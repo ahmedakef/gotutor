@@ -4,7 +4,9 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 	"time"
 	"vis/dlv"
 	"vis/serialize"
@@ -42,14 +44,32 @@ func execute(cmd *cobra.Command, args []string) error {
 	time.Sleep(1 * time.Second)
 	client, err := dlv.Connect(addr)
 	if err != nil {
-		return fmt.Errorf("failed to connect to server: %w", err)
+		fmt.Println("failed to connect to server: ", err)
+		return nil
 	}
 	serializer := serialize.NewSerializer(client)
-	serializer.ExecutionSteps()
+	steps, err := serializer.ExecutionSteps()
+	if err != nil {
+		fmt.Println("failed to get execution steps: ", err)
+		return nil
+	}
+	// put the result in steps.json file
+	file, err := os.OpenFile("steps.json", os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		fmt.Println("failed to open steps.json file: ", err)
+		return nil
+	}
+	defer file.Close()
+
+	err = json.NewEncoder(file).Encode(steps)
+	if err != nil {
+		fmt.Println("failed to encode steps: ", err)
+		return nil
+	}
 
 	select {
 	case <-debugServerErr:
-		fmt.Errorf("debugServer error occurred: %w", err)
+		fmt.Printf("debugServer error occurred: %v\n", err)
 	default:
 	}
 	return nil

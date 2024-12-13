@@ -25,10 +25,15 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	RunE: debug,
+	Args: cobra.RangeArgs(0, 1),
 }
 
 func debug(cmd *cobra.Command, args []string) error {
-	binaryPath, ok := dlv.BuildFromFile("source")
+	sourcePath := ""
+	if len(args) == 1 {
+		sourcePath = args[0]
+	}
+	binaryPath, ok := dlv.Build(sourcePath)
 	if !ok {
 		return errors.New("failed to build binary")
 	}
@@ -41,14 +46,19 @@ func debug(cmd *cobra.Command, args []string) error {
 	time.Sleep(1 * time.Second)
 	client, err := dlv.Connect(addr)
 	if err != nil {
-		return fmt.Errorf("failed to connect to server: %w", err)
+		fmt.Println("failed to connect to server: ", err)
+		return nil
 	}
 	serializer := serialize.NewSerializer(client)
-	serializer.ExecutionSteps()
+	_, err = serializer.ExecutionSteps()
+	if err != nil {
+		fmt.Println("failed to get execution steps: ", err)
+		return nil
+	}
 
 	select {
 	case <-debugServerErr:
-		fmt.Errorf("debugServer error occurred: %w", err)
+		fmt.Printf("debugServer error occurred: %v\n", err)
 	default:
 	}
 

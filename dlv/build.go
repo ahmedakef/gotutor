@@ -2,9 +2,7 @@ package dlv
 
 import (
 	"fmt"
-	"io"
 	"os"
-	"path/filepath"
 	"runtime"
 
 	"github.com/go-delve/delve/pkg/gobuild"
@@ -12,21 +10,8 @@ import (
 )
 
 // given a sourcePath, build the binary in temporary directory and return the path to the binary
-func BuildFromFile(sourcePath string) (string, bool) {
-	tmpDir, err := os.MkdirTemp("", "build")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to create temp directory: %v\n", err)
-		return "", false
-	}
-	defer os.RemoveAll(tmpDir)
-	destPath := filepath.Join(tmpDir, filepath.Base(sourcePath)+".go")
-	err = copy(sourcePath, destPath)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to copy file: %v\n", err)
-		return "", false
-	}
-
-	args := []string{destPath}
+func Build(sourcePath string) (string, bool) {
+	args := []string{sourcePath}
 	debugName, success := buildBinary(args, false)
 	if !success {
 		return "", false
@@ -54,28 +39,6 @@ func buildBinary(args []string, isTest bool) (string, bool) {
 		return "", false
 	}
 	return debugName, true
-}
-
-// copy copies a file from src to dst
-func copy(src, dst string) error {
-	sourceFile, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer sourceFile.Close()
-
-	destFile, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-	defer destFile.Close()
-
-	_, err = io.Copy(destFile, sourceFile)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func getBuildFlags() string {
