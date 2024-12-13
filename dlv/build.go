@@ -1,17 +1,18 @@
-package main
+package dlv
 
 import (
 	"fmt"
-	"github.com/go-delve/delve/pkg/gobuild"
-	"github.com/go-delve/delve/pkg/goversion"
 	"io"
 	"os"
 	"path/filepath"
 	"runtime"
+
+	"github.com/go-delve/delve/pkg/gobuild"
+	"github.com/go-delve/delve/pkg/goversion"
 )
 
 // given a sourcePath, build the binary in temporary directory and return the path to the binary
-func buildFromFile(sourcePath string) (string, bool) {
+func BuildFromFile(sourcePath string) (string, bool) {
 	tmpDir, err := os.MkdirTemp("", "build")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to create temp directory: %v\n", err)

@@ -1,4 +1,4 @@
-package main
+package dlv
 
 import (
 	"os"
@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func runDebugServer(debugName string, addr string) error {
+func RunDebugServer(debugName string, addr string) error {
 	return dlvCommandRun("exec", debugName, "--headless", "--listen="+addr)
 }
 

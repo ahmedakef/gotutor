@@ -1,15 +1,16 @@
-package main
+package dlv
 
 import (
 	"errors"
 	"fmt"
-	"github.com/go-delve/delve/pkg/logflags"
-	"github.com/go-delve/delve/service/rpc2"
 	"net"
 	"strings"
+
+	"github.com/go-delve/delve/pkg/logflags"
+	"github.com/go-delve/delve/service/rpc2"
 )
 
-func connect(addr string) (*rpc2.RPCClient, error) {
+func Connect(addr string) (*rpc2.RPCClient, error) {
 	var clientConn net.Conn
 	if clientConn = netDial(addr); clientConn == nil {
 		return nil, errors.New("already logged")
