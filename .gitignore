@@ -4,3 +4,4 @@ vis
 .idea/*
 bin
 source_debug
+steps.json

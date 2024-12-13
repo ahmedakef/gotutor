@@ -1,9 +1,10 @@
 package serialize
 
 import (
+	"strings"
+
 	"github.com/go-delve/delve/service/api"
 	"github.com/go-delve/delve/service/rpc2"
-	"strings"
 )
 
 type serializer struct {
@@ -17,8 +18,10 @@ func NewSerializer(client *rpc2.RPCClient) *serializer {
 func (v *serializer) ExecutionSteps() ([]Step, error) {
 	var steps []Step
 	var goroutines []*api.Goroutine
-	var err error
-	v.initMainBreakPoint()
+	err := v.initMainBreakPoint()
+	if err != nil {
+		return steps, err
+	}
 	debugState := <-v.client.Continue()
 	for !debugState.Exited {
 		if len(goroutines) == 0 {
@@ -31,8 +34,11 @@ func (v *serializer) ExecutionSteps() ([]Step, error) {
 		if err != nil {
 			return steps, err
 		}
+		if debugState.Exited {
+			break
+		}
 		variables, err := v.client.ListLocalVariables(
-			api.EvalScope{},
+			api.EvalScope{GoroutineID: -1},
 			api.LoadConfig{},
 		)
 		if err != nil {
@@ -43,21 +49,17 @@ func (v *serializer) ExecutionSteps() ([]Step, error) {
 			Variables: variables,
 		}
 		steps = append(steps, step)
-		_, _, err = v.client.ListGoroutines(0, 0)
-		if err != nil {
-			return steps, err
-		}
-
 	}
 
 	return steps, nil
 }
 
-func (v *serializer) initMainBreakPoint() {
-	v.client.CreateBreakpoint(&api.Breakpoint{
+func (v *serializer) initMainBreakPoint() error {
+	_, err := v.client.CreateBreakpoint(&api.Breakpoint{
 		Name:         "main",
 		FunctionName: "main.main",
 	})
+	return err
 }
 
 func (v *serializer) getUserGoroutines() ([]*api.Goroutine, error) {

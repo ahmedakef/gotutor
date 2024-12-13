@@ -27,11 +27,15 @@ to quickly create a Cobra application.`,
 func connect(cmd *cobra.Command, args []string) error {
 	client, err := dlv.Connect(addr)
 	if err != nil {
-		return fmt.Errorf("failed to connect to server: %w", err)
+		fmt.Println("failed to connect to server: ", err)
+		return nil
 	}
 	serializer := serialize.NewSerializer(client)
-	serializer.ExecutionSteps()
-
+	_, err = serializer.ExecutionSteps()
+	if err != nil {
+		fmt.Println("failed to get execution steps: ", err)
+		return nil
+	}
 	return nil
 }
 
