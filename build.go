@@ -17,6 +17,7 @@ func buildFromFile(sourcePath string) (string, bool) {
 		fmt.Fprintf(os.Stderr, "Failed to create temp directory: %v\n", err)
 		return "", false
 	}
+	defer os.RemoveAll(tmpDir)
 	destPath := filepath.Join(tmpDir, filepath.Base(sourcePath)+".go")
 	err = copy(sourcePath, destPath)
 	if err != nil {
