@@ -6,8 +6,8 @@ import (
 	"strings"
 )
 
-func runDebugServer(debugName string) error {
-	return dlvCommandRun("exec", debugName, "--headless", "--listen=:8082")
+func runDebugServer(debugName string, addr string) error {
+	return dlvCommandRun("exec", debugName, "--headless", "--listen="+addr)
 }
 
 func dlvCommandRun(command string, args ...string) error {
