@@ -15,11 +15,17 @@ func NewSerializer(client *rpc2.RPCClient) *serializer {
 
 func (v *serializer) ExecutionSteps() ([]Step, error) {
 	var steps []Step
-	//var goroutines []*api.Goroutine
+	var goroutines []*api.Goroutine
 	var err error
 	v.initMainBreakPoint()
 	debugState := <-v.client.Continue()
 	for !debugState.Exited {
+		if len(goroutines) == 0 {
+			goroutines, _, err = v.client.ListGoroutines(0, 0)
+			if err != nil {
+				return steps, err
+			}
+		}
 		debugState, err = v.client.Next()
 		if err != nil {
 			return steps, err

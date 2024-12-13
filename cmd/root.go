@@ -4,9 +4,8 @@ Copyright © 2024 Ahmed Akef aemed.akef.1@gmail.com
 package cmd
 
 import (
-	"os"
-
 	"github.com/spf13/cobra"
+	"os"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -19,6 +18,22 @@ examples and usage of using your application. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
+	//PersistentPreRun: func(cmd *cobra.Command, args []string) {
+	//	// Create a cancellable context
+	//	ctx, cancel := context.WithCancel(context.Background())
+	//
+	//	// Set up channel to listen for interrupt signals
+	//	sigs := make(chan os.Signal, 1)
+	//	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
+	//
+	//	// Goroutine to handle the interrupt signal
+	//	go func() {
+	//		<-sigs
+	//		cancel()
+	//	}()
+	//
+	//	cmd.SetContext(ctx)
+	//},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

@@ -28,20 +28,16 @@ to quickly create a Cobra application.`,
 }
 
 func debug(cmd *cobra.Command, args []string) error {
-	debugName, ok := dlv.BuildFromFile("source")
+	binaryPath, ok := dlv.BuildFromFile("source")
 	if !ok {
 		return errors.New("failed to build binary")
 	}
-	defer gobuild.Remove(debugName)
-	serverDone := make(chan struct{})
-	err := func() error {
-		err := dlv.RunDebugServer(debugName, addr)
-		close(serverDone)
-		return err
+	defer gobuild.Remove(binaryPath)
+	debugServerErr := make(chan error, 1)
+	go func() {
+		err := dlv.RunDebugServer(binaryPath, addr)
+		debugServerErr <- err
 	}()
-	if err != nil {
-		return fmt.Errorf("failed to run debug server: %w", err)
-	}
 	time.Sleep(1 * time.Second)
 	client, err := dlv.Connect(addr)
 	if err != nil {
@@ -49,6 +45,13 @@ func debug(cmd *cobra.Command, args []string) error {
 	}
 	serializer := serialize.NewSerializer(client)
 	serializer.ExecutionSteps()
+
+	select {
+	case <-debugServerErr:
+		fmt.Errorf("debugServer error occurred: %w", err)
+	default:
+	}
+
 	return nil
 }
 

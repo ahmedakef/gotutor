@@ -31,6 +31,7 @@ func connect(cmd *cobra.Command, args []string) error {
 	}
 	serializer := serialize.NewSerializer(client)
 	serializer.ExecutionSteps()
+
 	return nil
 }
 
