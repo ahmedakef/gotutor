@@ -34,15 +34,11 @@ func execute(cmd *cobra.Command, args []string) error {
 		binaryPath = args[0]
 	}
 
-	serverDone := make(chan struct{})
-	err := func() error {
+	debugServerErr := make(chan error, 1)
+	go func() {
 		err := dlv.RunDebugServer(binaryPath, addr)
-		close(serverDone)
-		return err
+		debugServerErr <- err
 	}()
-	if err != nil {
-		return fmt.Errorf("failed to run debug server: %w", err)
-	}
 	time.Sleep(1 * time.Second)
 	client, err := dlv.Connect(addr)
 	if err != nil {
@@ -50,6 +46,12 @@ func execute(cmd *cobra.Command, args []string) error {
 	}
 	serializer := serialize.NewSerializer(client)
 	serializer.ExecutionSteps()
+
+	select {
+	case <-debugServerErr:
+		fmt.Errorf("debugServer error occurred: %w", err)
+	default:
+	}
 	return nil
 
 }
