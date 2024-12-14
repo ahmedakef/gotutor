@@ -53,6 +53,11 @@ func execute(cmd *cobra.Command, args []string) error {
 		fmt.Println("failed to get execution steps: ", err)
 		return nil
 	}
+	err = client.Detach(true)
+	if err != nil {
+		fmt.Println("failed to halt the execution: ", err)
+		return nil
+	}
 	// put the result in steps.json file
 	file, err := os.OpenFile("steps.json", os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
@@ -66,10 +71,18 @@ func execute(cmd *cobra.Command, args []string) error {
 		fmt.Println("failed to encode steps: ", err)
 		return nil
 	}
+	// Explicitly flush the file buffer
+	err = file.Sync()
+	if err != nil {
+		fmt.Println("failed to flush file buffer: ", err)
+		return nil
+	}
 
 	select {
-	case <-debugServerErr:
-		fmt.Printf("debugServer error occurred: %v\n", err)
+	case err := <-debugServerErr:
+		if err != nil {
+			fmt.Printf("debugServer error occurred: %v\n", err)
+		}
 	default:
 	}
 	return nil

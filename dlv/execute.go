@@ -7,7 +7,7 @@ import (
 )
 
 func RunDebugServer(debugName string, addr string) error {
-	return dlvCommandRun("exec", debugName, "--headless", "--listen="+addr)
+	return dlvCommandRun("exec", debugName, "--headless", "--accept-multiclient", "--listen="+addr)
 }
 
 func dlvCommandRun(command string, args ...string) error {

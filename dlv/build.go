@@ -50,5 +50,6 @@ func getBuildFlags() string {
 			buildFlagsDefault = "-ldflags='-linkmode internal'"
 		}
 	}
+	//buildFlagsDefault += " -gcflags='all=-N -l'" // Disable optimizations and inlining
 	return buildFlagsDefault
 }
