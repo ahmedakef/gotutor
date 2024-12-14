@@ -24,12 +24,37 @@ func (v *serializer) ExecutionSteps() ([]Step, error) {
 	}
 	debugState := <-v.client.Continue()
 	for !debugState.Exited {
-		if len(goroutines) == 0 {
-			goroutines, err = v.getUserGoroutines()
-			if err != nil {
-				return steps, err
-			}
+		activeGoroutines, err := v.getUserGoroutines()
+		if err != nil || len(activeGoroutines) == 0 {
+			return steps, err
 		}
+		if len(goroutines) == 0 {
+			goroutines = activeGoroutines
+		} else {
+			goroutines = filterNotActiveGoroutines(goroutines, activeGoroutines)
+		}
+		if len(goroutines) == 0 {
+			break
+		}
+		goroutine := goroutines[0]
+		goroutines = goroutines[1:]
+		debugState, err = v.client.SwitchGoroutine(goroutine.ID)
+		if err != nil {
+			return nil, err
+		}
+		exited, err := v.stepOutToUserCode(debugState)
+		if err != nil {
+			return steps, err
+		}
+		if exited {
+			break
+		}
+		step, err := v.buildStep(debugState)
+		if err != nil {
+			return steps, err
+		}
+		steps = append(steps, step)
+
 		debugState, err = v.client.Next()
 		if err != nil {
 			return steps, err
@@ -37,16 +62,17 @@ func (v *serializer) ExecutionSteps() ([]Step, error) {
 		if debugState.Exited {
 			break
 		}
-		variables, err := v.client.ListLocalVariables(
-			api.EvalScope{GoroutineID: -1},
-			api.LoadConfig{},
-		)
+
+		exited, err = v.stepOutToUserCode(debugState)
 		if err != nil {
 			return steps, err
 		}
-		step := Step{
-			Goroutine: debugState.SelectedGoroutine,
-			Variables: variables,
+		if exited {
+			break
+		}
+		step, err = v.buildStep(debugState)
+		if err != nil {
+			return steps, err
 		}
 		steps = append(steps, step)
 	}
@@ -69,9 +95,59 @@ func (v *serializer) getUserGoroutines() ([]*api.Goroutine, error) {
 	}
 	var filteredGoroutines []*api.Goroutine
 	for _, goroutine := range goroutines {
-		if !strings.Contains(goroutine.CurrentLoc.File, "src/runtime/") {
+		if internalFunction(goroutine.GoStatementLoc.File) {
+			continue
+		}
+		filteredGoroutines = append(filteredGoroutines, goroutine)
+
+	}
+	return filteredGoroutines, nil
+}
+
+func filterNotActiveGoroutines(goroutines, activeGoroutines []*api.Goroutine) []*api.Goroutine {
+	var activeGoroutinesIDs = make(map[int64]bool)
+	for _, goroutine := range activeGoroutines {
+		activeGoroutinesIDs[goroutine.ID] = true
+	}
+	var filteredGoroutines []*api.Goroutine
+	for _, goroutine := range goroutines {
+		if activeGoroutinesIDs[goroutine.ID] {
 			filteredGoroutines = append(filteredGoroutines, goroutine)
 		}
 	}
-	return filteredGoroutines, nil
+	return filteredGoroutines
+
+}
+
+func (v *serializer) stepOutToUserCode(debugState *api.DebuggerState) (bool, error) {
+	var err error
+	for internalFunction(debugState.SelectedGoroutine.CurrentLoc.File) {
+		debugState, err = v.client.StepOut()
+		if err != nil {
+			return false, err
+		}
+		if debugState.Exited {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (v *serializer) buildStep(debugState *api.DebuggerState) (Step, error) {
+	variables, err := v.client.ListLocalVariables(
+		api.EvalScope{GoroutineID: debugState.SelectedGoroutine.ID},
+		api.LoadConfig{},
+	)
+	if err != nil {
+		return Step{}, err
+	}
+	return Step{
+		Goroutine: debugState.SelectedGoroutine,
+		Variables: variables,
+	}, nil
+}
+
+func internalFunction(goroutineFile string) bool {
+	return strings.Contains(goroutineFile, "src/runtime/") ||
+		strings.Contains(goroutineFile, "/libexec/")
 }
