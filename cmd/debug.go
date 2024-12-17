@@ -4,6 +4,7 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -44,13 +45,11 @@ func debug(cmd *cobra.Command, args []string) error {
 		debugServerErr <- err
 	}()
 	time.Sleep(1 * time.Second)
-	client, err := dlv.Connect(addr)
-	if err != nil {
-		fmt.Println("failed to connect to server: ", err)
-		return nil
-	}
-	serializer := serialize.NewSerializer(client)
-	_, err = serializer.ExecutionSteps()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	serializer := serialize.NewSerializer(ctx, addr)
+	_, err := serializer.ExecutionSteps()
+	cancel() // cancelling the context to stop the goroutines
 	if err != nil {
 		fmt.Println("failed to get execution steps: ", err)
 		return nil
