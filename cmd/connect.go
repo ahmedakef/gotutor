@@ -4,8 +4,8 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"context"
 	"fmt"
-	"vis/dlv"
 	"vis/serialize"
 
 	"github.com/spf13/cobra"
@@ -25,13 +25,10 @@ to quickly create a Cobra application.`,
 }
 
 func connect(cmd *cobra.Command, args []string) error {
-	client, err := dlv.Connect(addr)
-	if err != nil {
-		fmt.Println("failed to connect to server: ", err)
-		return nil
-	}
-	serializer := serialize.NewSerializer(client)
-	_, err = serializer.ExecutionSteps()
+	ctx, cancel := context.WithCancel(context.Background())
+	serializer := serialize.NewSerializer(ctx, addr)
+	_, err := serializer.ExecutionSteps()
+	cancel() // cancelling the context to stop the goroutines
 	if err != nil {
 		fmt.Println("failed to get execution steps: ", err)
 		return nil

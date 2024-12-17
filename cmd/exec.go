@@ -4,6 +4,7 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -42,22 +43,16 @@ func execute(cmd *cobra.Command, args []string) error {
 		debugServerErr <- err
 	}()
 	time.Sleep(1 * time.Second)
-	client, err := dlv.Connect(addr)
-	if err != nil {
-		fmt.Println("failed to connect to server: ", err)
-		return nil
-	}
-	serializer := serialize.NewSerializer(client)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	serializer := serialize.NewSerializer(ctx, addr)
 	steps, err := serializer.ExecutionSteps()
+	cancel() // cancelling the context to stop the goroutines
 	if err != nil {
 		fmt.Println("failed to get execution steps: ", err)
 		return nil
 	}
-	err = client.Detach(true)
-	if err != nil {
-		fmt.Println("failed to halt the execution: ", err)
-		return nil
-	}
+
 	// put the result in steps.json file
 	file, err := os.OpenFile("steps.json", os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
