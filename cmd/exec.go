@@ -7,10 +7,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/spf13/cobra"
 	"os"
 	"time"
-	"vis/dlv"
+
+	"github.com/ahmedakef/gotutor/dlv"
+	"github.com/spf13/cobra"
 )
 
 var addr = ":8083"

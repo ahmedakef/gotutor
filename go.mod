@@ -1,4 +1,4 @@
-module vis
+module github.com/ahmedakef/gotutor
 
 go 1.22
 
