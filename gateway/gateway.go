@@ -1,24 +1,25 @@
-package serialize
+package gateway
 
 import (
 	"context"
+
 	"github.com/go-delve/delve/service/api"
 	"github.com/go-delve/delve/service/rpc2"
 )
 
-type debugGateway struct {
+type Debug struct {
 	client    *rpc2.RPCClient
 	semaphore chan struct{}
 }
 
-func newDebugGateway(client *rpc2.RPCClient, semaphore chan struct{}) *debugGateway {
-	return &debugGateway{
+func NewDebug(client *rpc2.RPCClient) *Debug {
+	return &Debug{
 		client:    client,
-		semaphore: semaphore,
+		semaphore: make(chan struct{}, 1),
 	}
 }
 
-func (d *debugGateway) ListLocalVariables(ctx context.Context, scope api.EvalScope, cfg api.LoadConfig) ([]api.Variable, error) {
+func (d *Debug) ListLocalVariables(ctx context.Context, scope api.EvalScope, cfg api.LoadConfig) ([]api.Variable, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
@@ -31,7 +32,7 @@ func (d *debugGateway) ListLocalVariables(ctx context.Context, scope api.EvalSco
 	return d.client.ListLocalVariables(scope, cfg)
 }
 
-func (d *debugGateway) CreateBreakpoint(ctx context.Context, breakPoint *api.Breakpoint) (*api.Breakpoint, error) {
+func (d *Debug) CreateBreakpoint(ctx context.Context, breakPoint *api.Breakpoint) (*api.Breakpoint, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
@@ -44,7 +45,7 @@ func (d *debugGateway) CreateBreakpoint(ctx context.Context, breakPoint *api.Bre
 	return d.client.CreateBreakpoint(breakPoint)
 }
 
-func (d *debugGateway) ClearBreakpointByName(ctx context.Context, name string) (*api.Breakpoint, error) {
+func (d *Debug) ClearBreakpointByName(ctx context.Context, name string) (*api.Breakpoint, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
@@ -57,7 +58,7 @@ func (d *debugGateway) ClearBreakpointByName(ctx context.Context, name string) (
 	return d.client.ClearBreakpointByName(name)
 }
 
-func (d *debugGateway) Stacktrace(ctx context.Context, goroutineId int64, depth int, opts api.StacktraceOptions, cfg *api.LoadConfig) ([]api.Stackframe, error) {
+func (d *Debug) Stacktrace(ctx context.Context, goroutineId int64, depth int, opts api.StacktraceOptions, cfg *api.LoadConfig) ([]api.Stackframe, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
@@ -70,7 +71,7 @@ func (d *debugGateway) Stacktrace(ctx context.Context, goroutineId int64, depth 
 	return d.client.Stacktrace(goroutineId, depth, opts, cfg)
 }
 
-func (d *debugGateway) Continue(ctx context.Context) (*api.DebuggerState, error) {
+func (d *Debug) Continue(ctx context.Context) (*api.DebuggerState, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
@@ -88,7 +89,7 @@ func (d *debugGateway) Continue(ctx context.Context) (*api.DebuggerState, error)
 	}
 }
 
-func (d *debugGateway) Next(ctx context.Context) (*api.DebuggerState, error) {
+func (d *Debug) Next(ctx context.Context) (*api.DebuggerState, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
@@ -101,7 +102,7 @@ func (d *debugGateway) Next(ctx context.Context) (*api.DebuggerState, error) {
 	return d.client.Next()
 }
 
-func (d *debugGateway) ListGoroutines(ctx context.Context, start, count int) ([]*api.Goroutine, int, error) {
+func (d *Debug) ListGoroutines(ctx context.Context, start, count int) ([]*api.Goroutine, int, error) {
 	if ctx.Err() != nil {
 		return nil, 0, ctx.Err()
 	}
@@ -114,7 +115,7 @@ func (d *debugGateway) ListGoroutines(ctx context.Context, start, count int) ([]
 	return d.client.ListGoroutines(start, count)
 }
 
-func (d *debugGateway) SwitchGoroutine(ctx context.Context, goroutineID int64) (*api.DebuggerState, error) {
+func (d *Debug) SwitchGoroutine(ctx context.Context, goroutineID int64) (*api.DebuggerState, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
@@ -127,17 +128,17 @@ func (d *debugGateway) SwitchGoroutine(ctx context.Context, goroutineID int64) (
 	return d.client.SwitchGoroutine(goroutineID)
 }
 
-func (d *debugGateway) Detach(kill bool) error {
+func (d *Debug) Detach(kill bool) error {
 	d.getToken()
 	defer d.releaseToken()
 
 	return d.client.Detach(kill)
 }
 
-func (d *debugGateway) getToken() {
+func (d *Debug) getToken() {
 	d.semaphore <- struct{}{}
 }
 
-func (d *debugGateway) releaseToken() {
+func (d *Debug) releaseToken() {
 	<-d.semaphore
 }
