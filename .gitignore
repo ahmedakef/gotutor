@@ -1,7 +1,8 @@
 main
 source
-vis
+gotutor
 .idea/*
 bin
 source_debug
 steps.json
+__debug_bin*
