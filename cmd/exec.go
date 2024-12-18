@@ -7,12 +7,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/spf13/cobra"
 	"os"
 	"time"
 	"vis/dlv"
-	"vis/serialize"
-
-	"github.com/spf13/cobra"
 )
 
 var addr = ":8083"
@@ -45,13 +43,12 @@ func execute(cmd *cobra.Command, args []string) error {
 	time.Sleep(1 * time.Second)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	serializer := serialize.NewSerializer(ctx, addr)
-	steps, err := serializer.ExecutionSteps()
-	cancel() // cancelling the context to stop the goroutines
+	steps, err := getSteps(ctx)
 	if err != nil {
-		fmt.Println("failed to get execution steps: ", err)
+		fmt.Println("getSteps: ", err)
 		return nil
 	}
+	cancel()
 
 	// put the result in steps.json file
 	file, err := os.OpenFile("steps.json", os.O_WRONLY|os.O_CREATE, 0644)

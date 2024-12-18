@@ -4,8 +4,14 @@ Copyright © 2024 Ahmed Akef aemed.akef.1@gmail.com
 package cmd
 
 import (
-	"github.com/spf13/cobra"
+	"context"
+	"fmt"
 	"os"
+	"vis/dlv"
+	"vis/gateway"
+	"vis/serialize"
+
+	"github.com/spf13/cobra"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -46,4 +52,37 @@ func Execute() {
 }
 
 func init() {
+}
+
+func dlvGatewayClient(address string) (*gateway.Debug, error) {
+	rpcClient, err := dlv.Connect(addr)
+	if err != nil {
+		fmt.Println("failed to connect to server: ", err)
+		return nil, fmt.Errorf("failed to connect to server: %w", err)
+	}
+	client := gateway.NewDebug(rpcClient)
+	return client, nil
+
+}
+
+func getSteps(ctx context.Context) ([]serialize.Step, error) {
+	client, err := dlvGatewayClient(addr)
+	if err != nil {
+		fmt.Println("failed to create dlvGatewayClient: ", err)
+		return nil, nil
+	}
+
+	defer func() {
+		fmt.Println("killing the debugger")
+		err = client.Detach(true)
+		if err != nil {
+			fmt.Printf("failed to halt the execution: %v\n", err)
+		}
+	}()
+	serializer := serialize.NewSerializer(client)
+	steps, err := serializer.ExecutionSteps(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get execution steps: %w", err)
+	}
+	return steps, nil
 }

@@ -6,8 +6,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"vis/serialize"
-
 	"github.com/spf13/cobra"
 )
 
@@ -26,13 +24,12 @@ to quickly create a Cobra application.`,
 
 func connect(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithCancel(context.Background())
-	serializer := serialize.NewSerializer(ctx, addr)
-	_, err := serializer.ExecutionSteps()
-	cancel() // cancelling the context to stop the goroutines
+	_, err := getSteps(ctx)
 	if err != nil {
-		fmt.Println("failed to get execution steps: ", err)
+		fmt.Println("getSteps: ", err)
 		return nil
 	}
+	cancel()
 	return nil
 }
 

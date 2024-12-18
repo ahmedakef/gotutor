@@ -5,7 +5,6 @@ go 1.22
 require (
 	github.com/go-delve/delve v1.23.1
 	github.com/spf13/cobra v1.8.1
-	go.uber.org/atomic v1.11.0
 )
 
 require (
