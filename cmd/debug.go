@@ -7,10 +7,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+
+	"github.com/ahmedakef/gotutor/dlv"
 	"github.com/go-delve/delve/pkg/gobuild"
 	"github.com/spf13/cobra"
-	"time"
-	"vis/dlv"
 )
 
 // debugCmd represents the debug command

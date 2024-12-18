@@ -7,9 +7,12 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"vis/dlv"
-	"vis/gateway"
-	"vis/serialize"
+
+	"github.com/ahmedakef/gotutor/serialize"
+
+	"github.com/ahmedakef/gotutor/gateway"
+
+	"github.com/ahmedakef/gotutor/dlv"
 
 	"github.com/spf13/cobra"
 )

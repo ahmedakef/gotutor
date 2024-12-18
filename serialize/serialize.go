@@ -8,7 +8,8 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"vis/gateway"
+
+	"github.com/ahmedakef/gotutor/gateway"
 
 	"github.com/go-delve/delve/service/api"
 )
