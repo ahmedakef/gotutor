@@ -45,7 +45,7 @@ func execute(cmd *cobra.Command, args []string) error {
 	defer cancel()
 	err := getAndWriteSteps(ctx)
 	if err != nil {
-		fmt.Println("getAndWriteSteps: ", err)
+		fmt.Println("getAndWriteSteps:", err)
 		return nil
 	}
 

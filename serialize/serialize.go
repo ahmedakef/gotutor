@@ -136,7 +136,9 @@ func (v *Serializer) getGoroutineState(ctx context.Context, goroutine *api.Gorou
 		return Step{}, true, nil
 	}
 
+	//fmt.Printf("File:Line: %s:%d\n", debugState.SelectedGoroutine.CurrentLoc.File, debugState.SelectedGoroutine.CurrentLoc.Line)
 	if !isUserCode(debugState.SelectedGoroutine.CurrentLoc.File) {
+		//fmt.Printf("File:Line: %s:%d\n", debugState.SelectedGoroutine.CurrentLoc.File, debugState.SelectedGoroutine.CurrentLoc.Line)
 		debugState, err = v.client.StepOut(ctx)
 		if err != nil {
 			return Step{}, true, fmt.Errorf("StepOut: %w", err)
