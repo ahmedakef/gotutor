@@ -58,7 +58,7 @@ func Execute() {
 func init() {
 }
 
-func dlvGatewayClient(address string) (*gateway.Debug, error) {
+func dlvGatewayClient() (*gateway.Debug, error) {
 	rpcClient, err := dlv.Connect(addr)
 	if err != nil {
 		fmt.Println("failed to connect to server: ", err)
@@ -70,7 +70,7 @@ func dlvGatewayClient(address string) (*gateway.Debug, error) {
 }
 
 func getAndWriteSteps(ctx context.Context) error {
-	client, err := dlvGatewayClient(addr)
+	client, err := dlvGatewayClient()
 	if err != nil {
 		return fmt.Errorf("failed to create dlvGatewayClient: %w", err)
 	}
@@ -96,12 +96,12 @@ func getAndWriteSteps(ctx context.Context) error {
 
 	err = json.NewEncoder(file).Encode(steps)
 	if err != nil {
-		return fmt.Errorf("failed to encode steps: ", err)
+		return fmt.Errorf("failed to encode steps: %w", err)
 	}
 	// Explicitly flush the file buffer
 	err = file.Sync()
 	if err != nil {
-		return fmt.Errorf("failed to flush file buffer: ", err)
+		return fmt.Errorf("failed to flush file buffer: %w", err)
 	}
 	return nil
 }

@@ -6,9 +6,12 @@ import (
 	"time"
 )
 
+var packageVar = "packageVar"
+
 func main() {
 	var wg sync.WaitGroup
-	hello()
+	hello("ahmed")
+	fmt.Println(packageVar)
 
 	wg.Add(2) // Wait for two workers
 
@@ -20,9 +23,9 @@ func main() {
 	wg.Wait() // Wait for all workers to finish
 }
 
-func hello() {
+func hello(personName string) {
 	greating := "Hello, World!"
-	fmt.Println(greating)
+	fmt.Printf("%s %s", greating, personName)
 }
 
 func work(i int, wg *sync.WaitGroup) {

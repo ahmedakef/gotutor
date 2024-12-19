@@ -15,7 +15,7 @@ import (
 	"github.com/go-delve/delve/service/api"
 )
 
-var noMainErr = errors.New("main function not found")
+var errNoMain = errors.New("main function not found")
 
 type Serializer struct {
 	client          *gateway.Debug
@@ -139,7 +139,7 @@ func (v *Serializer) getGoroutineState(ctx context.Context, goroutine *api.Gorou
 	if !isUserCode(debugState.SelectedGoroutine.CurrentLoc.File) {
 		debugState, err = v.client.StepOut(ctx)
 		if err != nil {
-			return Step{}, true, fmt.Errorf("goroutine: %d, StepOut: %w", debugState.SelectedGoroutine.ID, err)
+			return Step{}, true, fmt.Errorf("StepOut: %w", err)
 		}
 		if debugState.Exited {
 			return Step{}, true, nil
@@ -197,24 +197,6 @@ func (v *Serializer) goToNextLine(ctx context.Context, goroutine *api.Goroutine)
 	return Step{}, false, nil
 }
 
-func (v *Serializer) stepOutToUserCode(ctx context.Context, debugState *api.DebuggerState) (*api.DebuggerState, bool, error) {
-	var err error
-	fmt.Printf("goroutine: %d, stepOutToUserCode\n", debugState.SelectedGoroutine.ID)
-	fmt.Printf("File:Line: %s:%d\n", debugState.SelectedGoroutine.CurrentLoc.File, debugState.SelectedGoroutine.CurrentLoc.Line)
-	for !isUserCode(debugState.SelectedGoroutine.CurrentLoc.File) {
-		debugState, err = v.client.StepOut(ctx)
-		if err != nil {
-			return nil, true, fmt.Errorf("StepOut: %w", err)
-		}
-		if debugState.Exited {
-			return debugState, true, nil
-		}
-		fmt.Printf("File:Line: %s:%d\n", debugState.SelectedGoroutine.CurrentLoc.File, debugState.SelectedGoroutine.CurrentLoc.Line)
-
-	}
-	return debugState, false, nil
-}
-
 func (v *Serializer) getUserGoroutines(ctx context.Context) ([]*api.Goroutine, error) {
 	goroutines, _, err := v.client.ListGoroutines(ctx, 0, 0)
 	if err != nil {
@@ -243,13 +225,57 @@ func (v *Serializer) buildStep(ctx context.Context, debugState *api.DebuggerStat
 	if err != nil {
 		return Step{}, err
 	}
+	args, err := v.client.ListFunctionArgs(ctx,
+		api.EvalScope{GoroutineID: debugState.SelectedGoroutine.ID},
+		api.LoadConfig{},
+	)
+	if err != nil {
+		return Step{}, err
+	}
+
+	packageVars, err := v.client.ListPackageVariables(ctx,
+		"^main.",
+		api.LoadConfig{},
+	)
+	if err != nil {
+		return Step{}, err
+	}
 	return Step{
-		Goroutine: debugState.SelectedGoroutine,
-		Variables: variables,
+		Goroutine:        debugState.SelectedGoroutine,
+		Variables:        variables,
+		Args:             args,
+		PackageVariables: packageVars,
 	}, nil
 }
 
+func internalFunction(goroutineFile string) bool {
+	return strings.Contains(goroutineFile, "src/runtime/") ||
+		strings.Contains(goroutineFile, "/libexec/")
+}
+
+func isUserCode(goroutineFile string) bool {
+	return strings.HasSuffix(goroutineFile, "main.go")
+}
+
 // old functions no longer used
+
+func (v *Serializer) stepOutToUserCode(ctx context.Context, debugState *api.DebuggerState) (*api.DebuggerState, bool, error) {
+	var err error
+	fmt.Printf("goroutine: %d, stepOutToUserCode\n", debugState.SelectedGoroutine.ID)
+	fmt.Printf("File:Line: %s:%d\n", debugState.SelectedGoroutine.CurrentLoc.File, debugState.SelectedGoroutine.CurrentLoc.Line)
+	for !isUserCode(debugState.SelectedGoroutine.CurrentLoc.File) {
+		debugState, err = v.client.StepOut(ctx)
+		if err != nil {
+			return nil, true, fmt.Errorf("StepOut: %w", err)
+		}
+		if debugState.Exited {
+			return debugState, true, nil
+		}
+		fmt.Printf("File:Line: %s:%d\n", debugState.SelectedGoroutine.CurrentLoc.File, debugState.SelectedGoroutine.CurrentLoc.Line)
+
+	}
+	return debugState, false, nil
+}
 
 func (v *Serializer) continueToUserCode(ctx context.Context, debugState *api.DebuggerState) (*api.DebuggerState, bool, error) {
 	if isUserCode(debugState.SelectedGoroutine.CurrentLoc.File) {
@@ -285,18 +311,18 @@ func (v *Serializer) continueToUserCode(ctx context.Context, debugState *api.Deb
 		}
 	}
 	if breakPointName == "" {
-		return nil, true, noMainErr
+		return nil, true, errNoMain
 	}
 	debugState, err = v.client.Continue(ctx)
 	if err != nil {
-		return nil, true, fmt.Errorf("goroutine: %d, continue: %w", debugState.SelectedGoroutine.ID, err)
+		return nil, true, fmt.Errorf("continue: %w", err)
 	}
 	if debugState.Exited {
 		return debugState, true, nil
 	}
 	_, err = v.client.ClearBreakpointByName(ctx, breakPointName)
 	if err != nil {
-		return nil, true, fmt.Errorf("goroutine: %d, clear breakpoint: %w", debugState.SelectedGoroutine.ID, err)
+		return nil, true, fmt.Errorf("clear breakpoint: %w", err)
 	}
 	return debugState, false, nil
 }
@@ -321,13 +347,4 @@ func getNextLine(filePath string, currentLine int) (int, error) {
 		return 0, fmt.Errorf("error reading file: %w", err)
 	}
 	return currentLine, nil
-}
-
-func internalFunction(goroutineFile string) bool {
-	return strings.Contains(goroutineFile, "src/runtime/") ||
-		strings.Contains(goroutineFile, "/libexec/")
-}
-
-func isUserCode(goroutineFile string) bool {
-	return strings.HasSuffix(goroutineFile, "main.go")
 }
