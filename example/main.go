@@ -21,13 +21,14 @@ func main() {
 }
 
 func hello() {
-	fmt.Println("Hello, World!")
+	greating := "Hello, World!"
+	fmt.Println(greating)
 }
 
 func work(i int, wg *sync.WaitGroup) {
 	startWord := fmt.Sprintf("Worker %d starting", i)
 	fmt.Println(startWord)
-	time.Sleep(10 * time.Second)
+	time.Sleep(5 * time.Second)
 	endWord := fmt.Sprintf("Worker %d done", i)
 	fmt.Println(endWord)
 	wg.Done()

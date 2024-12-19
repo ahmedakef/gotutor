@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"sync"
 
@@ -154,6 +155,9 @@ func (v *Serializer) getGoroutineState(ctx context.Context, goroutine *api.Gorou
 func (v *Serializer) goToNextLine(ctx context.Context, goroutine *api.Goroutine) (Step, bool, error) {
 	debugState, err := v.client.SwitchGoroutine(ctx, goroutine.ID)
 	if err != nil {
+		if strings.Contains(err.Error(), "unknown goroutine") {
+			return Step{}, false, nil
+		}
 		return Step{}, true, fmt.Errorf("goroutine: %d, switching goroutine: %v\n", goroutine.ID, err)
 	}
 
@@ -223,6 +227,10 @@ func (v *Serializer) getUserGoroutines(ctx context.Context) ([]*api.Goroutine, e
 		filteredGoroutines = append(filteredGoroutines, goroutine)
 
 	}
+	// assuming the later go routines has work to do while the earlier ones are waiting
+	sort.Slice(filteredGoroutines, func(i, j int) bool {
+		return filteredGoroutines[i].ID > filteredGoroutines[j].ID
+	})
 	return filteredGoroutines, nil
 }
 
