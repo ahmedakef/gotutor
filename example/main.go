@@ -24,8 +24,8 @@ func main() {
 }
 
 func hello(personName string) {
-	greating := "Hello, World!"
-	fmt.Printf("%s %s", greating, personName)
+	greeting := "Hello, World!"
+	fmt.Printf("%s %s\n", greeting, personName)
 }
 
 func work(i int, wg *sync.WaitGroup) {
