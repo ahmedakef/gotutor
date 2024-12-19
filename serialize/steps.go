@@ -5,8 +5,10 @@ import (
 )
 
 type Step struct {
-	Goroutine *api.Goroutine
-	Variables []api.Variable
+	Goroutine        *api.Goroutine
+	Variables        []api.Variable
+	Args             []api.Variable
+	PackageVariables []api.Variable
 }
 
 func (s *Step) isValid() bool {

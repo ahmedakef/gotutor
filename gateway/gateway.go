@@ -32,6 +32,32 @@ func (d *Debug) ListLocalVariables(ctx context.Context, scope api.EvalScope, cfg
 	return d.client.ListLocalVariables(scope, cfg)
 }
 
+func (d *Debug) ListFunctionArgs(ctx context.Context, scope api.EvalScope, cfg api.LoadConfig) ([]api.Variable, error) {
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+	d.getToken()
+	defer d.releaseToken()
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+
+	return d.client.ListFunctionArgs(scope, cfg)
+}
+
+func (d *Debug) ListPackageVariables(ctx context.Context, filter string, cfg api.LoadConfig) ([]api.Variable, error) {
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+	d.getToken()
+	defer d.releaseToken()
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+
+	return d.client.ListPackageVariables(filter, cfg)
+}
+
 func (d *Debug) CreateBreakpoint(ctx context.Context, breakPoint *api.Breakpoint) (*api.Breakpoint, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
