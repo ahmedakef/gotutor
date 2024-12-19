@@ -5,9 +5,7 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/ahmedakef/gotutor/dlv"
@@ -44,30 +42,10 @@ func execute(cmd *cobra.Command, args []string) error {
 	time.Sleep(1 * time.Second)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	steps, err := getSteps(ctx)
+	defer cancel()
+	err := getAndWriteSteps(ctx)
 	if err != nil {
-		fmt.Println("getSteps: ", err)
-		return nil
-	}
-	cancel()
-
-	// put the result in steps.json file
-	file, err := os.OpenFile("steps.json", os.O_WRONLY|os.O_CREATE, 0644)
-	if err != nil {
-		fmt.Println("failed to open steps.json file: ", err)
-		return nil
-	}
-	defer file.Close()
-
-	err = json.NewEncoder(file).Encode(steps)
-	if err != nil {
-		fmt.Println("failed to encode steps: ", err)
-		return nil
-	}
-	// Explicitly flush the file buffer
-	err = file.Sync()
-	if err != nil {
-		fmt.Println("failed to flush file buffer: ", err)
+		fmt.Println("getAndWriteSteps: ", err)
 		return nil
 	}
 

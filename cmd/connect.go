@@ -24,12 +24,12 @@ to quickly create a Cobra application.`,
 
 func connect(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithCancel(context.Background())
-	_, err := getSteps(ctx)
+	defer cancel()
+	err := getAndWriteSteps(ctx)
 	if err != nil {
-		fmt.Println("getSteps: ", err)
+		fmt.Println("getAndWriteSteps: ", err)
 		return nil
 	}
-	cancel()
 	return nil
 }
 
