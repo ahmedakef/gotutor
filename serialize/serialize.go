@@ -73,11 +73,11 @@ func (v *Serializer) stepForward(ctx context.Context) ([]Step, bool, error) {
 		return nil, true, err
 	}
 	for _, goroutine := range activeGoroutines {
-		step, exit, err := v.pressNext(ctx, goroutine)
+		step, exited, err := v.goToNextLine(ctx, goroutine)
 		if err != nil {
-			return allSteps, true, fmt.Errorf("goroutine: %d, pressNext: %v\n", goroutine.ID, err)
+			return allSteps, true, fmt.Errorf("goroutine: %d, goToNextLine: %v\n", goroutine.ID, err)
 		}
-		if exit {
+		if exited {
 			fmt.Printf("goroutine: %d, read exit signal\n", goroutine.ID)
 			return allSteps, true, nil
 		}
@@ -86,8 +86,7 @@ func (v *Serializer) stepForward(ctx context.Context) ([]Step, bool, error) {
 		}
 		steps, err := v.getGoroutinesState(ctx)
 		if err != nil {
-			fmt.Println("getGoroutinesState: ", err)
-			break
+			return allSteps, true, fmt.Errorf("goroutine: %d, getGoroutinesState: %w", goroutine.ID, err)
 		}
 		allSteps = append(allSteps, steps...)
 
@@ -103,9 +102,13 @@ func (v *Serializer) getGoroutinesState(ctx context.Context) ([]Step, error) {
 	}
 	var steps []Step
 	for _, goroutine := range goroutines {
-		step, _, err := v.getGoroutineState(ctx, goroutine)
+		step, exited, err := v.getGoroutineState(ctx, goroutine)
 		if err != nil {
 			return nil, fmt.Errorf("goroutine: %d, getGoroutineState: %w", goroutine.ID, err)
+		}
+		if exited {
+			fmt.Printf("goroutine: %d, read exit signal\n", goroutine.ID)
+			break
 		}
 		if step.isValid() {
 			steps = append(steps, step)
@@ -115,19 +118,31 @@ func (v *Serializer) getGoroutinesState(ctx context.Context) ([]Step, error) {
 }
 
 func (v *Serializer) getGoroutineState(ctx context.Context, goroutine *api.Goroutine) (Step, bool, error) {
-	fmt.Printf("goroutine: %d, getGoroutineState\n", goroutine.ID)
+	//fmt.Printf("goroutine: %d, getGoroutineState\n", goroutine.ID)
 
 	debugState, err := v.client.SwitchGoroutine(ctx, goroutine.ID)
 	if err != nil {
+		if strings.Contains(err.Error(), "unknown goroutine") {
+			return Step{}, false, nil
+		}
 		return Step{}, true, fmt.Errorf("goroutine: %d, switching goroutine: %v\n", goroutine.ID, err)
 	}
 
 	if debugState.Exited {
 		return Step{}, true, nil
 	}
-
+	var exited bool
 	if !isUserCode(debugState.SelectedGoroutine.CurrentLoc.File) {
-		return Step{}, false, nil
+		debugState, exited, err = v.continueToUserCode(ctx, debugState)
+		if errors.Is(err, noMainErr) {
+			return Step{}, false, nil
+		}
+		if err != nil {
+			return Step{}, true, fmt.Errorf("goroutine: %d, StepOut: %w", goroutine.ID, err)
+		}
+		if exited {
+			return Step{}, true, nil
+		}
 	}
 	step, err := v.buildStep(ctx, debugState)
 	if err != nil {
@@ -136,41 +151,63 @@ func (v *Serializer) getGoroutineState(ctx context.Context, goroutine *api.Gorou
 	return step, false, nil
 }
 
-func (v *Serializer) pressNext(ctx context.Context, goroutine *api.Goroutine) (Step, bool, error) {
+func (v *Serializer) goToNextLine(ctx context.Context, goroutine *api.Goroutine) (Step, bool, error) {
 	debugState, err := v.client.SwitchGoroutine(ctx, goroutine.ID)
 	if err != nil {
 		return Step{}, true, fmt.Errorf("goroutine: %d, switching goroutine: %v\n", goroutine.ID, err)
 	}
+
 	if isUserCode(debugState.SelectedGoroutine.CurrentLoc.File) {
-		debugState, err = v.client.Next(ctx)
+		debugState, err = v.client.Step(ctx)
 		if err != nil {
-			return Step{}, true, fmt.Errorf("pressNext: %d, next: %v\n", goroutine.ID, err)
+			return Step{}, true, fmt.Errorf("goroutine: %d, Step: %v\n", goroutine.ID, err)
 		}
-		if debugState.Exited {
-			fmt.Println("pressNext:Next:debugState.Exited")
-			return Step{}, true, nil
+	} else {
+		//fmt.Printf("debugState: %#v\n", debugState)
+		//fmt.Printf("debugState.SelectedGoroutine: %#v\n", debugState.SelectedGoroutine)
+		//fmt.Printf("File:Line: %s:%d\n", debugState.SelectedGoroutine.CurrentLoc.File, debugState.SelectedGoroutine.CurrentLoc.Line)
+		debugState, err = v.client.StepOut(ctx)
+		if err != nil {
+			return Step{}, true, fmt.Errorf("goroutine: %d, StepOut: %v\n", err)
 		}
+	}
+	if debugState.Exited {
+		return Step{}, true, nil
+	}
+
+	if debugState.SelectedGoroutine.ID != goroutine.ID {
+		// the goroutine has been switched
+		return Step{}, false, nil
+	}
+
+	if isUserCode(debugState.SelectedGoroutine.CurrentLoc.File) {
 		step, err := v.buildStep(ctx, debugState)
 		if err != nil {
 			return Step{}, true, fmt.Errorf("goroutine: %d, building step: %v\n", goroutine.ID, err)
 		}
 		return step, false, nil
 	}
-	debugState, err = v.stepOutToUserCode(ctx, debugState)
-	if errors.Is(err, noMainErr) {
-		return Step{}, true, nil
+	return Step{}, false, nil
+}
+
+func (v *Serializer) stepOutToUserCode(ctx context.Context, debugState *api.DebuggerState) (*api.DebuggerState, bool, error) {
+	var err error
+	fmt.Printf("goroutine: %d, stepOutToUserCode\n", debugState.SelectedGoroutine.ID)
+	fmt.Printf("debugState.SelectedGoroutine.CurrentLoc: %#v\n", debugState.SelectedGoroutine.CurrentLoc)
+	for !isUserCode(debugState.SelectedGoroutine.CurrentLoc.File) {
+		debugState, err = v.client.StepOut(ctx)
+		if err != nil {
+			return nil, true, fmt.Errorf("StepOut: %v\n", err)
+		}
+		if debugState.Exited {
+			return debugState, true, nil
+		}
+		fmt.Printf("debugState: %#v\n", debugState)
+		fmt.Printf("debugState.SelectedGoroutine: %#v\n", debugState.SelectedGoroutine)
+		fmt.Printf("File:Line: %s:%d\n", debugState.SelectedGoroutine.CurrentLoc.File, debugState.SelectedGoroutine.CurrentLoc.Line)
+
 	}
-	if err != nil {
-		return Step{}, true, fmt.Errorf("goroutine: %d, stepping out: %v\n", goroutine.ID, err)
-	}
-	if debugState.Exited {
-		return Step{}, true, nil
-	}
-	step, err := v.buildStep(ctx, debugState)
-	if err != nil {
-		return Step{}, true, fmt.Errorf("goroutine: %d, building step: %v\n", goroutine.ID, err)
-	}
-	return step, false, nil
+	return debugState, false, nil
 }
 
 func (v *Serializer) getUserGoroutines(ctx context.Context) ([]*api.Goroutine, error) {
@@ -189,53 +226,6 @@ func (v *Serializer) getUserGoroutines(ctx context.Context) ([]*api.Goroutine, e
 	return filteredGoroutines, nil
 }
 
-func (v *Serializer) stepOutToUserCode(ctx context.Context, debugState *api.DebuggerState) (*api.DebuggerState, error) {
-	if isUserCode(debugState.SelectedGoroutine.CurrentLoc.File) {
-		return debugState, nil
-	}
-	v.breakPointsLock.Lock()
-	defer v.breakPointsLock.Unlock()
-	fmt.Printf("goroutine: %d, stepping out to user code\n", debugState.SelectedGoroutine.ID)
-	stack, err := v.client.Stacktrace(ctx, debugState.SelectedGoroutine.ID, 1000, 0, nil)
-	if err != nil {
-		return nil, fmt.Errorf("goroutine: %d, get stacktrace: %w", debugState.SelectedGoroutine.ID, err)
-	}
-	//fmt.Printf("current breakpoints: %#v\n", debugState.SelectedGoroutine.CurrentLoc)
-	//fmt.Printf("stack: %#v\n ", stack)
-	var breakPointName string
-	for _, frame := range stack {
-		if strings.HasSuffix(frame.Location.File, "main.go") {
-			nextLine := getNextLine(frame.Location.File, frame.Location.Line)
-			breakPointName = fmt.Sprintf("gID%dL%d", debugState.SelectedGoroutine.ID, nextLine)
-			_, err = v.client.CreateBreakpoint(ctx, &api.Breakpoint{
-				Name: breakPointName,
-				File: frame.Location.File,
-				Line: nextLine,
-				Cond: fmt.Sprintf("runtime.curg.goid == %d", debugState.SelectedGoroutine.ID),
-			})
-			if err != nil {
-				return nil, fmt.Errorf("goroutine: %d, create breakpoint: %s: %w", debugState.SelectedGoroutine.ID, breakPointName, err)
-			}
-			break
-		}
-	}
-	if breakPointName == "" {
-		return nil, noMainErr
-	}
-	debugState, err = v.client.Continue(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("goroutine: %d, continue: %w", debugState.SelectedGoroutine.ID, err)
-	}
-	if debugState.Exited {
-		return debugState, nil
-	}
-	_, err = v.client.ClearBreakpointByName(ctx, breakPointName)
-	if err != nil {
-		return nil, fmt.Errorf("goroutine: %d, clear breakpoint: %w", debugState.SelectedGoroutine.ID, err)
-	}
-	return debugState, nil
-}
-
 func (v *Serializer) buildStep(ctx context.Context, debugState *api.DebuggerState) (Step, error) {
 	variables, err := v.client.ListLocalVariables(ctx,
 		api.EvalScope{GoroutineID: debugState.SelectedGoroutine.ID},
@@ -250,12 +240,63 @@ func (v *Serializer) buildStep(ctx context.Context, debugState *api.DebuggerStat
 	}, nil
 }
 
+// old functions no longer used
+
+func (v *Serializer) continueToUserCode(ctx context.Context, debugState *api.DebuggerState) (*api.DebuggerState, bool, error) {
+	if isUserCode(debugState.SelectedGoroutine.CurrentLoc.File) {
+		return debugState, false, nil
+	}
+	v.breakPointsLock.Lock()
+	defer v.breakPointsLock.Unlock()
+	fmt.Printf("goroutine: %d, continue to user code\n", debugState.SelectedGoroutine.ID)
+	stack, err := v.client.Stacktrace(ctx, debugState.SelectedGoroutine.ID, 1000, 0, nil)
+	if err != nil {
+		return nil, true, fmt.Errorf("goroutine: %d, get stacktrace: %w", debugState.SelectedGoroutine.ID, err)
+	}
+	//fmt.Printf("current breakpoints: %#v\n", debugState.SelectedGoroutine.CurrentLoc)
+	//fmt.Printf("stack: %#v\n ", stack)
+	var breakPointName string
+	for _, frame := range stack {
+		if strings.HasSuffix(frame.Location.File, "main.go") {
+			nextLine, err := getNextLine(frame.Location.File, frame.Location.Line)
+			if err != nil {
+				return nil, true, fmt.Errorf("goroutine: %d, get next line: %w", debugState.SelectedGoroutine.ID, err)
+			}
+			breakPointName = fmt.Sprintf("gID%dL%d", debugState.SelectedGoroutine.ID, nextLine)
+			_, err = v.client.CreateBreakpoint(ctx, &api.Breakpoint{
+				Name: breakPointName,
+				File: frame.Location.File,
+				Line: nextLine,
+				Cond: fmt.Sprintf("runtime.curg.goid == %d", debugState.SelectedGoroutine.ID),
+			})
+			if err != nil {
+				return nil, true, fmt.Errorf("goroutine: %d, create breakpoint: %s: %w", debugState.SelectedGoroutine.ID, breakPointName, err)
+			}
+			break
+		}
+	}
+	if breakPointName == "" {
+		return nil, true, noMainErr
+	}
+	debugState, err = v.client.Continue(ctx)
+	if err != nil {
+		return nil, true, fmt.Errorf("goroutine: %d, continue: %w", debugState.SelectedGoroutine.ID, err)
+	}
+	if debugState.Exited {
+		return debugState, true, nil
+	}
+	_, err = v.client.ClearBreakpointByName(ctx, breakPointName)
+	if err != nil {
+		return nil, true, fmt.Errorf("goroutine: %d, clear breakpoint: %w", debugState.SelectedGoroutine.ID, err)
+	}
+	return debugState, false, nil
+}
+
 // getNextLine takes a file and line of current statement and returns the next line that has statement
-func getNextLine(filePath string, currentLine int) int {
+func getNextLine(filePath string, currentLine int) (int, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
-		fmt.Printf("error opening file: %v\n", err)
-		return currentLine
+		return currentLine, fmt.Errorf("error opening file: %w", err)
 	}
 	defer file.Close()
 
@@ -264,13 +305,13 @@ func getNextLine(filePath string, currentLine int) int {
 	for scanner.Scan() {
 		lineNumber++
 		if lineNumber > currentLine && strings.TrimSpace(scanner.Text()) != "" {
-			return lineNumber
+			return lineNumber, nil
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		fmt.Printf("error reading file: %v\n", err)
+		return 0, fmt.Errorf("error reading file: %w", err)
 	}
-	return currentLine
+	return currentLine, nil
 }
 
 func internalFunction(goroutineFile string) bool {

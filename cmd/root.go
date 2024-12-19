@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -68,11 +69,10 @@ func dlvGatewayClient(address string) (*gateway.Debug, error) {
 
 }
 
-func getSteps(ctx context.Context) ([]serialize.Step, error) {
+func getAndWriteSteps(ctx context.Context) error {
 	client, err := dlvGatewayClient(addr)
 	if err != nil {
-		fmt.Println("failed to create dlvGatewayClient: ", err)
-		return nil, nil
+		return fmt.Errorf("failed to create dlvGatewayClient: %w", err)
 	}
 
 	defer func() {
@@ -85,7 +85,23 @@ func getSteps(ctx context.Context) ([]serialize.Step, error) {
 	serializer := serialize.NewSerializer(client)
 	steps, err := serializer.ExecutionSteps(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get execution steps: %w", err)
+		return fmt.Errorf("failed to get execution steps: %w", err)
 	}
-	return steps, nil
+	// put the result in steps.json file
+	file, err := os.OpenFile("steps.json", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to open steps.json file: %w", err)
+	}
+	defer file.Close()
+
+	err = json.NewEncoder(file).Encode(steps)
+	if err != nil {
+		return fmt.Errorf("failed to encode steps: ", err)
+	}
+	// Explicitly flush the file buffer
+	err = file.Sync()
+	if err != nil {
+		return fmt.Errorf("failed to flush file buffer: ", err)
+	}
+	return nil
 }

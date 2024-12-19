@@ -102,6 +102,32 @@ func (d *Debug) Next(ctx context.Context) (*api.DebuggerState, error) {
 	return d.client.Next()
 }
 
+func (d *Debug) Step(ctx context.Context) (*api.DebuggerState, error) {
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+	d.getToken()
+	defer d.releaseToken()
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+
+	return d.client.Step()
+}
+
+func (d *Debug) StepOut(ctx context.Context) (*api.DebuggerState, error) {
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+	d.getToken()
+	defer d.releaseToken()
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+
+	return d.client.StepOut()
+}
+
 func (d *Debug) ListGoroutines(ctx context.Context, start, count int) ([]*api.Goroutine, int, error) {
 	if ctx.Err() != nil {
 		return nil, 0, ctx.Err()
