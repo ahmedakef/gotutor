@@ -139,9 +139,11 @@ func (v *Serializer) getGoroutineState(ctx context.Context, goroutine *api.Gorou
 		return Step{}, true, nil
 	}
 
-	//v.logger.Info().Msg(fmt.Sprintf("File:Line: %s:%d", debugState.SelectedGoroutine.CurrentLoc.File, debugState.SelectedGoroutine.CurrentLoc.Line)
+	if goroutineInRuntime(debugState.SelectedGoroutine.CurrentLoc.File) {
+		return Step{}, false, nil
+	}
+
 	if !isUserCode(debugState.SelectedGoroutine.CurrentLoc.File) {
-		//v.logger.Info().Msg(fmt.Sprintf("File:Line: %s:%d", debugState.SelectedGoroutine.CurrentLoc.File, debugState.SelectedGoroutine.CurrentLoc.Line)
 		debugState, err = v.client.StepOut(ctx)
 		if err != nil {
 			return Step{}, true, fmt.Errorf("StepOut: %w", err)
@@ -167,6 +169,10 @@ func (v *Serializer) goToNextLine(ctx context.Context, goroutine *api.Goroutine)
 			return Step{}, false, nil
 		}
 		return Step{}, true, fmt.Errorf("goroutine: %d, switching goroutine: %v", goroutine.ID, err)
+	}
+
+	if goroutineInRuntime(debugState.SelectedGoroutine.CurrentLoc.File) {
+		return Step{}, false, nil
 	}
 
 	if isUserCode(debugState.SelectedGoroutine.CurrentLoc.File) {
@@ -225,14 +231,15 @@ func (v *Serializer) buildStep(ctx context.Context, debugState *api.DebuggerStat
 		api.LoadConfig{},
 	)
 	if err != nil {
-		return Step{}, err
+		v.logger.Info().Msg(fmt.Sprintf("debugState: %#v", debugState))
+		return Step{}, fmt.Errorf("ListLocalVariables: %w", err)
 	}
 	args, err := v.client.ListFunctionArgs(ctx,
 		api.EvalScope{GoroutineID: debugState.SelectedGoroutine.ID},
 		api.LoadConfig{},
 	)
 	if err != nil {
-		return Step{}, err
+		return Step{}, fmt.Errorf("ListFunctionArgs: %w", err)
 	}
 
 	packageVars, err := v.client.ListPackageVariables(ctx,
@@ -240,7 +247,7 @@ func (v *Serializer) buildStep(ctx context.Context, debugState *api.DebuggerStat
 		api.LoadConfig{},
 	)
 	if err != nil {
-		return Step{}, err
+		return Step{}, fmt.Errorf("ListPackageVariables: %w", err)
 	}
 	return Step{
 		Goroutine:        debugState.SelectedGoroutine,
@@ -255,16 +262,32 @@ func internalFunction(goroutineFile string) bool {
 		strings.Contains(goroutineFile, "/libexec/")
 }
 
+// isUserCode checks if the current location is in main.go file
 func isUserCode(goroutineFile string) bool {
-	return strings.HasSuffix(goroutineFile, "main.go")
+	mainFie := strings.HasSuffix(goroutineFile, "main.go")
+	return mainFie
+}
+
+// goroutineInRuntime checks if the goroutine is in runtime
+// tbh I don't know if empty file means it's in runtime or not
+// this was suggested by copilot
+// anyway we need to not execute step of step out in this case as this case errors out the delve server
+func goroutineInRuntime(goroutineFile string) bool {
+	emptyFile := goroutineFile == "" // calling step out while the goroutine has CurrentLoc.File as empty string cause runtime error in delve server
+
+	return emptyFile
 }
 
 // old functions no longer used
 
+// stepOutToUserCode steps out of the current function until it reaches user code
 func (v *Serializer) stepOutToUserCode(ctx context.Context, debugState *api.DebuggerState) (*api.DebuggerState, bool, error) {
 	var err error
 	v.logger.Info().Msg(fmt.Sprintf("goroutine: %d, stepOutToUserCode", debugState.SelectedGoroutine.ID))
 	v.logger.Info().Msg(fmt.Sprintf("File:Line: %s:%d", debugState.SelectedGoroutine.CurrentLoc.File, debugState.SelectedGoroutine.CurrentLoc.Line))
+	if goroutineInRuntime(debugState.SelectedGoroutine.CurrentLoc.File) {
+		return debugState, false, nil
+	}
 	for !isUserCode(debugState.SelectedGoroutine.CurrentLoc.File) {
 		debugState, err = v.client.StepOut(ctx)
 		if err != nil {
@@ -274,12 +297,17 @@ func (v *Serializer) stepOutToUserCode(ctx context.Context, debugState *api.Debu
 			return debugState, true, nil
 		}
 		v.logger.Info().Msg(fmt.Sprintf("File:Line: %s:%d\n", debugState.SelectedGoroutine.CurrentLoc.File, debugState.SelectedGoroutine.CurrentLoc.Line))
-
+		if goroutineInRuntime(debugState.SelectedGoroutine.CurrentLoc.File) {
+			return debugState, false, nil
+		}
 	}
 	return debugState, false, nil
 }
 
 func (v *Serializer) continueToUserCode(ctx context.Context, debugState *api.DebuggerState) (*api.DebuggerState, bool, error) {
+	if goroutineInRuntime(debugState.SelectedGoroutine.CurrentLoc.File) {
+		return debugState, false, nil
+	}
 	if isUserCode(debugState.SelectedGoroutine.CurrentLoc.File) {
 		return debugState, false, nil
 	}
