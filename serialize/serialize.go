@@ -80,6 +80,70 @@ func (v *Serializer) initMainBreakPoint(ctx context.Context) error {
 	return err
 }
 
+// goToNextLine steps to the next line in the given goroutine
+func (v *Serializer) goToNextLine(ctx context.Context, goroutine *api.Goroutine) (Step, bool, error) {
+	debugState, err := v.client.SwitchGoroutine(ctx, goroutine.ID)
+	if err != nil {
+		return Step{}, true, fmt.Errorf("goroutine: %d, switching goroutine: %w", goroutine.ID, err)
+	}
+	if isUserCode(debugState.SelectedGoroutine.CurrentLoc.File) {
+		debugState, err := v.client.Step(ctx)
+		if err != nil {
+			return Step{}, true, fmt.Errorf("step: %w", err)
+		}
+
+		if debugState.Exited {
+			return Step{}, true, nil
+		}
+	} else {
+		debugState, err := v.client.StepOut(ctx)
+		if err != nil {
+			return Step{}, true, fmt.Errorf("stepOut: %w", err)
+		}
+		if debugState.Exited {
+			return Step{}, true, nil
+		}
+	}
+
+	step, err := v.buildStep(ctx, debugState)
+	if err != nil {
+		return Step{}, true, fmt.Errorf("goroutine: %d, building step: %w", debugState.SelectedGoroutine.ID, err)
+	}
+	return step, false, nil
+}
+
+func (v *Serializer) buildStep(ctx context.Context, debugState *api.DebuggerState) (Step, error) {
+	variables, err := v.client.ListLocalVariables(ctx,
+		api.EvalScope{GoroutineID: debugState.SelectedGoroutine.ID},
+		api.LoadConfig{},
+	)
+	if err != nil {
+		v.logger.Info().Msg(fmt.Sprintf("debugState: %#v", debugState))
+		return Step{}, fmt.Errorf("ListLocalVariables: %w", err)
+	}
+	args, err := v.client.ListFunctionArgs(ctx,
+		api.EvalScope{GoroutineID: debugState.SelectedGoroutine.ID},
+		api.LoadConfig{},
+	)
+	if err != nil {
+		return Step{}, fmt.Errorf("ListFunctionArgs: %w", err)
+	}
+
+	packageVars, err := v.client.ListPackageVariables(ctx,
+		"^main.",
+		api.LoadConfig{},
+	)
+	if err != nil {
+		return Step{}, fmt.Errorf("ListPackageVariables: %w", err)
+	}
+	return Step{
+		Goroutine:        debugState.SelectedGoroutine,
+		Variables:        variables,
+		Args:             args,
+		PackageVariables: packageVars,
+	}, nil
+}
+
 // stepForwardMultipleGoroutines steps forward in all active goroutines
 // doesn't work perfectly
 func (v *Serializer) stepForwardMultipleGoroutines(ctx context.Context) ([]Step, bool, error) {
@@ -112,6 +176,26 @@ func (v *Serializer) stepForwardMultipleGoroutines(ctx context.Context) ([]Step,
 
 	}
 	return allSteps, false, nil
+}
+
+func (v *Serializer) getUserGoroutines(ctx context.Context) ([]*api.Goroutine, error) {
+	goroutines, _, err := v.client.ListGoroutines(ctx, 0, 0)
+	if err != nil {
+		return nil, err
+	}
+	var filteredGoroutines []*api.Goroutine
+	for _, goroutine := range goroutines {
+		if internalFunction(goroutine.GoStatementLoc.File) {
+			continue
+		}
+		filteredGoroutines = append(filteredGoroutines, goroutine)
+
+	}
+	// assuming the later go routines has work to do while the earlier ones are waiting
+	sort.Slice(filteredGoroutines, func(i, j int) bool {
+		return filteredGoroutines[i].ID > filteredGoroutines[j].ID
+	})
+	return filteredGoroutines, nil
 }
 
 func (v *Serializer) getGoroutinesState(ctx context.Context) ([]Step, bool, error) {
@@ -174,38 +258,6 @@ func (v *Serializer) getGoroutineState(ctx context.Context, goroutine *api.Gorou
 	return step, false, nil
 }
 
-// goToNextLine steps to the next line in the given goroutine
-func (v *Serializer) goToNextLine(ctx context.Context, goroutine *api.Goroutine) (Step, bool, error) {
-	debugState, err := v.client.SwitchGoroutine(ctx, goroutine.ID)
-	if err != nil {
-		return Step{}, true, fmt.Errorf("goroutine: %d, switching goroutine: %w", goroutine.ID, err)
-	}
-	if isUserCode(debugState.SelectedGoroutine.CurrentLoc.File) {
-		debugState, err := v.client.Step(ctx)
-		if err != nil {
-			return Step{}, true, fmt.Errorf("step: %w", err)
-		}
-
-		if debugState.Exited {
-			return Step{}, true, nil
-		}
-	} else {
-		debugState, err := v.client.StepOut(ctx)
-		if err != nil {
-			return Step{}, true, fmt.Errorf("stepOut: %w", err)
-		}
-		if debugState.Exited {
-			return Step{}, true, nil
-		}
-	}
-
-	step, err := v.buildStep(ctx, debugState)
-	if err != nil {
-		return Step{}, true, fmt.Errorf("goroutine: %d, building step: %w", debugState.SelectedGoroutine.ID, err)
-	}
-	return step, false, nil
-}
-
 // goToNextLineConsideringJumpingFromOtherGoroutine steps to the next line in the given goroutine
 // while considering that we are switching from another goroutine
 func (v *Serializer) goToNextLineConsideringJumpingFromOtherGoroutine(ctx context.Context, goroutine *api.Goroutine) (Step, bool, error) {
@@ -249,58 +301,6 @@ func (v *Serializer) goToNextLineConsideringJumpingFromOtherGoroutine(ctx contex
 		return Step{}, true, fmt.Errorf("goroutine: %d, building step: %w", goroutine.ID, err)
 	}
 	return step, false, nil
-}
-
-func (v *Serializer) getUserGoroutines(ctx context.Context) ([]*api.Goroutine, error) {
-	goroutines, _, err := v.client.ListGoroutines(ctx, 0, 0)
-	if err != nil {
-		return nil, err
-	}
-	var filteredGoroutines []*api.Goroutine
-	for _, goroutine := range goroutines {
-		if internalFunction(goroutine.GoStatementLoc.File) {
-			continue
-		}
-		filteredGoroutines = append(filteredGoroutines, goroutine)
-
-	}
-	// assuming the later go routines has work to do while the earlier ones are waiting
-	sort.Slice(filteredGoroutines, func(i, j int) bool {
-		return filteredGoroutines[i].ID > filteredGoroutines[j].ID
-	})
-	return filteredGoroutines, nil
-}
-
-func (v *Serializer) buildStep(ctx context.Context, debugState *api.DebuggerState) (Step, error) {
-	variables, err := v.client.ListLocalVariables(ctx,
-		api.EvalScope{GoroutineID: debugState.SelectedGoroutine.ID},
-		api.LoadConfig{},
-	)
-	if err != nil {
-		v.logger.Info().Msg(fmt.Sprintf("debugState: %#v", debugState))
-		return Step{}, fmt.Errorf("ListLocalVariables: %w", err)
-	}
-	args, err := v.client.ListFunctionArgs(ctx,
-		api.EvalScope{GoroutineID: debugState.SelectedGoroutine.ID},
-		api.LoadConfig{},
-	)
-	if err != nil {
-		return Step{}, fmt.Errorf("ListFunctionArgs: %w", err)
-	}
-
-	packageVars, err := v.client.ListPackageVariables(ctx,
-		"^main.",
-		api.LoadConfig{},
-	)
-	if err != nil {
-		return Step{}, fmt.Errorf("ListPackageVariables: %w", err)
-	}
-	return Step{
-		Goroutine:        debugState.SelectedGoroutine,
-		Variables:        variables,
-		Args:             args,
-		PackageVariables: packageVars,
-	}, nil
 }
 
 func internalFunction(goroutineFile string) bool {
