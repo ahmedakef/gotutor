@@ -50,6 +50,7 @@ func Execute() {
 }
 
 func init() {
+	rootCmd.PersistentFlags().Bool("multiple-goroutines", false, "handle multiple goroutines // not well supported yet")
 }
 
 func dlvGatewayClient(logger zerolog.Logger) (*gateway.Debug, error) {
@@ -63,7 +64,7 @@ func dlvGatewayClient(logger zerolog.Logger) (*gateway.Debug, error) {
 
 }
 
-func getAndWriteSteps(ctx context.Context, logger zerolog.Logger) error {
+func getAndWriteSteps(ctx context.Context, logger zerolog.Logger, multipleGoroutines bool) error {
 	client, err := dlvGatewayClient(logger)
 	if err != nil {
 		return fmt.Errorf("failed to create dlvGatewayClient: %w", err)
@@ -77,7 +78,7 @@ func getAndWriteSteps(ctx context.Context, logger zerolog.Logger) error {
 		}
 	}()
 
-	serializer := serialize.NewSerializer(client, logger)
+	serializer := serialize.NewSerializer(client, logger, multipleGoroutines)
 	steps, err := serializer.ExecutionSteps(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get execution steps: %w", err)

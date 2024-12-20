@@ -9,10 +9,12 @@ GoTutor is a project aimed at capturing the execution steps of a Go program by i
 
 ## Limitations
 
-Currently, the project has limitations when dealing with multiple goroutines. When executing one goroutine with `next` or `step`, all goroutines make progress, making it impossible to capture the state in other goroutines. This issue is tracked in [Delve Issue #1529](https://github.com/go-delve/delve/issues/1529).
+Currently, the project has limitations when dealing with multiple goroutines.
+When executing one goroutine with `next` or `step`, all goroutines make progress, making it impossible to capture the state in other goroutines.
+This issue is tracked in [Delve Issue #1529](https://github.com/go-delve/delve/issues/1529).
 
 ## Usage
-the commands follows `dlv` cli terminology
+the commands follow `dlv` cli terminology
 
 ### exec
 ```

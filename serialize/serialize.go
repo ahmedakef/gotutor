@@ -5,13 +5,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/ahmedakef/gotutor/gateway"
 	"github.com/rs/zerolog"
 	"os"
 	"sort"
 	"strings"
-	"sync"
-
-	"github.com/ahmedakef/gotutor/gateway"
 
 	"github.com/go-delve/delve/service/api"
 )
@@ -19,15 +17,16 @@ import (
 var errNoMain = errors.New("main function not found")
 
 type Serializer struct {
-	client          *gateway.Debug
-	logger          zerolog.Logger
-	breakPointsLock sync.Mutex
+	client             *gateway.Debug
+	logger             zerolog.Logger
+	multipleGoRoutines bool // not working correctly because https://github.com/go-delve/delve/issues/1529
 }
 
-func NewSerializer(client *gateway.Debug, logger zerolog.Logger) *Serializer {
+func NewSerializer(client *gateway.Debug, logger zerolog.Logger, multipleGoroutines bool) *Serializer {
 	return &Serializer{
-		client: client,
-		logger: logger,
+		client:             client,
+		logger:             logger,
+		multipleGoRoutines: multipleGoroutines,
 	}
 }
 
@@ -47,13 +46,26 @@ func (v *Serializer) ExecutionSteps(ctx context.Context) ([]Step, error) {
 
 	var allSteps []Step
 	for ctx.Err() == nil {
-		steps, exited, err := v.stepForward(ctx)
-		if err != nil {
-			return allSteps, err
-		}
-		allSteps = append(allSteps, steps...)
-		if exited {
-			break
+		if v.multipleGoRoutines {
+			steps, exited, err := v.stepForwardMultipleGoroutines(ctx)
+			if err != nil {
+				return allSteps, err
+			}
+			allSteps = append(allSteps, steps...)
+			if exited {
+				break
+			}
+		} else {
+			step, exited, err := v.goToNextLine(ctx, debugState.SelectedGoroutine)
+			if err != nil {
+				return allSteps, err
+			}
+			if step.isValid() {
+				allSteps = append(allSteps, step)
+			}
+			if exited {
+				break
+			}
 		}
 	}
 
@@ -61,25 +73,25 @@ func (v *Serializer) ExecutionSteps(ctx context.Context) ([]Step, error) {
 }
 
 func (v *Serializer) initMainBreakPoint(ctx context.Context) error {
-	v.breakPointsLock.Lock()
 	_, err := v.client.CreateBreakpoint(ctx, &api.Breakpoint{
 		Name:         "main",
 		FunctionName: "main.main",
 	})
-	v.breakPointsLock.Unlock()
 	return err
 }
 
-func (v *Serializer) stepForward(ctx context.Context) ([]Step, bool, error) {
+// stepForwardMultipleGoroutines steps forward in all active goroutines
+// doesn't work perfectly
+func (v *Serializer) stepForwardMultipleGoroutines(ctx context.Context) ([]Step, bool, error) {
 	var allSteps []Step
 	activeGoroutines, err := v.getUserGoroutines(ctx)
 	if err != nil || len(activeGoroutines) == 0 {
 		return nil, true, err
 	}
 	for _, goroutine := range activeGoroutines {
-		step, exited, err := v.goToNextLine(ctx, goroutine)
+		step, exited, err := v.goToNextLineConsideringJumpingFromOtherGoroutine(ctx, goroutine)
 		if err != nil {
-			return allSteps, true, fmt.Errorf("goroutine: %d, goToNextLine: %w", goroutine.ID, err)
+			return allSteps, true, fmt.Errorf("goroutine: %d, goToNextLineConsideringJumpingFromOtherGoroutine: %w", goroutine.ID, err)
 		}
 		if step.isValid() {
 			allSteps = append(allSteps, step)
@@ -162,7 +174,41 @@ func (v *Serializer) getGoroutineState(ctx context.Context, goroutine *api.Gorou
 	return step, false, nil
 }
 
+// goToNextLine steps to the next line in the given goroutine
 func (v *Serializer) goToNextLine(ctx context.Context, goroutine *api.Goroutine) (Step, bool, error) {
+	debugState, err := v.client.SwitchGoroutine(ctx, goroutine.ID)
+	if err != nil {
+		return Step{}, true, fmt.Errorf("goroutine: %d, switching goroutine: %w", goroutine.ID, err)
+	}
+	if isUserCode(debugState.SelectedGoroutine.CurrentLoc.File) {
+		debugState, err := v.client.Step(ctx)
+		if err != nil {
+			return Step{}, true, fmt.Errorf("step: %w", err)
+		}
+
+		if debugState.Exited {
+			return Step{}, true, nil
+		}
+	} else {
+		debugState, err := v.client.StepOut(ctx)
+		if err != nil {
+			return Step{}, true, fmt.Errorf("stepOut: %w", err)
+		}
+		if debugState.Exited {
+			return Step{}, true, nil
+		}
+	}
+
+	step, err := v.buildStep(ctx, debugState)
+	if err != nil {
+		return Step{}, true, fmt.Errorf("goroutine: %d, building step: %w", debugState.SelectedGoroutine.ID, err)
+	}
+	return step, false, nil
+}
+
+// goToNextLineConsideringJumpingFromOtherGoroutine steps to the next line in the given goroutine
+// while considering that we are switching from another goroutine
+func (v *Serializer) goToNextLineConsideringJumpingFromOtherGoroutine(ctx context.Context, goroutine *api.Goroutine) (Step, bool, error) {
 	debugState, err := v.client.SwitchGoroutine(ctx, goroutine.ID)
 	if err != nil {
 		if strings.Contains(err.Error(), "unknown goroutine") {
@@ -195,14 +241,14 @@ func (v *Serializer) goToNextLine(ctx context.Context, goroutine *api.Goroutine)
 		return Step{}, false, nil
 	}
 
-	if isUserCode(debugState.SelectedGoroutine.CurrentLoc.File) {
-		step, err := v.buildStep(ctx, debugState)
-		if err != nil {
-			return Step{}, true, fmt.Errorf("goroutine: %d, building step: %w", goroutine.ID, err)
-		}
-		return step, false, nil
+	if !isUserCode(debugState.SelectedGoroutine.CurrentLoc.File) {
+		return Step{}, false, nil
 	}
-	return Step{}, false, nil
+	step, err := v.buildStep(ctx, debugState)
+	if err != nil {
+		return Step{}, true, fmt.Errorf("goroutine: %d, building step: %w", goroutine.ID, err)
+	}
+	return step, false, nil
 }
 
 func (v *Serializer) getUserGoroutines(ctx context.Context) ([]*api.Goroutine, error) {
@@ -311,8 +357,6 @@ func (v *Serializer) continueToUserCode(ctx context.Context, debugState *api.Deb
 	if isUserCode(debugState.SelectedGoroutine.CurrentLoc.File) {
 		return debugState, false, nil
 	}
-	v.breakPointsLock.Lock()
-	defer v.breakPointsLock.Unlock()
 	v.logger.Info().Msg(fmt.Sprintf("goroutine: %d, continue to user code", debugState.SelectedGoroutine.ID))
 	stack, err := v.client.Stacktrace(ctx, debugState.SelectedGoroutine.ID, 1000, 0, nil)
 	if err != nil {
