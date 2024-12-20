@@ -2,7 +2,6 @@ package gateway
 
 import (
 	"context"
-
 	"github.com/go-delve/delve/service/api"
 	"github.com/go-delve/delve/service/rpc2"
 )
@@ -178,6 +177,32 @@ func (d *Debug) SwitchGoroutine(ctx context.Context, goroutineID int64) (*api.De
 	}
 
 	return d.client.SwitchGoroutine(goroutineID)
+}
+
+func (d *Debug) TraceDirectory(ctx context.Context) (string, error) {
+	if ctx.Err() != nil {
+		return "", ctx.Err()
+	}
+	d.getToken()
+	defer d.releaseToken()
+	if ctx.Err() != nil {
+		return "", ctx.Err()
+	}
+
+	return d.client.TraceDirectory()
+}
+
+func (d *Debug) Halt(ctx context.Context) (*api.DebuggerState, error) {
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+	d.getToken()
+	defer d.releaseToken()
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+
+	return d.client.Halt()
 }
 
 func (d *Debug) Detach(kill bool) error {
