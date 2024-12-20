@@ -32,7 +32,7 @@ gotutor connect delve_server_address
 ```
 connect to already running delve server
 
-the execution steps will be written to `steps` file in the current direcotry
+the execution steps will be written to `steps.json` file in the current direcotry
 
 ### Prerequisites
 
