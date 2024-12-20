@@ -365,7 +365,7 @@ func (v *Serializer) continueToUserCode(ctx context.Context, debugState *api.Deb
 	var breakPointName string
 	for _, frame := range stack {
 		if strings.HasSuffix(frame.Location.File, "main.go") {
-			nextLine, err := getNextLine(frame.Location.File, frame.Location.Line)
+			nextLine, err := v.getNextLine(frame.Location.File, frame.Location.Line)
 			if err != nil {
 				return nil, true, fmt.Errorf("goroutine: %d, get next line: %w", debugState.SelectedGoroutine.ID, err)
 			}
@@ -400,12 +400,17 @@ func (v *Serializer) continueToUserCode(ctx context.Context, debugState *api.Deb
 }
 
 // getNextLine takes a file and line of current statement and returns the next line that has statement
-func getNextLine(filePath string, currentLine int) (int, error) {
+func (v *Serializer) getNextLine(filePath string, currentLine int) (int, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return currentLine, fmt.Errorf("error opening file: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		err := file.Close()
+		if err != nil {
+			v.logger.Error().Err(err).Msg("error closing file")
+		}
+	}()
 
 	scanner := bufio.NewScanner(file)
 	lineNumber := 0
