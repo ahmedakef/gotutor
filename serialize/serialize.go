@@ -5,11 +5,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/ahmedakef/gotutor/gateway"
-	"github.com/rs/zerolog"
 	"os"
 	"sort"
 	"strings"
+
+	"github.com/ahmedakef/gotutor/gateway"
+	"github.com/rs/zerolog"
 
 	"github.com/go-delve/delve/service/api"
 )
@@ -140,11 +141,17 @@ func (v *Serializer) buildStep(ctx context.Context, debugState *api.DebuggerStat
 	if err != nil {
 		return Step{}, fmt.Errorf("ListPackageVariables: %w", err)
 	}
+
+	stacktrace, err := v.client.Stacktrace(ctx, debugState.SelectedGoroutine.ID, 100, 0, nil)
+	if err != nil {
+		return Step{}, fmt.Errorf("Stacktrace: %w", err)
+	}
 	return Step{
 		Goroutine:        debugState.SelectedGoroutine,
 		Variables:        variables,
 		Args:             args,
 		PackageVariables: packageVars,
+		Stacktrace:       stacktrace,
 	}, nil
 }
 
@@ -362,7 +369,7 @@ func (v *Serializer) continueToUserCode(ctx context.Context, debugState *api.Deb
 		return debugState, false, nil
 	}
 	v.logger.Info().Msg(fmt.Sprintf("goroutine: %d, continue to user code", debugState.SelectedGoroutine.ID))
-	stack, err := v.client.Stacktrace(ctx, debugState.SelectedGoroutine.ID, 1000, 0, nil)
+	stack, err := v.client.Stacktrace(ctx, debugState.SelectedGoroutine.ID, 100, 0, nil)
 	if err != nil {
 		return nil, true, fmt.Errorf("goroutine: %d, get stacktrace: %w", debugState.SelectedGoroutine.ID, err)
 	}

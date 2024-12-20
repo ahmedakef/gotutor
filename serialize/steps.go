@@ -9,6 +9,7 @@ type Step struct {
 	Variables        []api.Variable
 	Args             []api.Variable
 	PackageVariables []api.Variable
+	Stacktrace       []api.Stackframe
 }
 
 func (s *Step) isValid() bool {
