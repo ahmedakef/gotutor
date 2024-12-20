@@ -5,7 +5,7 @@ package cmd
 
 import (
 	"context"
-	"fmt"
+	"github.com/rs/zerolog"
 	"time"
 
 	"github.com/ahmedakef/gotutor/dlv"
@@ -41,18 +41,19 @@ func execute(cmd *cobra.Command, args []string) error {
 	}()
 	time.Sleep(1 * time.Second)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(cmd.Context())
 	defer cancel()
-	err := getAndWriteSteps(ctx)
+	logger := ctx.Value("logger").(zerolog.Logger)
+	err := getAndWriteSteps(ctx, logger)
 	if err != nil {
-		fmt.Println("getAndWriteSteps:", err)
+		logger.Error().Err(err).Msg("getAndWriteSteps")
 		return nil
 	}
 
 	select {
 	case err := <-debugServerErr:
 		if err != nil {
-			fmt.Printf("debugServer error occurred: %v\n", err)
+			logger.Error().Err(err).Msg("debugServer error occurred")
 		}
 	default:
 	}
