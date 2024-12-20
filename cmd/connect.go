@@ -5,7 +5,7 @@ package cmd
 
 import (
 	"context"
-	"fmt"
+	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 )
 
@@ -23,11 +23,12 @@ to quickly create a Cobra application.`,
 }
 
 func connect(cmd *cobra.Command, args []string) error {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(cmd.Context())
 	defer cancel()
-	err := getAndWriteSteps(ctx)
+	logger := ctx.Value("logger").(zerolog.Logger)
+	err := getAndWriteSteps(ctx, logger)
 	if err != nil {
-		fmt.Println("getAndWriteSteps:", err)
+		logger.Error().Err(err).Msg("getAndWriteSteps")
 		return nil
 	}
 	return nil

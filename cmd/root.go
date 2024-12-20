@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/ahmedakef/gotutor/serialize"
 
@@ -15,6 +16,7 @@ import (
 
 	"github.com/ahmedakef/gotutor/dlv"
 
+	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 )
 
@@ -28,22 +30,14 @@ examples and usage of using your application. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-	//PersistentPreRun: func(cmd *cobra.Command, args []string) {
-	//	// Create a cancellable context
-	//	ctx, cancel := context.WithCancel(context.Background())
-	//
-	//	// Set up channel to listen for interrupt signals
-	//	sigs := make(chan os.Signal, 1)
-	//	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
-	//
-	//	// Goroutine to handle the interrupt signal
-	//	go func() {
-	//		<-sigs
-	//		cancel()
-	//	}()
-	//
-	//	cmd.SetContext(ctx)
-	//},
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		logger := zerolog.New(
+			zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339},
+		).Level(zerolog.TraceLevel).With().Timestamp().Caller().Logger()
+
+		ctx := context.WithValue(context.Background(), "logger", logger)
+		cmd.SetContext(ctx)
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -58,10 +52,10 @@ func Execute() {
 func init() {
 }
 
-func dlvGatewayClient() (*gateway.Debug, error) {
+func dlvGatewayClient(logger zerolog.Logger) (*gateway.Debug, error) {
 	rpcClient, err := dlv.Connect(addr)
 	if err != nil {
-		fmt.Println("failed to connect to server: ", err)
+		logger.Error().Msg(fmt.Sprintf("failed to connect to server: %v", err))
 		return nil, fmt.Errorf("failed to connect to server: %w", err)
 	}
 	client := gateway.NewDebug(rpcClient)
@@ -69,20 +63,21 @@ func dlvGatewayClient() (*gateway.Debug, error) {
 
 }
 
-func getAndWriteSteps(ctx context.Context) error {
-	client, err := dlvGatewayClient()
+func getAndWriteSteps(ctx context.Context, logger zerolog.Logger) error {
+	client, err := dlvGatewayClient(logger)
 	if err != nil {
 		return fmt.Errorf("failed to create dlvGatewayClient: %w", err)
 	}
 
 	defer func() {
-		fmt.Println("killing the debugger")
+		logger.Info().Msg("killing the debugger")
 		err = client.Detach(true)
 		if err != nil {
-			fmt.Printf("failed to halt the execution: %v\n", err)
+			logger.Error().Msg(fmt.Sprintf("failed to halt the execution: %v", err))
 		}
 	}()
-	serializer := serialize.NewSerializer(client)
+
+	serializer := serialize.NewSerializer(client, logger)
 	steps, err := serializer.ExecutionSteps(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get execution steps: %w", err)
