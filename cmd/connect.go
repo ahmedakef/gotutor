@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 )
@@ -26,7 +27,11 @@ func connect(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithCancel(cmd.Context())
 	defer cancel()
 	logger := ctx.Value("logger").(zerolog.Logger)
-	err := getAndWriteSteps(ctx, logger)
+	multipleGoroutines, err := cmd.Flags().GetBool("multiple-goroutines")
+	if err != nil {
+		return fmt.Errorf("failed to get multiple-goroutines flag: %w", err)
+	}
+	err = getAndWriteSteps(ctx, logger, multipleGoroutines)
 	if err != nil {
 		logger.Error().Err(err).Msg("getAndWriteSteps")
 		return nil
