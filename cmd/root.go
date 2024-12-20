@@ -56,7 +56,7 @@ func init() {
 func dlvGatewayClient(logger zerolog.Logger) (*gateway.Debug, error) {
 	rpcClient, err := dlv.Connect(addr)
 	if err != nil {
-		logger.Error().Msg(fmt.Sprintf("failed to connect to server: %v", err))
+		logger.Error().Err(err).Msg("failed to connect to server")
 		return nil, fmt.Errorf("failed to connect to server: %w", err)
 	}
 	client := gateway.NewDebug(rpcClient)
@@ -74,7 +74,7 @@ func getAndWriteSteps(ctx context.Context, logger zerolog.Logger, multipleGorout
 		logger.Info().Msg("killing the debugger")
 		err = client.Detach(true)
 		if err != nil {
-			logger.Error().Msg(fmt.Sprintf("failed to halt the execution: %v", err))
+			logger.Error().Err(err).Msg("failed to halt the execution")
 		}
 	}()
 
