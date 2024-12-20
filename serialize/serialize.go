@@ -86,23 +86,27 @@ func (v *Serializer) goToNextLine(ctx context.Context, goroutine *api.Goroutine)
 	if err != nil {
 		return Step{}, true, fmt.Errorf("goroutine: %d, switching goroutine: %w", goroutine.ID, err)
 	}
+
 	if isUserCode(debugState.SelectedGoroutine.CurrentLoc.File) {
-		debugState, err := v.client.Step(ctx)
+		debugState, err = v.client.Step(ctx)
 		if err != nil {
 			return Step{}, true, fmt.Errorf("step: %w", err)
 		}
-
 		if debugState.Exited {
 			return Step{}, true, nil
 		}
 	} else {
-		debugState, err := v.client.StepOut(ctx)
+		debugState, err = v.client.StepOut(ctx)
 		if err != nil {
 			return Step{}, true, fmt.Errorf("stepOut: %w", err)
 		}
 		if debugState.Exited {
 			return Step{}, true, nil
 		}
+	}
+	// if not in user code, don't build the step
+	if !isUserCode(debugState.SelectedGoroutine.CurrentLoc.File) {
+		return Step{}, false, nil
 	}
 
 	step, err := v.buildStep(ctx, debugState)
