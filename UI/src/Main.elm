@@ -9,8 +9,6 @@ import Steps.View as StepsView
 import Styles
 import Url
 
-
-
 -- MAIN
 
 
@@ -25,13 +23,7 @@ main =
         , onUrlRequest = LinkClicked
         }
 
-
-
 -- MODEL
-
-
-
-
 
 type alias Model =
     { key : Nav.Key
@@ -42,7 +34,13 @@ type alias Model =
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init _ url key =
-    ( Model key url Steps.Loading, Steps.getSteps StepsMsg )
+    let
+        initialModel = Model key url Steps.Loading
+        getSteps = Cmd.map StepsMsg (Steps.getSteps)
+        getSourceCode = Cmd.map StepsMsg (Steps.getSourceCode)
+        combinedCmd = Cmd.batch [ getSteps, getSourceCode ]
+    in
+    ( initialModel, combinedCmd )
 
 
 
