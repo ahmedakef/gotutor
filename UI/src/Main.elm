@@ -2,8 +2,10 @@ module Main exposing (..)
 
 import Browser
 import Browser.Navigation as Nav
+import Helpers.Http as HttpHelper
 import Html.Styled as Html exposing (..)
 import Html.Styled.Attributes exposing (..)
+import Steps.Steps as Steps
 import Styles
 import Url
 
@@ -28,15 +30,22 @@ main =
 -- MODEL
 
 
+type State
+    = Success (List Steps.Step)
+    | Failure String
+    | Loading
+
+
 type alias Model =
     { key : Nav.Key
     , url : Url.Url
+    , state : State
     }
 
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init _ url key =
-    ( Model key url, Cmd.none )
+    ( Model key url Loading, Steps.getSteps StepsMsg )
 
 
 
@@ -46,6 +55,7 @@ init _ url key =
 type Msg
     = LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
+    | StepsMsg Steps.Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -63,6 +73,14 @@ update msg model =
             ( { model | url = url }
             , Cmd.none
             )
+
+        StepsMsg stepsMsg ->
+            case stepsMsg of
+                Steps.GotSteps (Ok steps) ->
+                    ( { model | state = Success steps }, Cmd.none )
+
+                Steps.GotSteps (Err err) ->
+                    ( { model | state = Failure (err |> HttpHelper.errorToString) }, Cmd.none )
 
 
 
