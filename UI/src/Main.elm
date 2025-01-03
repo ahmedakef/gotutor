@@ -100,7 +100,8 @@ view model =
 
         body =
             div []
-                [ navigation
+                [ Styles.globalStyles
+                , navigation
                 , StepsView.view model.state
                 ]
     in
@@ -108,6 +109,7 @@ view model =
     , body = [ toUnstyled body ]
     }
 
+-- Apply the global styles
 
 viewLink : String -> Html msg
 viewLink path =

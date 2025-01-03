@@ -4,6 +4,17 @@ import Css exposing (..)
 import Html.Styled as Html exposing (..)
 import Html.Styled.Attributes exposing (..)
 
+import Css.Global
+
+-- Define global styles
+globalStyles :  Html msg
+globalStyles =
+    Css.Global.global
+        [ Css.Global.body
+            [ backgroundColor (hex "f0f0f0")
+            ]
+        ]
+
 -- Define the styles for the horizontal list
 horizontalUlStyle : List (Css.Style)
 horizontalUlStyle =
