@@ -102,7 +102,7 @@ view model =
             div []
                 [ Styles.globalStyles
                 , navigation
-                , StepsView.view model.state
+                , Html.map StepsMsg (StepsView.view model.state)
                 ]
     in
     { title = title

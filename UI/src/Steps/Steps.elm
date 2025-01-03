@@ -8,7 +8,8 @@ import Http
 
 type Msg
     = GotSteps (Result Http.Error (List StepsDecoder.Step))
-
+    | Next
+    | Prev
 
 -- load data
 
@@ -22,18 +23,42 @@ getSteps toMsg =
 
 -- Model
 
+type alias StepsState =
+    { steps : (List StepsDecoder.Step)
+    , position : Int
+    }
+
 type State
-    = Success (List StepsDecoder.Step)
+    = Success StepsState
     | Failure String
     | Loading
 
 -- Update
 
 update : Msg -> State -> ( State, Cmd Msg )
-update msg _ =
+update msg state =
     case msg of
         GotSteps (Ok steps) ->
-            (  Success steps , Cmd.none )
+            (  Success {steps =  steps, position = 0} , Cmd.none )
 
         GotSteps (Err err) ->
             (   Failure (err |> HttpHelper.errorToString) , Cmd.none )
+        Next ->
+            case state of
+                Success {steps, position} ->
+                    if position + 1 > List.length steps then
+                        (  Success {steps = steps, position = position} , Cmd.none )
+                    else
+                        (  Success {steps = steps, position = position + 1} , Cmd.none )
+                _ ->
+                    (  state , Cmd.none )
+
+        Prev ->
+            case state of
+                Success {steps, position} ->
+                    if position - 1 < 0 then
+                        (  Success {steps = steps, position = position} , Cmd.none )
+                    else
+                        (  Success {steps = steps, position = position - 1} , Cmd.none )
+                _ ->
+                    (  state , Cmd.none )

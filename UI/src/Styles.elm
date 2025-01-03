@@ -11,9 +11,30 @@ globalStyles :  Html msg
 globalStyles =
     Css.Global.global
         [ Css.Global.body
-            [ backgroundColor (hex "f0f0f0")
+            [ backgroundColor (hex "FAFAFA")
+            , color (hex "333333")
             ]
         ]
+
+
+container :  Css.Style
+container =
+     Css.batch [ displayFlex
+    ]
+
+flexColumn : Css.Style
+flexColumn =
+    Css.batch [ flex (num 1)
+    , padding (px 10)
+    ]
+
+flexCenter : Css.Style
+flexCenter =
+    Css.batch [ displayFlex
+    , flexDirection column
+    , alignItems center
+    ]
+
 
 -- Define the styles for the horizontal list
 horizontalUlStyle : List (Css.Style)
@@ -21,7 +42,7 @@ horizontalUlStyle =
     [ listStyleType none
     , padding (px 0)
     , margin (px 0)
-    , display inlineFlex
+    , displayFlex
     ]
 
 horizontalLiStyle : List (Css.Style)
@@ -34,12 +55,3 @@ horizontalUL : List (Html msg) -> Html msg
 horizontalUL items =
     ul [ css horizontalUlStyle ]
         (List.map (\item -> li [ css horizontalLiStyle ] [ item ]) items)
-
--- Apply the styles in your view
-view : Html msg
-view =
-    horizontalUL
-        [ text "Item 1"
-        , text "Item 2"
-        , text "Item 3"
-        ]
