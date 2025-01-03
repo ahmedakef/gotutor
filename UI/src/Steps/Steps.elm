@@ -1,71 +1,39 @@
-module Steps.Steps exposing (getSteps, Step, Msg(..))
+module Steps.Steps exposing (..)
+import Steps.Decoder as StepsDecoder
+import Helpers.Http as HttpHelper
 
 import Http
-import Json.Decode as Json
+
+-- Msg
+
 type Msg
-    = GotSteps (Result Http.Error (List Step))
+    = GotSteps (Result Http.Error (List StepsDecoder.Step))
+
+
+-- load data
 
 getSteps : (Msg -> msg) -> Cmd msg
 getSteps toMsg =
     Http.get
         { url = "http://localhost:8000/steps.json"
-        , expect = Http.expectJson (GotSteps >> toMsg) stepsDecoder
+        , expect = Http.expectJson (GotSteps >> toMsg) StepsDecoder.stepsDecoder
         }
 
 
-type alias Function =
-    { name : String
-    , value : Int
-    , type_ : Int
-    , goType : Int
-    , optimized : Bool
-    }
+-- Model
 
-type alias Location =
-    { pc : Int
-    , file : String
-    , line : Int
-    , function : Function
-    }
+type State
+    = Success (List StepsDecoder.Step)
+    | Failure String
+    | Loading
 
-type alias Goroutine =
-    { id : Int
-    , currentLoc : Location
-    , userCurrentLoc : Location
-    }
+-- Update
 
-type alias Step =
-    { goroutine : Goroutine
-    }
+update : Msg -> State -> ( State, Cmd Msg )
+update msg _ =
+    case msg of
+        GotSteps (Ok steps) ->
+            (  Success steps , Cmd.none )
 
-functionDecoder : Json.Decoder Function
-functionDecoder =
-    Json.map5 Function
-        (Json.field "name" Json.string)
-        (Json.field "value" Json.int)
-        (Json.field "type" Json.int)
-        (Json.field "goType" Json.int)
-        (Json.field "optimized" Json.bool)
-
-locationDecoder : Json.Decoder Location
-locationDecoder =
-    Json.map4 Location
-        (Json.field "pc" Json.int)
-        (Json.field "file" Json.string)
-        (Json.field "line" Json.int)
-        (Json.field "function" functionDecoder)
-
-goroutineDecoder : Json.Decoder Goroutine
-goroutineDecoder =
-    Json.map3 Goroutine
-        (Json.field "id" Json.int)
-        (Json.field "currentLoc" locationDecoder)
-        (Json.field "userCurrentLoc" locationDecoder)
-
-stepDecoder : Json.Decoder Step
-stepDecoder =
-    Json.map Step (Json.field "Goroutine" goroutineDecoder)
-
-stepsDecoder : Json.Decoder (List Step)
-stepsDecoder =
-    Json.list stepDecoder
+        GotSteps (Err err) ->
+            (   Failure (err |> HttpHelper.errorToString) , Cmd.none )

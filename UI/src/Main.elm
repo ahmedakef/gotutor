@@ -2,10 +2,10 @@ module Main exposing (..)
 
 import Browser
 import Browser.Navigation as Nav
-import Helpers.Http as HttpHelper
 import Html.Styled as Html exposing (..)
 import Html.Styled.Attributes exposing (..)
 import Steps.Steps as Steps
+import Steps.View as StepsView
 import Styles
 import Url
 
@@ -30,22 +30,19 @@ main =
 -- MODEL
 
 
-type State
-    = Success (List Steps.Step)
-    | Failure String
-    | Loading
+
 
 
 type alias Model =
     { key : Nav.Key
     , url : Url.Url
-    , state : State
+    , state : Steps.State
     }
 
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init _ url key =
-    ( Model key url Loading, Steps.getSteps StepsMsg )
+    ( Model key url Steps.Loading, Steps.getSteps StepsMsg )
 
 
 
@@ -75,12 +72,11 @@ update msg model =
             )
 
         StepsMsg stepsMsg ->
-            case stepsMsg of
-                Steps.GotSteps (Ok steps) ->
-                    ( { model | state = Success steps }, Cmd.none )
-
-                Steps.GotSteps (Err err) ->
-                    ( { model | state = Failure (err |> HttpHelper.errorToString) }, Cmd.none )
+            let
+                (state, cmd) =
+                    Steps.update stepsMsg model.state
+            in
+            ( { model | state = state }, Cmd.map StepsMsg cmd )
 
 
 
@@ -97,17 +93,15 @@ subscriptions _ =
 
 
 view : Model -> Browser.Document Msg
-view _ =
+view model =
     let
         title =
             "URL Interceptor"
 
         body =
             div []
-                [ Styles.horizontalUL
-                    [ viewLink "/home"
-                    , viewLink "/about"
-                    ]
+                [ navigation
+                , StepsView.view model.state
                 ]
     in
     { title = title
@@ -118,3 +112,11 @@ view _ =
 viewLink : String -> Html msg
 viewLink path =
     a [ href path ] [ text path ]
+
+
+navigation : Html msg
+navigation =
+    Styles.horizontalUL
+        [ viewLink "/home"
+        , viewLink "/about"
+        ]
