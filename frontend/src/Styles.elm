@@ -40,7 +40,6 @@ flexCenter =
     Css.batch
         [ displayFlex
         , alignItems center
-        , justifyContent center
         , flexDirection column
         ]
 
@@ -55,10 +54,11 @@ horizontalUlStyle =
         ]
 
 
-horizontalLiStyle :  Css.Style
+horizontalLiStyle : Css.Style
 horizontalLiStyle =
-    Css.batch [ marginRight (px 20)
-    ]
+    Css.batch
+        [ marginRight (px 20)
+        ]
 
 
 navItems : Css.Style

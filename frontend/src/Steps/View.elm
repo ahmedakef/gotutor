@@ -23,12 +23,12 @@ view state =
                     [ div [ css [ Styles.flexColumn, Styles.flexCenter ] ]
                         [ div []
                             [ codeView stepsState.sourceCode
-                            , div [ css [ Styles.flexCenter ] ]
+                            , div [ css [ Styles.flexCenter, Css.margin2 (Css.px 20) (Css.px 0) ] ]
                                 [ div []
                                     [ button [ onClick Steps.Prev ] [ text "Prev" ]
                                     , button [ onClick Steps.Next ] [ text "Next" ]
                                     ]
-                                , div []
+                                , div [ css [ Css.margin2 (Css.px 10) (Css.px 0) ] ]
                                     [ text ("Step " ++ String.fromInt stepsState.position ++ " of " ++ (List.length stepsState.steps |> String.fromInt))
                                     ]
                                 ]
@@ -49,40 +49,6 @@ view state =
 
         Steps.Loading ->
             div [] [ text "Loading..." ]
-
-
-codeView : String -> Html msg
-codeView sourceCode =
-    let
-        linesNumber =
-            sourceCode
-                |> String.split "\n"
-                |> List.length
-    in
-    div [ css [ Css.displayFlex ] ]
-        [ div [ css [ Styles.codeBlock, Css.color (Css.hex "78909C") ] ]
-            (List.indexedMap (\i _ -> div [] [ text (String.fromInt (i + 1)) ]) (List.repeat linesNumber ()))
-        , div [ css [ Styles.codeBlock ] ]
-            [ pre [ css [ Css.margin (Css.px 0) ] ]
-                [ code [] [ text sourceCode ]
-                ]
-            ]
-        ]
-
-
-packageVarsView : List Variable -> Html msg
-packageVarsView packageVars =
-    div []
-        (List.map packageVarView packageVars)
-
-
-packageVarView : Variable -> Html msg
-packageVarView packageVar =
-    div []
-        [ div [] [ text ("Name: " ++ packageVar.name) ]
-        , div [] [ text ("Type: " ++ packageVar.type_) ]
-        , div [] [ text ("Value: " ++ packageVar.value) ]
-        ]
 
 
 type alias VisualizeState =
@@ -116,6 +82,44 @@ stateToVisualize stepsState =
         Nothing ->
             -- This should never happen, try to remove this case
             VisualizeState [] []
+
+
+codeView : String -> Html msg
+codeView sourceCode =
+    let
+        linesNumber =
+            sourceCode
+                |> String.split "\n"
+                |> List.length
+    in
+    div [ css [ Css.displayFlex ] ]
+        [ div [ css [ Styles.codeBlock, Css.color (Css.hex "78909C") ] ]
+            (List.indexedMap (\i _ -> div [] [ text (String.fromInt (i + 1)) ]) (List.repeat linesNumber ()))
+        , div [ css [ Styles.codeBlock ] ]
+            [ pre [ css [ Css.margin (Css.px 0) ] ]
+                [ code [] [ text sourceCode ]
+                ]
+            ]
+        ]
+
+
+packageVarsView : List Variable -> Html msg
+packageVarsView packageVars =
+    div []
+        [ h2 []
+            [ text "Package Variables"
+            ]
+        , div [] (List.map packageVarView packageVars)
+        ]
+
+
+packageVarView : Variable -> Html msg
+packageVarView packageVar =
+    div []
+        [ div [] [ text ("Name: " ++ packageVar.name) ]
+        , div [] [ text ("Type: " ++ packageVar.type_) ]
+        , div [] [ text ("Value: " ++ packageVar.value) ]
+        ]
 
 
 programVisualizer : VisualizeState -> Html msg
