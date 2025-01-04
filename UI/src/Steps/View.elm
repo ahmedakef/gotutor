@@ -23,11 +23,15 @@ view state =
                     [ div [ css [ Styles.flexColumn, Styles.flexCenter ] ]
                         [ div []
                             [ codeView stepsState.sourceCode
-                            , div []
-                                [ button [ onClick Steps.Prev ] [ text "Prev" ]
-                                , button [ onClick Steps.Next ] [ text "Next" ]
+                            , div [ css [ Styles.flexCenter ] ]
+                                [ div []
+                                    [ button [ onClick Steps.Prev ] [ text "Prev" ]
+                                    , button [ onClick Steps.Next ] [ text "Next" ]
+                                    ]
+                                , div []
+                                    [ text ("Step " ++ String.fromInt stepsState.position ++ " of " ++ (List.length stepsState.steps |> String.fromInt))
+                                    ]
                                 ]
-                            , div [] [ text ("Step " ++ String.fromInt stepsState.position ++ " of " ++ (List.length stepsState.steps |> String.fromInt)) ]
                             ]
                         ]
                     , div [ css [ Styles.flexColumn ] ]
@@ -51,11 +55,11 @@ codeView sourceCode =
                 |> String.split "\n"
                 |> List.length
     in
-    div [ css [Css.displayFlex]]
-        [ div [ css [ Styles.codeBlock,  Css.color (Css.hex "78909C") ] ]
+    div [ css [ Css.displayFlex ] ]
+        [ div [ css [ Styles.codeBlock, Css.color (Css.hex "78909C") ] ]
             (List.indexedMap (\i _ -> div [] [ text (String.fromInt (i + 1)) ]) (List.repeat linesNumber ()))
         , div [ css [ Styles.codeBlock ] ]
-            [ pre [ css [ Css.margin (Css.px 0) ]]
+            [ pre [ css [ Css.margin (Css.px 0) ] ]
                 [ code [] [ text sourceCode ]
                 ]
             ]

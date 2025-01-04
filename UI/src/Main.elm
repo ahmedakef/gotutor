@@ -9,6 +9,8 @@ import Steps.View as StepsView
 import Styles
 import Url
 
+
+
 -- MAIN
 
 
@@ -23,7 +25,10 @@ main =
         , onUrlRequest = LinkClicked
         }
 
+
+
 -- MODEL
+
 
 type alias Model =
     { key : Nav.Key
@@ -35,10 +40,17 @@ type alias Model =
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init _ url key =
     let
-        initialModel = Model key url Steps.Loading
-        getSteps = Cmd.map StepsMsg (Steps.getSteps)
-        getSourceCode = Cmd.map StepsMsg (Steps.getSourceCode)
-        combinedCmd = Cmd.batch [ getSteps, getSourceCode ]
+        initialModel =
+            Model key url Steps.Loading
+
+        getSteps =
+            Cmd.map StepsMsg Steps.getSteps
+
+        getSourceCode =
+            Cmd.map StepsMsg Steps.getSourceCode
+
+        combinedCmd =
+            Cmd.batch [ getSteps, getSourceCode ]
     in
     ( initialModel, combinedCmd )
 
@@ -71,7 +83,7 @@ update msg model =
 
         StepsMsg stepsMsg ->
             let
-                (state, cmd) =
+                ( state, cmd ) =
                     Steps.update stepsMsg model.state
             in
             ( { model | state = state }, Cmd.map StepsMsg cmd )
@@ -107,16 +119,23 @@ view model =
     , body = [ toUnstyled body ]
     }
 
--- Apply the global styles
-
-viewLink : String -> Html msg
-viewLink path =
-    a [ href path ] [ text path ]
-
 
 navigation : Html msg
 navigation =
-    Styles.horizontalUL
-        [ viewLink "/home"
-        , viewLink "/about"
+    div [ css [ Styles.container, Styles.flexCenter ] ]
+        [ horizontalUL
+            [ viewLink "home"
+            , viewLink "about"
+            ]
         ]
+
+
+horizontalUL : List (Html msg) -> Html msg
+horizontalUL items =
+    ul [ css [ Styles.horizontalUlStyle ] ]
+        (List.map (\item -> li [ css [ Styles.horizontalLiStyle ] ] [ item ]) items)
+
+
+viewLink : String -> Html msg
+viewLink path =
+    a [ href ("/" ++ path), css [ Styles.navItems ] ] [ text path ]
