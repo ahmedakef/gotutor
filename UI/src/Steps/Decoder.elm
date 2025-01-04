@@ -1,5 +1,7 @@
 module Steps.Decoder exposing (..)
-import Json.Decode as Json
+
+import Json.Decode exposing (..)
+import Json.Decode.Field as Field
 
 
 type alias Function =
@@ -10,6 +12,7 @@ type alias Function =
     , optimized : Bool
     }
 
+
 type alias Location =
     { pc : Int
     , file : String
@@ -17,44 +20,120 @@ type alias Location =
     , function : Function
     }
 
+
 type alias Goroutine =
     { id : Int
     , currentLoc : Location
     , userCurrentLoc : Location
     }
 
-type alias Step =
-    { goroutine : Goroutine
+
+type alias PackageVariable =
+    { name : String
+    , addr : Int
+    , onlyAddr : Bool
+    , type_ : String
+    , realType : String
+    , flags : Int
+    , kind : Int
+    , value : String
+    , len : Int
+    , cap : Int
+    , base : Int
+    , unreadable : String
+    , locationExpr : String
+    , declLine : Int
     }
 
-functionDecoder : Json.Decoder Function
+
+type alias Step =
+    { goroutine : Goroutine
+    , packageVars : List PackageVariable
+    }
+
+
+functionDecoder : Decoder Function
 functionDecoder =
-    Json.map5 Function
-        (Json.field "name" Json.string)
-        (Json.field "value" Json.int)
-        (Json.field "type" Json.int)
-        (Json.field "goType" Json.int)
-        (Json.field "optimized" Json.bool)
+    map5 Function
+        (field "name" string)
+        (field "value" int)
+        (field "type" int)
+        (field "goType" int)
+        (field "optimized" bool)
 
-locationDecoder : Json.Decoder Location
+
+locationDecoder : Decoder Location
 locationDecoder =
-    Json.map4 Location
-        (Json.field "pc" Json.int)
-        (Json.field "file" Json.string)
-        (Json.field "line" Json.int)
-        (Json.field "function" functionDecoder)
+    map4 Location
+        (field "pc" int)
+        (field "file" string)
+        (field "line" int)
+        (field "function" functionDecoder)
 
-goroutineDecoder : Json.Decoder Goroutine
+
+goroutineDecoder : Decoder Goroutine
 goroutineDecoder =
-    Json.map3 Goroutine
-        (Json.field "id" Json.int)
-        (Json.field "currentLoc" locationDecoder)
-        (Json.field "userCurrentLoc" locationDecoder)
+    map3 Goroutine
+        (field "id" int)
+        (field "currentLoc" locationDecoder)
+        (field "userCurrentLoc" locationDecoder)
 
-stepDecoder : Json.Decoder Step
+
+packageVariablesDecoder : Decoder PackageVariable
+packageVariablesDecoder =
+    Field.require "name" string <|
+        \name ->
+            Field.require "addr" int <|
+                \addr ->
+                    Field.require "onlyAddr" bool <|
+                        \onlyAddr ->
+                            Field.require "type" string <|
+                                \type_ ->
+                                    Field.require "realType" string <|
+                                        \realType ->
+                                            Field.require "flags" int <|
+                                                \flags ->
+                                                    Field.require "kind" int <|
+                                                        \kind ->
+                                                            Field.require "value" string <|
+                                                                \value ->
+                                                                    Field.require "len" int <|
+                                                                        \len ->
+                                                                            Field.require "cap" int <|
+                                                                                \cap ->
+                                                                                    Field.require "base" int <|
+                                                                                        \base ->
+                                                                                            Field.require "unreadable" string <|
+                                                                                                \unreadable ->
+                                                                                                    Field.require "LocationExpr" string <|
+                                                                                                        \locationExpr ->
+                                                                                                            Field.require "DeclLine" int <|
+                                                                                                                \declLine ->
+                                                                                                                    Json.Decode.succeed
+                                                                                                                        { name = name
+                                                                                                                        , addr = addr
+                                                                                                                        , onlyAddr = onlyAddr
+                                                                                                                        , type_ = type_
+                                                                                                                        , realType = realType
+                                                                                                                        , flags = flags
+                                                                                                                        , kind = kind
+                                                                                                                        , value = value
+                                                                                                                        , len = len
+                                                                                                                        , cap = cap
+                                                                                                                        , base = base
+                                                                                                                        , unreadable = unreadable
+                                                                                                                        , locationExpr = locationExpr
+                                                                                                                        , declLine = declLine
+                                                                                                                        }
+
+
+stepDecoder : Decoder Step
 stepDecoder =
-    Json.map Step (Json.field "Goroutine" goroutineDecoder)
+    map2 Step
+        (field "Goroutine" goroutineDecoder)
+        (field "PackageVariables" (list packageVariablesDecoder))
 
-stepsDecoder : Json.Decoder (List Step)
+
+stepsDecoder : Decoder (List Step)
 stepsDecoder =
-    Json.list stepDecoder
+    list stepDecoder

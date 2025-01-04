@@ -35,7 +35,11 @@ view state =
                             ]
                         ]
                     , div [ css [ Styles.flexColumn ] ]
-                        [ stepsView stepsState
+                        [ let
+                            ( stepsSoFar, packageVars ) =
+                                stateToVisualize stepsState
+                          in
+                          programVisualizer stepsSoFar packageVars
                         ]
                     ]
                 ]
@@ -66,14 +70,53 @@ codeView sourceCode =
         ]
 
 
-stepsView : Steps.StepsState -> Html msg
-stepsView stepsState =
+packageVarsView : List StepsDecoder.PackageVariable -> Html msg
+packageVarsView packageVars =
+    div []
+        (List.map packageVarView packageVars)
+
+
+packageVarView : StepsDecoder.PackageVariable -> Html msg
+packageVarView packageVar =
+    div [] [ text packageVar.name ]
+
+
+stateToVisualize : Steps.StepsState -> ( List StepsDecoder.Step, List StepsDecoder.PackageVariable )
+stateToVisualize stepsState =
     let
         stepsSoFar =
             stepsState.steps
                 |> List.take stepsState.position
+
+        lastStep =
+            stepsState.steps
+                |> List.drop stepsState.position
+                |> List.head
     in
-    ul [] (List.map stepView stepsSoFar)
+    case lastStep of
+        Just step ->
+            let
+                packageVars =
+                    step.packageVars
+            in
+            ( stepsSoFar, packageVars )
+
+        Nothing ->
+            -- This should never happen, try to remove this case
+            ( stepsSoFar, [] )
+
+
+programVisualizer : List StepsDecoder.Step -> List StepsDecoder.PackageVariable -> Html msg
+programVisualizer steps packageVars =
+    div []
+        [ packageVarsView packageVars
+        , stepsListView steps
+        ]
+
+
+stepsListView : List StepsDecoder.Step -> Html msg
+stepsListView steps =
+    ul [] (List.map stepView steps)
 
 
 stepView : StepsDecoder.Step -> Html msg
