@@ -2,7 +2,7 @@ module Steps.Steps exposing (..)
 
 import Helpers.Http as HttpHelper
 import Http
-import Steps.Decoder as StepsDecoder
+import Steps.Decoder exposing (..)
 
 
 
@@ -10,7 +10,7 @@ import Steps.Decoder as StepsDecoder
 
 
 type Msg
-    = GotSteps (Result Http.Error (List StepsDecoder.Step))
+    = GotSteps (Result Http.Error (List Step))
     | GotSourceCode (Result Http.Error String)
     | Next
     | Prev
@@ -24,7 +24,7 @@ getSteps : Cmd Msg
 getSteps =
     Http.get
         { url = "http://localhost:8000/steps.json"
-        , expect = Http.expectJson GotSteps StepsDecoder.stepsDecoder
+        , expect = Http.expectJson GotSteps stepsDecoder
         }
 
 
@@ -41,7 +41,7 @@ getSourceCode =
 
 
 type alias StepsState =
-    { steps : List StepsDecoder.Step
+    { steps : List Step
     , position : Int
     , sourceCode : String
     }
@@ -67,8 +67,11 @@ update msg state =
                         Success successState ->
                             ( Success { successState | steps = steps }, Cmd.none )
 
-                        _ ->
-                            ( Success (StepsState steps 0 ""), Cmd.none )
+                        Failure _ ->
+                            ( state, Cmd.none )
+
+                        Loading ->
+                            ( Success (StepsState steps 0 ""), getSourceCode )
 
                 Err err ->
                     ( Failure (err |> HttpHelper.errorToString), Cmd.none )
@@ -80,7 +83,10 @@ update msg state =
                         Success successState ->
                             ( Success { successState | sourceCode = sourceCode }, Cmd.none )
 
-                        _ ->
+                        Failure _ ->
+                            ( state, Cmd.none )
+
+                        Loading ->
                             ( Success (StepsState [] 0 sourceCode), Cmd.none )
 
                 Err err ->

@@ -4,7 +4,7 @@ import Css
 import Html.Styled as Html exposing (..)
 import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events exposing (onClick)
-import Steps.Decoder as StepsDecoder
+import Steps.Decoder exposing (..)
 import Steps.Steps as Steps
 import Styles
 
@@ -70,18 +70,18 @@ codeView sourceCode =
         ]
 
 
-packageVarsView : List StepsDecoder.PackageVariable -> Html msg
+packageVarsView : List PackageVariable -> Html msg
 packageVarsView packageVars =
     div []
         (List.map packageVarView packageVars)
 
 
-packageVarView : StepsDecoder.PackageVariable -> Html msg
+packageVarView : PackageVariable -> Html msg
 packageVarView packageVar =
     div [] [ text packageVar.name ]
 
 
-stateToVisualize : Steps.StepsState -> ( List StepsDecoder.Step, List StepsDecoder.PackageVariable )
+stateToVisualize : Steps.StepsState -> ( List Step, List PackageVariable )
 stateToVisualize stepsState =
     let
         stepsSoFar =
@@ -106,7 +106,7 @@ stateToVisualize stepsState =
             ( stepsSoFar, [] )
 
 
-programVisualizer : List StepsDecoder.Step -> List StepsDecoder.PackageVariable -> Html msg
+programVisualizer : List Step -> List PackageVariable -> Html msg
 programVisualizer steps packageVars =
     div []
         [ packageVarsView packageVars
@@ -114,12 +114,12 @@ programVisualizer steps packageVars =
         ]
 
 
-stepsListView : List StepsDecoder.Step -> Html msg
+stepsListView : List Step -> Html msg
 stepsListView steps =
     ul [] (List.map stepView steps)
 
 
-stepView : StepsDecoder.Step -> Html msg
+stepView : Step -> Html msg
 stepView step =
     div [ css borderStyle ]
         [ div [] [ text <| step.goroutine.currentLoc.function.name ]
