@@ -6,8 +6,8 @@ bin
 source_debug
 steps.json
 __debug_bin*
-UI/elm-stuff/*
+frontend/elm-stuff/*
 .DS_Store
 */.DS_Store
-UI/index.html
-UI/main.txt
+frontend/index.html
+frontend/main.txt
