@@ -45,7 +45,7 @@ view state =
                 ]
 
         Steps.Failure error ->
-            div [] [ text error ]
+            div [] [ pre [] [ text error ] ]
 
         Steps.Loading ->
             div [] [ text "Loading..." ]
@@ -70,18 +70,22 @@ codeView sourceCode =
         ]
 
 
-packageVarsView : List PackageVariable -> Html msg
+packageVarsView : List Variable -> Html msg
 packageVarsView packageVars =
     div []
         (List.map packageVarView packageVars)
 
 
-packageVarView : PackageVariable -> Html msg
+packageVarView : Variable -> Html msg
 packageVarView packageVar =
-    div [] [ text packageVar.name ]
+    div []
+        [ div [] [ text ("Name: " ++ packageVar.name) ]
+        , div [] [ text ("Type: " ++ packageVar.type_) ]
+        , div [] [ text ("Value: " ++ packageVar.value) ]
+        ]
 
 
-stateToVisualize : Steps.StepsState -> ( List Step, List PackageVariable )
+stateToVisualize : Steps.StepsState -> ( List Step, List Variable )
 stateToVisualize stepsState =
     let
         stepsSoFar =
@@ -106,7 +110,7 @@ stateToVisualize stepsState =
             ( stepsSoFar, [] )
 
 
-programVisualizer : List Step -> List PackageVariable -> Html msg
+programVisualizer : List Step -> List Variable -> Html msg
 programVisualizer steps packageVars =
     div []
         [ packageVarsView packageVars

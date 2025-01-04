@@ -95,10 +95,6 @@ update msg state =
         Next ->
             case state of
                 Success successState ->
-                    let
-                        _ =
-                            state |> Debug.toString |> Debug.log "state"
-                    in
                     if successState.position + 1 > List.length successState.steps then
                         ( Success successState, Cmd.none )
 
@@ -106,10 +102,6 @@ update msg state =
                         ( Success { successState | position = successState.position + 1 }, Cmd.none )
 
                 _ ->
-                    let
-                        _ =
-                            state |> Debug.toString |> Debug.log "state"
-                    in
                     ( state, Cmd.none )
 
         Prev ->

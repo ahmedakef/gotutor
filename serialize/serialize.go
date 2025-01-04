@@ -136,7 +136,7 @@ func (v *Serializer) buildStep(ctx context.Context, debugState *api.DebuggerStat
 
 	packageVars, err := v.client.ListPackageVariables(ctx,
 		"^main.",
-		api.LoadConfig{},
+		api.LoadConfig{MaxStringLen: 64, MaxStructFields: 3},
 	)
 	if err != nil {
 		return Step{}, fmt.Errorf("ListPackageVariables: %w", err)

@@ -28,7 +28,7 @@ type alias Goroutine =
     }
 
 
-type alias PackageVariable =
+type alias Variable =
     { name : String
     , addr : Int
     , onlyAddr : Bool
@@ -48,7 +48,7 @@ type alias PackageVariable =
 
 type alias Step =
     { goroutine : Goroutine
-    , packageVars : List PackageVariable
+    , packageVars : List Variable
     }
 
 
@@ -79,8 +79,8 @@ goroutineDecoder =
         (field "userCurrentLoc" locationDecoder)
 
 
-packageVariablesDecoder : Decoder PackageVariable
-packageVariablesDecoder =
+variableDecoder : Decoder Variable
+variableDecoder =
     Field.require "name" string <|
         \name ->
             Field.require "addr" int <|
@@ -131,7 +131,7 @@ stepDecoder : Decoder Step
 stepDecoder =
     map2 Step
         (field "Goroutine" goroutineDecoder)
-        (field "PackageVariables" (list packageVariablesDecoder))
+        (field "PackageVariables" (list variableDecoder))
 
 
 stepsDecoder : Decoder (List Step)
