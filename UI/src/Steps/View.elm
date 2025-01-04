@@ -22,11 +22,7 @@ view state =
                 , div [ css [ Styles.container ] ]
                     [ div [ css [ Styles.flexColumn, Styles.flexCenter ] ]
                         [ div []
-                            [ div [css [ Styles.codeBlock ] ]
-                                [ pre []
-                                    [ code [] [ text stepsState.sourceCode ]
-                                    ]
-                                ]
+                            [ codeView stepsState.sourceCode
                             , div []
                                 [ button [ onClick Steps.Prev ] [ text "Prev" ]
                                 , button [ onClick Steps.Next ] [ text "Next" ]
@@ -45,6 +41,25 @@ view state =
 
         Steps.Loading ->
             div [] [ text "Loading..." ]
+
+
+codeView : String -> Html msg
+codeView sourceCode =
+    let
+        linesNumber =
+            sourceCode
+                |> String.split "\n"
+                |> List.length
+    in
+    div [ css [Css.displayFlex]]
+        [ div [ css [ Styles.codeBlock,  Css.color (Css.hex "78909C") ] ]
+            (List.indexedMap (\i _ -> div [] [ text (String.fromInt (i + 1)) ]) (List.repeat linesNumber ()))
+        , div [ css [ Styles.codeBlock ] ]
+            [ pre [ css [ Css.margin (Css.px 0) ]]
+                [ code [] [ text sourceCode ]
+                ]
+            ]
+        ]
 
 
 stepsView : Steps.StepsState -> Html msg

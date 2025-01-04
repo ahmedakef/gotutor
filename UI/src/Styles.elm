@@ -83,4 +83,5 @@ codeBlock =
         , fontSize (px 14)
         , overflowX auto
         , color (hex"333")
+        , padding (px 5)
         ]
