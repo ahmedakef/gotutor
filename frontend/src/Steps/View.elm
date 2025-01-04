@@ -36,10 +36,10 @@ view state =
                         ]
                     , div [ css [ Styles.flexColumn ] ]
                         [ let
-                            ( stepsSoFar, packageVars ) =
+                            visualizeState =
                                 stateToVisualize stepsState
                           in
-                          programVisualizer stepsSoFar packageVars
+                          programVisualizer visualizeState
                         ]
                     ]
                 ]
@@ -85,7 +85,13 @@ packageVarView packageVar =
         ]
 
 
-stateToVisualize : Steps.StepsState -> ( List Step, List Variable )
+type alias VisualizeState =
+    { steps : List Step
+    , packageVars : List Variable
+    }
+
+
+stateToVisualize : Steps.StepsState -> VisualizeState
 stateToVisualize stepsState =
     let
         stepsSoFar =
@@ -93,8 +99,7 @@ stateToVisualize stepsState =
                 |> List.take stepsState.position
 
         lastStep =
-            stepsState.steps
-                |> List.drop stepsState.position
+            stepsSoFar
                 |> List.head
     in
     case lastStep of
@@ -102,19 +107,22 @@ stateToVisualize stepsState =
             let
                 packageVars =
                     step.packageVars
+
+                _ =
+                    stepsSoFar |> Debug.toString |> Debug.log "Just stepsSoFar"
             in
-            ( stepsSoFar, packageVars )
+            VisualizeState stepsSoFar packageVars
 
         Nothing ->
             -- This should never happen, try to remove this case
-            ( stepsSoFar, [] )
+            VisualizeState [] []
 
 
-programVisualizer : List Step -> List Variable -> Html msg
-programVisualizer steps packageVars =
+programVisualizer : VisualizeState -> Html msg
+programVisualizer state =
     div []
-        [ packageVarsView packageVars
-        , stepsListView steps
+        [ packageVarsView state.packageVars
+        , stepsListView state.steps
         ]
 
 
