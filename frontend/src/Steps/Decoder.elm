@@ -49,6 +49,7 @@ type alias Variable =
 type alias Step =
     { goroutine : Goroutine
     , packageVars : List Variable
+    , stacktrace : List StackFrame
     }
 
 
@@ -127,11 +128,63 @@ variableDecoder =
                                                                                                                         }
 
 
+type alias StackFrame =
+    { pc : Int
+    , file : String
+    , line : Int
+    , function : Function
+    , locals : Maybe (List Variable)
+    , arguments : Maybe (List Variable)
+    , frameOffset : Int
+    , framePointerOffset : Int
+    , defers : List String
+    , err : String
+    }
+
+
+stacktraceDecoder : Decoder (List StackFrame)
+stacktraceDecoder =
+    list <|
+        Field.require "pc" int <|
+            \pc ->
+                Field.require "file" string <|
+                    \file ->
+                        Field.require "line" int <|
+                            \line ->
+                                Field.require "function" functionDecoder <|
+                                    \function ->
+                                        Field.require "Locals" (maybe (list variableDecoder)) <|
+                                            \locals ->
+                                                Field.require "Arguments" (maybe (list variableDecoder)) <|
+                                                    \arguments ->
+                                                        Field.require "FrameOffset" int <|
+                                                            \frameOffset ->
+                                                                Field.require "FramePointerOffset" int <|
+                                                                    \framePointerOffset ->
+                                                                        Field.require "Defers" (list string) <|
+                                                                            \defers ->
+                                                                                Field.require "Err" string <|
+                                                                                    \err ->
+                                                                                        Json.Decode.succeed
+                                                                                            { pc = pc
+                                                                                            , file = file
+                                                                                            , line = line
+                                                                                            , function = function
+                                                                                            , locals = locals
+                                                                                            , arguments = arguments
+                                                                                            , frameOffset = frameOffset
+                                                                                            , framePointerOffset = framePointerOffset
+                                                                                            , defers = defers
+                                                                                            , err = err
+                                                                                            }
+
+
 stepDecoder : Decoder Step
 stepDecoder =
-    map2 Step
+    map3 Step
         (field "Goroutine" goroutineDecoder)
         (field "PackageVariables" (list variableDecoder))
+        (field "Stacktrace" stacktraceDecoder)
 
 
 stepsDecoder : Decoder (List Step)

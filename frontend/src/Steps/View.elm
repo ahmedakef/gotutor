@@ -52,7 +52,8 @@ view state =
 
 
 type alias VisualizeState =
-    { steps : List Step
+    { lastStep : Maybe Step
+    , stack : List StackFrame
     , packageVars : List Variable
     }
 
@@ -66,6 +67,7 @@ stateToVisualize stepsState =
 
         lastStep =
             stepsSoFar
+                |> List.reverse
                 |> List.head
     in
     case lastStep of
@@ -74,14 +76,17 @@ stateToVisualize stepsState =
                 packageVars =
                     step.packageVars
 
+                callHierarchy =
+                    step.stacktrace
+
                 _ =
                     stepsSoFar |> Debug.toString |> Debug.log "Just stepsSoFar"
             in
-            VisualizeState stepsSoFar packageVars
+            VisualizeState (Just step) callHierarchy packageVars
 
         Nothing ->
             -- This should never happen, try to remove this case
-            VisualizeState [] []
+            VisualizeState lastStep [] []
 
 
 codeView : String -> Html msg
@@ -105,12 +110,16 @@ codeView sourceCode =
 
 packageVarsView : List Variable -> Html msg
 packageVarsView packageVars =
-    div []
-        [ h2 []
-            [ text "Package Variables"
+    if List.isEmpty packageVars then
+        div [] []
+
+    else
+        div []
+            [ h2 []
+                [ text "Package Variables"
+                ]
+            , div [] (List.map packageVarView packageVars)
             ]
-        , div [] (List.map packageVarView packageVars)
-        ]
 
 
 packageVarView : Variable -> Html msg
@@ -126,25 +135,35 @@ programVisualizer : VisualizeState -> Html msg
 programVisualizer state =
     div []
         [ packageVarsView state.packageVars
-        , stepsListView state.steps
+        , goroutineView state.lastStep
+        , stackView state.stack
         ]
 
 
-stepsListView : List Step -> Html msg
-stepsListView steps =
-    ul [] (List.map stepView steps)
+stackView : List StackFrame -> Html msg
+stackView stack =
+    ul [] (List.map frameView stack)
 
 
-stepView : Step -> Html msg
-stepView step =
+frameView : StackFrame -> Html msg
+frameView frame =
     div [ css borderStyle ]
-        [ div [] [ text <| step.goroutine.currentLoc.function.name ]
+        [ div [] [ text <| frame.function.name ]
         , hr [] []
-        , div [] [ text <| "Goroutine ID: " ++ String.fromInt step.goroutine.id ]
-        , div [] [ text <| "File: " ++ step.goroutine.currentLoc.file ]
-        , div [] [ text <| "Line: " ++ String.fromInt step.goroutine.currentLoc.line ]
-        , div [] [ text <| "PC: " ++ String.fromInt step.goroutine.currentLoc.pc ]
+        , div [] [ text <| "File: " ++ frame.file ]
+        , div [] [ text <| "Line: " ++ String.fromInt frame.line ]
+        , div [] [ text <| "PC: " ++ String.fromInt frame.pc ]
         ]
+
+
+goroutineView : Maybe Step -> Html msg
+goroutineView maybeStep =
+    case maybeStep of
+        Nothing ->
+            div [] []
+
+        Just step ->
+            div [] [ text <| "Goroutine ID: " ++ String.fromInt step.goroutine.id ]
 
 
 borderStyle : List Css.Style

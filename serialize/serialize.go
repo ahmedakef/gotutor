@@ -16,6 +16,7 @@ import (
 )
 
 var errNoMain = errors.New("main function not found")
+var defaultLoadConfig = api.LoadConfig{MaxStringLen: 64, MaxStructFields: 3, MaxArrayValues: 3}
 
 type Serializer struct {
 	client             *gateway.Debug
@@ -136,15 +137,15 @@ func (v *Serializer) buildStep(ctx context.Context, debugState *api.DebuggerStat
 
 	packageVars, err := v.client.ListPackageVariables(ctx,
 		"^main.",
-		api.LoadConfig{MaxStringLen: 64, MaxStructFields: 3},
+		defaultLoadConfig,
 	)
 	if err != nil {
 		return Step{}, fmt.Errorf("ListPackageVariables: %w", err)
 	}
 
-	stacktrace, err := v.client.Stacktrace(ctx, debugState.SelectedGoroutine.ID, 100, 0, nil)
+	stacktrace, err := v.client.Stacktrace(ctx, debugState.SelectedGoroutine.ID, 100, 0, &defaultLoadConfig)
 	if err != nil {
-		return Step{}, fmt.Errorf("Stacktrace: %w", err)
+		return Step{}, fmt.Errorf("stacktrace: %w", err)
 	}
 	return Step{
 		Goroutine:        debugState.SelectedGoroutine,
