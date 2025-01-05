@@ -69,15 +69,37 @@ navItems =
         ]
 
 
-codeBlock : Css.Style
-codeBlock =
-    Css.batch
-        [ backgroundColor (hex "f5f5f5")
-        , border3 (px 1) solid (hex "ddd")
-        , borderRadius (px 5)
-        , fontFamilies [ "Courier New", "Courier", "monospace" ]
-        , fontSize (px 14)
-        , overflowX auto
-        , color (hex "333")
-        , padding (px 5)
-        ]
+requiredShStyles : String
+requiredShStyles =
+    """
+pre.elmsh {
+    padding: 5px;
+    margin: 0;
+    text-align: left;
+    overflow: auto;
+    // my styles
+    background-color: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+
+
+}
+code.elmsh {
+    padding: 0;
+    // my styles
+    font-family: "Courier New", Courier, monospace;
+    font-size: 14px;
+    font-family: "Courier New", Courier, monospace;
+    overflow-x: auto;
+    color: #333;
+
+}
+.elmsh-line:before {
+    content: attr(data-elmsh-lc);
+    display: inline-block;
+    text-align: right;
+    width: 20px;
+    padding: 0 20px 0 0;
+    opacity: 0.3;
+}
+    """

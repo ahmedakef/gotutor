@@ -1,12 +1,14 @@
 module Steps.View exposing (..)
 
 import Css
-import Html.Styled as Html exposing (..)
+import Html as UnSytyled
+import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events exposing (onClick)
 import Steps.Decoder exposing (..)
 import Steps.Steps as Steps
 import Styles
+import SyntaxHighlight
 
 
 view : Steps.State -> Html Steps.Msg
@@ -78,6 +80,7 @@ stateToVisualize stepsState =
 
                 callHierarchy =
                     step.stacktrace
+                        |> filterUserFrames
 
                 _ =
                     stepsSoFar |> Debug.toString |> Debug.log "Just stepsSoFar"
@@ -89,23 +92,27 @@ stateToVisualize stepsState =
             VisualizeState lastStep [] []
 
 
+filterUserFrames : List StackFrame -> List StackFrame
+filterUserFrames stack =
+    stack
+        |> List.filter (\frame -> String.endsWith "main.go" frame.file)
+
+
 codeView : String -> Html msg
 codeView sourceCode =
-    let
-        linesNumber =
-            sourceCode
-                |> String.split "\n"
-                |> List.length
-    in
-    div [ css [ Css.displayFlex ] ]
-        [ div [ css [ Styles.codeBlock, Css.color (Css.hex "78909C") ] ]
-            (List.indexedMap (\i _ -> div [] [ text (String.fromInt (i + 1)) ]) (List.repeat linesNumber ()))
-        , div [ css [ Styles.codeBlock ] ]
-            [ pre [ css [ Css.margin (Css.px 0) ] ]
-                [ code [] [ text sourceCode ]
-                ]
-            ]
+    div
+        []
+        [ SyntaxHighlight.noLang sourceCode
+            |> Result.map (SyntaxHighlight.toBlockHtml (Just 1))
+            |> Result.withDefault
+                (UnSytyled.pre [] [ UnSytyled.code [] [ UnSytyled.text sourceCode ] ])
+            |> Html.Styled.fromUnstyled
         ]
+
+
+wrapCode : String -> String
+wrapCode code =
+    "```go\n" ++ code ++ "\n```"
 
 
 packageVarsView : List Variable -> Html msg
@@ -142,7 +149,16 @@ programVisualizer state =
 
 stackView : List StackFrame -> Html msg
 stackView stack =
-    ul [] (List.map frameView stack)
+    if List.isEmpty stack then
+        div [] []
+
+    else
+        div []
+            [ h2 []
+                [ text "Stacktrace"
+                ]
+            , ul [] (List.map frameView stack)
+            ]
 
 
 frameView : StackFrame -> Html msg
@@ -152,7 +168,6 @@ frameView frame =
         , hr [] []
         , div [] [ text <| "File: " ++ frame.file ]
         , div [] [ text <| "Line: " ++ String.fromInt frame.line ]
-        , div [] [ text <| "PC: " ++ String.fromInt frame.pc ]
         ]
 
 
@@ -163,7 +178,16 @@ goroutineView maybeStep =
             div [] []
 
         Just step ->
-            div [] [ text <| "Goroutine ID: " ++ String.fromInt step.goroutine.id ]
+            div []
+                [ h2 []
+                    [ text "goroutine Info"
+                    ]
+                , div []
+                    [ text <|
+                        "Goroutine ID: "
+                            ++ String.fromInt step.goroutine.id
+                    ]
+                ]
 
 
 borderStyle : List Css.Style

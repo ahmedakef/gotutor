@@ -106,11 +106,12 @@ view : Model -> Browser.Document Msg
 view model =
     let
         title =
-            "URL Interceptor"
+            "Go tutor"
 
         body =
             div []
                 [ Styles.globalStyles
+                , inlineCss Styles.requiredShStyles
                 , navigation
                 , Html.map StepsMsg (StepsView.view model.state)
                 ]
@@ -139,3 +140,8 @@ horizontalUL items =
 viewLink : String -> Html msg
 viewLink path =
     a [ href ("/" ++ path), css [ Styles.navItems ] ] [ text path ]
+
+
+inlineCss : String -> Html msg
+inlineCss inlineRawCss =
+    node "style" [] [ text inlineRawCss ]

@@ -11,3 +11,4 @@ frontend/elm-stuff/*
 */.DS_Store
 frontend/index.html
 frontend/main.txt
+frontend/src/main.js
