@@ -127,18 +127,6 @@ codeView state =
 
             else
                 Maybe.map (\_ -> SH.Highlight) state.highlightedLine
-
-        _ =
-            Debug.toString currentLine |> Debug.log "currentLine"
-
-        _ =
-            Debug.toString highlightModeCurrentLine |> Debug.log "highlightModeCurrentLine"
-
-        _ =
-            Debug.toString highlightedLine |> Debug.log "highlightedLine"
-
-        _ =
-            Debug.toString highlightModeHighlightedLine |> Debug.log "highlightModeHighlightedLine"
     in
     div
         []
@@ -193,17 +181,19 @@ varView v =
                                 )
             in
             li []
-                [ p []
-                    [ text <| var.name ++ " = "
-                    , span [ css [ Css.color (Css.hex "979494") ] ] [ text <| "{" ++ var.type_ ++ "}  " ]
-                    , text value
+                [ details []
+                    [ summary []
+                        [ text <| var.name ++ " = "
+                        , span [ css [ Css.color (Css.hex "979494") ] ] [ text <| "{" ++ var.type_ ++ "}  " ]
+                        , text value
+                        ]
                     , ul [ css [ Css.listStyleType Css.none ] ] (List.map varView children)
                     ]
                 ]
 
 
-varsView : String -> Maybe (List Variable) -> Html msg
-varsView title maybeVars =
+varsView : String -> Maybe (List Variable) -> List (Attribute msg) -> Html msg
+varsView title maybeVars attributes =
     case maybeVars of
         Nothing ->
             div [] []
@@ -213,8 +203,10 @@ varsView title maybeVars =
                 div [] []
 
             else
-                div []
-                    [ h3 [] [ text title ]
+                details (attribute "open" "" :: attributes)
+                    [ summary []
+                        [ b [] [ text title ]
+                        ]
                     , ul [ css [ Css.listStyleType Css.none ] ] (List.map varView vars)
                     ]
 
@@ -222,7 +214,7 @@ varsView title maybeVars =
 programVisualizer : VisualizeState -> Html Msg
 programVisualizer state =
     div []
-        [ varsView "Global Variables:" (Just state.packageVars)
+        [ varsView "Global Variables:" (Just state.packageVars) [ css [ Styles.marginBottom 10 ] ]
         , goroutineView state.lastStep
         , stackView state.stack
         ]
@@ -234,11 +226,16 @@ stackView stack =
         div [] []
 
     else
-        div []
-            [ h2 []
-                [ text "Stacktrace"
+        details [ attribute "open" "" ]
+            [ summary []
+                [ b []
+                    [ text "Stacktrace"
+                    ]
                 ]
-            , ul [] (List.map frameView stack)
+            , ul [ css [ Css.listStyleType Css.none ] ]
+                (List.map frameView stack
+                    |> List.map (\element -> li [] [ element ])
+                )
             ]
 
 
@@ -252,11 +249,10 @@ frameView frame =
                 |> Maybe.withDefault frame.file
     in
     div [ css borderStyle, onMouseEnter (Highlight frame.line), onMouseLeave (Unhighlight frame.line) ]
-        [ div [] [ text <| removeMainPrefix frame.function.name ]
-        , hr [] []
-        , div [] [ text <| "Loc: " ++ fileName ++ ":" ++ String.fromInt frame.line ]
-        , varsView "arguments:" frame.arguments
-        , varsView "locals:" frame.locals
+        [ div [ css [ Styles.flexCenter ] ] [ b [] [ text <| removeMainPrefix frame.function.name ] ]
+        , div [ css [ Css.margin3 (Css.px 0) (Css.px 0) (Css.px 10) ] ] [ b [] [ text "Loc: " ], text <| fileName ++ ":" ++ String.fromInt frame.line ]
+        , varsView "arguments:" frame.arguments [ css [ Styles.marginBottom 10 ] ]
+        , varsView "locals:" frame.locals []
         ]
 
 
@@ -283,11 +279,13 @@ goroutineView maybeStep =
             div [] []
 
         Just step ->
-            div []
-                [ h2 []
-                    [ text "goroutine Info"
+            details [ attribute "open" "", css [ Css.margin3 (Css.px 0) (Css.px 0) (Css.px 10) ] ]
+                [ summary []
+                    [ b []
+                        [ text "goroutine Info:"
+                        ]
                     ]
-                , div []
+                , div [ css [ Css.margin3 (Css.px 10) (Css.px 0) (Css.px 0) ] ]
                     [ text <|
                         "Goroutine ID: "
                             ++ String.fromInt step.goroutine.id

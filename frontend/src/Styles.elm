@@ -15,7 +15,7 @@ globalStyles =
     Css.Global.global
         [ Css.Global.body
             [ backgroundColor (hex "FAFAFA")
-            , color (hex "333333")
+            , color (hex "484848")
             ]
         ]
 
@@ -67,6 +67,11 @@ navItems =
         [ textDecoration none
         , color (hex "333")
         ]
+
+
+marginBottom : Float -> Css.Style
+marginBottom v =
+    margin3 (px 0) (px 0) (px v)
 
 
 requiredShStyles : String
