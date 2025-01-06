@@ -4,17 +4,17 @@ import Css
 import Html as UnSytyled
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
-import Html.Styled.Events exposing (onClick)
+import Html.Styled.Events exposing (..)
 import Steps.Decoder exposing (..)
-import Steps.Steps as Steps
+import Steps.Steps exposing (..)
 import Styles
 import SyntaxHighlight as SH
 
 
-view : Steps.State -> Html Steps.Msg
+view : State -> Html Msg
 view state =
     case state of
-        Steps.Success stepsState ->
+        Success stepsState ->
             let
                 visualizeState =
                     stateToVisualize stepsState
@@ -31,8 +31,8 @@ view state =
                             [ codeView visualizeState
                             , div [ css [ Styles.flexCenter, Css.margin2 (Css.px 20) (Css.px 0) ] ]
                                 [ div []
-                                    [ button [ onClick Steps.Prev ] [ text "Prev" ]
-                                    , button [ onClick Steps.Next ] [ text "Next" ]
+                                    [ button [ onClick Prev ] [ text "Prev" ]
+                                    , button [ onClick Next ] [ text "Next" ]
                                     ]
                                 , div [ css [ Css.margin2 (Css.px 10) (Css.px 0) ] ]
                                     [ text ("Step " ++ String.fromInt stepsState.position ++ " of " ++ (List.length stepsState.steps |> String.fromInt))
@@ -46,10 +46,10 @@ view state =
                     ]
                 ]
 
-        Steps.Failure error ->
+        Failure error ->
             div [] [ pre [] [ text error ] ]
 
-        Steps.Loading ->
+        Loading ->
             div [] [ text "Loading..." ]
 
 
@@ -59,10 +59,11 @@ type alias VisualizeState =
     , packageVars : List Variable
     , sourceCode : String
     , currentLine : Maybe Int
+    , highlightedLine : Maybe Int
     }
 
 
-stateToVisualize : Steps.StepsState -> VisualizeState
+stateToVisualize : StepsState -> VisualizeState
 stateToVisualize stepsState =
     let
         stepsSoFar =
@@ -87,14 +88,17 @@ stateToVisualize stepsState =
                 currentLine =
                     List.head callHierarchy
                         |> Maybe.map .line
-
-                _ =
-                    stepsSoFar |> Debug.toString |> Debug.log "Just stepsSoFar"
             in
-            VisualizeState (Just step) callHierarchy packageVars stepsState.sourceCode currentLine
+            { lastStep = Just step
+            , stack = callHierarchy
+            , packageVars = packageVars
+            , sourceCode = stepsState.sourceCode
+            , currentLine = currentLine
+            , highlightedLine = stepsState.highlightedLine
+            }
 
         Nothing ->
-            VisualizeState lastStep [] [] stepsState.sourceCode Nothing
+            VisualizeState lastStep [] [] stepsState.sourceCode Nothing Nothing
 
 
 filterUserFrames : List StackFrame -> List StackFrame
@@ -106,22 +110,39 @@ filterUserFrames stack =
 codeView : VisualizeState -> Html msg
 codeView state =
     let
-        highlightMode =
-            Maybe.map (\_ -> SH.Add) state.lastStep
-
         currentLine =
             Maybe.withDefault 0 state.currentLine
+
+        highlightedLine =
+            Maybe.withDefault 0 state.highlightedLine
+
+        highlightModeCurrentLine =
+            Maybe.map (\_ -> SH.Add) state.lastStep
+
+        highlightModeHighlightedLine =
+            if highlightedLine == currentLine then
+                Nothing
+
+            else
+                Maybe.map (\_ -> SH.Highlight) state.highlightedLine
 
         _ =
             Debug.toString currentLine |> Debug.log "currentLine"
 
         _ =
-            Debug.toString highlightMode |> Debug.log "highlightMode"
+            Debug.toString highlightModeCurrentLine |> Debug.log "highlightModeCurrentLine"
+
+        _ =
+            Debug.toString highlightedLine |> Debug.log "highlightedLine"
+
+        _ =
+            Debug.toString highlightModeHighlightedLine |> Debug.log "highlightModeHighlightedLine"
     in
     div
         []
         [ SH.noLang state.sourceCode
-            |> Result.map (SH.highlightLines highlightMode (currentLine - 1) currentLine)
+            |> Result.map (SH.highlightLines highlightModeHighlightedLine (highlightedLine - 1) highlightedLine)
+            |> Result.map (SH.highlightLines highlightModeCurrentLine (currentLine - 1) currentLine)
             |> Result.map (SH.toBlockHtml (Just 1))
             |> Result.withDefault
                 (UnSytyled.pre [] [ UnSytyled.code [] [ UnSytyled.text state.sourceCode ] ])
@@ -157,7 +178,7 @@ packageVarView packageVar =
         ]
 
 
-programVisualizer : VisualizeState -> Html msg
+programVisualizer : VisualizeState -> Html Msg
 programVisualizer state =
     div []
         [ packageVarsView state.packageVars
@@ -166,7 +187,7 @@ programVisualizer state =
         ]
 
 
-stackView : List StackFrame -> Html msg
+stackView : List StackFrame -> Html Msg
 stackView stack =
     if List.isEmpty stack then
         div [] []
@@ -180,9 +201,9 @@ stackView stack =
             ]
 
 
-frameView : StackFrame -> Html msg
+frameView : StackFrame -> Html Msg
 frameView frame =
-    div [ css borderStyle ]
+    div [ css borderStyle, onMouseEnter (Highlight frame.line), onMouseLeave (Unhighlight frame.line) ]
         [ div [] [ text <| frame.function.name ]
         , hr [] []
         , div [] [ text <| "File: " ++ frame.file ]

@@ -105,4 +105,7 @@ code.elmsh {
 .elmsh-add {
     background-color: #ddffdd;
     }
+.elmsh-hl {
+    background-color:rgb(220, 229, 239);
+    }
     """

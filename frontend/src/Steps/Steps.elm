@@ -14,6 +14,8 @@ type Msg
     | GotSourceCode (Result Http.Error String)
     | Next
     | Prev
+    | Highlight Int
+    | Unhighlight Int
 
 
 
@@ -44,6 +46,7 @@ type alias StepsState =
     { steps : List Step
     , position : Int
     , sourceCode : String
+    , highlightedLine : Maybe Int
     }
 
 
@@ -92,6 +95,12 @@ update msg state =
                     else
                         ( Success { successState | position = successState.position - 1 }, Cmd.none )
 
+                Highlight line ->
+                    ( Success { successState | highlightedLine = Just line }, Cmd.none )
+
+                Unhighlight _ ->
+                    ( Success { successState | highlightedLine = Nothing }, Cmd.none )
+
         Failure _ ->
             ( state, Cmd.none )
 
@@ -100,7 +109,7 @@ update msg state =
                 GotSteps gotStepsResult ->
                     case gotStepsResult of
                         Ok steps ->
-                            ( Success (StepsState steps 0 ""), getSourceCode )
+                            ( Success (StepsState steps 0 "" Nothing), getSourceCode )
 
                         Err err ->
                             ( Failure (err |> HttpHelper.errorToString), Cmd.none )
@@ -108,7 +117,7 @@ update msg state =
                 GotSourceCode sourceCodeResult ->
                     case sourceCodeResult of
                         Ok sourceCode ->
-                            ( Success (StepsState [] 0 sourceCode), Cmd.none )
+                            ( Success (StepsState [] 0 sourceCode Nothing), Cmd.none )
 
                         Err err ->
                             ( Failure (err |> HttpHelper.errorToString), Cmd.none )
@@ -117,4 +126,10 @@ update msg state =
                     ( state, Cmd.none )
 
                 Prev ->
+                    ( state, Cmd.none )
+
+                Highlight _ ->
+                    ( state, Cmd.none )
+
+                Unhighlight _ ->
                     ( state, Cmd.none )
