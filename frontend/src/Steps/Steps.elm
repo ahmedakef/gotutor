@@ -59,59 +59,62 @@ type State
 
 update : Msg -> State -> ( State, Cmd Msg )
 update msg state =
-    case msg of
-        GotSteps gotStepsResult ->
-            case gotStepsResult of
-                Ok steps ->
-                    case state of
-                        Success successState ->
+    case state of
+        Success successState ->
+            case msg of
+                GotSteps gotStepsResult ->
+                    case gotStepsResult of
+                        Ok steps ->
                             ( Success { successState | steps = steps }, Cmd.none )
 
-                        Failure _ ->
-                            ( state, Cmd.none )
+                        Err err ->
+                            ( Failure (err |> HttpHelper.errorToString), Cmd.none )
 
-                        Loading ->
-                            ( Success (StepsState steps 0 ""), getSourceCode )
-
-                Err err ->
-                    ( Failure (err |> HttpHelper.errorToString), Cmd.none )
-
-        GotSourceCode sourceCodeResult ->
-            case sourceCodeResult of
-                Ok sourceCode ->
-                    case state of
-                        Success successState ->
+                GotSourceCode sourceCodeResult ->
+                    case sourceCodeResult of
+                        Ok sourceCode ->
                             ( Success { successState | sourceCode = sourceCode }, Cmd.none )
 
-                        Failure _ ->
-                            ( state, Cmd.none )
+                        Err err ->
+                            ( Failure (err |> HttpHelper.errorToString), Cmd.none )
 
-                        Loading ->
-                            ( Success (StepsState [] 0 sourceCode), Cmd.none )
-
-                Err err ->
-                    ( Failure (err |> HttpHelper.errorToString), Cmd.none )
-
-        Next ->
-            case state of
-                Success successState ->
+                Next ->
                     if successState.position + 1 > List.length successState.steps then
                         ( Success successState, Cmd.none )
 
                     else
                         ( Success { successState | position = successState.position + 1 }, Cmd.none )
 
-                _ ->
-                    ( state, Cmd.none )
-
-        Prev ->
-            case state of
-                Success successState ->
+                Prev ->
                     if successState.position - 1 < 0 then
                         ( Success successState, Cmd.none )
 
                     else
                         ( Success { successState | position = successState.position - 1 }, Cmd.none )
 
-                _ ->
+        Failure _ ->
+            ( state, Cmd.none )
+
+        Loading ->
+            case msg of
+                GotSteps gotStepsResult ->
+                    case gotStepsResult of
+                        Ok steps ->
+                            ( Success (StepsState steps 0 ""), getSourceCode )
+
+                        Err err ->
+                            ( Failure (err |> HttpHelper.errorToString), Cmd.none )
+
+                GotSourceCode sourceCodeResult ->
+                    case sourceCodeResult of
+                        Ok sourceCode ->
+                            ( Success (StepsState [] 0 sourceCode), Cmd.none )
+
+                        Err err ->
+                            ( Failure (err |> HttpHelper.errorToString), Cmd.none )
+
+                Next ->
+                    ( state, Cmd.none )
+
+                Prev ->
                     ( state, Cmd.none )

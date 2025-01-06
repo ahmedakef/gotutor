@@ -8,7 +8,7 @@ import Html.Styled.Events exposing (onClick)
 import Steps.Decoder exposing (..)
 import Steps.Steps as Steps
 import Styles
-import SyntaxHighlight
+import SyntaxHighlight as SH
 
 
 view : Steps.State -> Html Steps.Msg
@@ -102,8 +102,8 @@ codeView : String -> Html msg
 codeView sourceCode =
     div
         []
-        [ SyntaxHighlight.noLang sourceCode
-            |> Result.map (SyntaxHighlight.toBlockHtml (Just 1))
+        [ SH.noLang sourceCode
+            |> Result.map (SH.toBlockHtml (Just 1))
             |> Result.withDefault
                 (UnSytyled.pre [] [ UnSytyled.code [] [ UnSytyled.text sourceCode ] ])
             |> Html.Styled.fromUnstyled
