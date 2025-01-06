@@ -33,8 +33,18 @@ view state =
                             [ codeView visualizeState
                             , div [ css [ Styles.flexCenter, Css.margin2 (Css.px 20) (Css.px 0) ] ]
                                 [ div []
-                                    [ button [ onClick Prev ] [ text "Prev" ]
-                                    , button [ onClick Next ] [ text "Next" ]
+                                    [ div []
+                                        [ input
+                                            [ type_ "range"
+                                            , Html.Styled.Attributes.min "0"
+                                            , Html.Styled.Attributes.max (String.fromInt (List.length stepsState.steps))
+                                            , Html.Styled.Attributes.value (String.fromInt stepsState.position)
+                                            , onInput (String.toInt >> Maybe.withDefault 0 >> SliderChange)
+                                            ]
+                                            []
+                                        ]
+                                    , button [ onClick Prev, css [ buttonStyle, Css.margin4 (Css.px 0) (Css.px 10) (Css.px 0) (Css.px 0) ] ] [ text "< Prev" ]
+                                    , button [ onClick Next, css [ buttonStyle ] ] [ text "Next >" ]
                                     ]
                                 , div [ css [ Css.margin2 (Css.px 10) (Css.px 0) ] ]
                                     [ text ("Step " ++ String.fromInt stepsState.position ++ " of " ++ (List.length stepsState.steps |> String.fromInt))
@@ -248,7 +258,15 @@ frameView frame =
                 |> List.head
                 |> Maybe.withDefault frame.file
     in
-    div [ css borderStyle, onMouseEnter (Highlight frame.line), onMouseLeave (Unhighlight frame.line) ]
+    div
+        [ css
+            [ borderStyle
+            , Css.width (Css.pct 50)
+            , Css.backgroundColor (Css.hex "f2f0ec")
+            ]
+        , onMouseEnter (Highlight frame.line)
+        , onMouseLeave (Unhighlight frame.line)
+        ]
         [ div [ css [ Styles.flexCenter ] ] [ b [] [ text <| removeMainPrefix frame.function.name ] ]
         , div [ css [ Css.margin3 (Css.px 0) (Css.px 0) (Css.px 10) ] ] [ b [] [ text "Loc: " ], text <| fileName ++ ":" ++ String.fromInt frame.line ]
         , varsView "arguments:" frame.arguments [ css [ Styles.marginBottom 10 ] ]
@@ -281,21 +299,32 @@ goroutineView maybeStep =
         Just step ->
             details [ attribute "open" "", css [ Css.margin3 (Css.px 0) (Css.px 0) (Css.px 10) ] ]
                 [ summary []
-                    [ b []
-                        [ text "goroutine Info:"
-                        ]
+                    [ b [] [ text "Goroutine Info:" ]
                     ]
                 , div [ css [ Css.margin3 (Css.px 10) (Css.px 0) (Css.px 0) ] ]
-                    [ text <|
-                        "Goroutine ID: "
-                            ++ String.fromInt step.goroutine.id
+                    [ ul [ css [ Css.listStyleType Css.none ] ]
+                        [ li []
+                            [ text <| "ID: " ++ String.fromInt step.goroutine.id
+                            ]
+                        ]
                     ]
                 ]
 
 
-borderStyle : List Css.Style
+borderStyle : Css.Style
 borderStyle =
-    [ Css.border3 (Css.px 1) Css.solid (Css.hex "ccc")
-    , Css.padding (Css.px 10)
-    , Css.margin3 (Css.px 0) (Css.px 0) (Css.px 10)
-    ]
+    Css.batch
+        [ Css.border3 (Css.px 1) Css.solid (Css.hex "ccc")
+        , Css.padding (Css.px 10)
+        , Css.margin3 (Css.px 0) (Css.px 0) (Css.px 10)
+        , Css.borderRadius (Css.px 15)
+        ]
+
+
+buttonStyle : Css.Style
+buttonStyle =
+    Css.batch
+        [ Css.backgroundColor (Css.hex "f2f0ec")
+        , Css.border3 (Css.px 1) Css.solid (Css.hex "ccc")
+        , Css.padding (Css.px 5)
+        ]

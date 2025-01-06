@@ -14,6 +14,7 @@ type Msg
     | GotSourceCode (Result Http.Error String)
     | Next
     | Prev
+    | SliderChange Int
     | Highlight Int
     | Unhighlight Int
 
@@ -95,6 +96,9 @@ update msg state =
                     else
                         ( Success { successState | position = successState.position - 1 }, Cmd.none )
 
+                SliderChange position ->
+                    ( Success { successState | position = position }, Cmd.none )
+
                 Highlight line ->
                     ( Success { successState | highlightedLine = Just line }, Cmd.none )
 
@@ -126,6 +130,9 @@ update msg state =
                     ( state, Cmd.none )
 
                 Prev ->
+                    ( state, Cmd.none )
+
+                SliderChange _ ->
                     ( state, Cmd.none )
 
                 Highlight _ ->
