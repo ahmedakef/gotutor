@@ -102,4 +102,7 @@ code.elmsh {
     padding: 0 20px 0 0;
     opacity: 0.3;
 }
+.elmsh-add {
+    background-color: #ddffdd;
+    }
     """

@@ -15,6 +15,10 @@ view : Steps.State -> Html Steps.Msg
 view state =
     case state of
         Steps.Success stepsState ->
+            let
+                visualizeState =
+                    stateToVisualize stepsState
+            in
             div []
                 [ div [ css [ Styles.container ] ]
                     [ div [ css [ Styles.flexColumn ] ]
@@ -24,7 +28,7 @@ view state =
                 , div [ css [ Styles.container ] ]
                     [ div [ css [ Styles.flexColumn, Styles.flexCenter ] ]
                         [ div []
-                            [ codeView stepsState.sourceCode
+                            [ codeView visualizeState
                             , div [ css [ Styles.flexCenter, Css.margin2 (Css.px 20) (Css.px 0) ] ]
                                 [ div []
                                     [ button [ onClick Steps.Prev ] [ text "Prev" ]
@@ -37,11 +41,7 @@ view state =
                             ]
                         ]
                     , div [ css [ Styles.flexColumn ] ]
-                        [ let
-                            visualizeState =
-                                stateToVisualize stepsState
-                          in
-                          programVisualizer visualizeState
+                        [ programVisualizer visualizeState
                         ]
                     ]
                 ]
@@ -57,6 +57,8 @@ type alias VisualizeState =
     { lastStep : Maybe Step
     , stack : List StackFrame
     , packageVars : List Variable
+    , sourceCode : String
+    , currentLine : Maybe Int
     }
 
 
@@ -82,14 +84,17 @@ stateToVisualize stepsState =
                     step.stacktrace
                         |> filterUserFrames
 
+                currentLine =
+                    List.head callHierarchy
+                        |> Maybe.map .line
+
                 _ =
                     stepsSoFar |> Debug.toString |> Debug.log "Just stepsSoFar"
             in
-            VisualizeState (Just step) callHierarchy packageVars
+            VisualizeState (Just step) callHierarchy packageVars stepsState.sourceCode currentLine
 
         Nothing ->
-            -- This should never happen, try to remove this case
-            VisualizeState lastStep [] []
+            VisualizeState lastStep [] [] stepsState.sourceCode Nothing
 
 
 filterUserFrames : List StackFrame -> List StackFrame
@@ -98,14 +103,28 @@ filterUserFrames stack =
         |> List.filter (\frame -> String.endsWith "main.go" frame.file)
 
 
-codeView : String -> Html msg
-codeView sourceCode =
+codeView : VisualizeState -> Html msg
+codeView state =
+    let
+        highlightMode =
+            Maybe.map (\_ -> SH.Add) state.lastStep
+
+        currentLine =
+            Maybe.withDefault 0 state.currentLine
+
+        _ =
+            Debug.toString currentLine |> Debug.log "currentLine"
+
+        _ =
+            Debug.toString highlightMode |> Debug.log "highlightMode"
+    in
     div
         []
-        [ SH.noLang sourceCode
+        [ SH.noLang state.sourceCode
+            |> Result.map (SH.highlightLines highlightMode (currentLine - 1) currentLine)
             |> Result.map (SH.toBlockHtml (Just 1))
             |> Result.withDefault
-                (UnSytyled.pre [] [ UnSytyled.code [] [ UnSytyled.text sourceCode ] ])
+                (UnSytyled.pre [] [ UnSytyled.code [] [ UnSytyled.text state.sourceCode ] ])
             |> Html.Styled.fromUnstyled
         ]
 
