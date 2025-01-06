@@ -10,7 +10,7 @@ var packageVar = "packageVar"
 
 func main() {
 	var wg sync.WaitGroup
-	hello("ahmed")
+	hello([]string{"ahmed"})
 	fmt.Println(packageVar)
 
 	wg.Add(2) // Wait for two workers
@@ -25,9 +25,9 @@ func main() {
 	fmt.Println(workAfterWorker)
 }
 
-func hello(personName string) {
+func hello(personsName []string) {
 	greeting := "Hello, World!"
-	fmt.Printf("%s %s\n", greeting, personName)
+	fmt.Printf("%s %s\n", greeting, personsName[0])
 }
 
 func work(i int, wg *sync.WaitGroup) {

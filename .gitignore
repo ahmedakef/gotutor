@@ -4,7 +4,7 @@ gotutor
 .idea/*
 bin
 source_debug
-steps.json
+./steps.json
 __debug_bin*
 frontend/elm-stuff/*
 .DS_Store

@@ -1,5 +1,6 @@
 module Steps.Decoder exposing (..)
 
+import Css.Global exposing (children)
 import Json.Decode exposing (..)
 import Json.Decode.Field as Field
 
@@ -28,22 +29,24 @@ type alias Goroutine =
     }
 
 
-type alias Variable =
-    { name : String
-    , addr : Int
-    , onlyAddr : Bool
-    , type_ : String
-    , realType : String
-    , flags : Int
-    , kind : Int
-    , value : String
-    , len : Int
-    , cap : Int
-    , base : Int
-    , unreadable : String
-    , locationExpr : String
-    , declLine : Int
-    }
+type Variable
+    = VariableI
+        { name : String
+        , addr : Int
+        , onlyAddr : Bool
+        , type_ : String
+        , realType : String
+        , flags : Int
+        , kind : Int
+        , value : String
+        , len : Int
+        , cap : Int
+        , children : List Variable
+        , base : Int
+        , unreadable : String
+        , locationExpr : String
+        , declLine : Int
+        }
 
 
 type alias Step =
@@ -100,32 +103,37 @@ variableDecoder =
                                                                 \value ->
                                                                     Field.require "len" int <|
                                                                         \len ->
-                                                                            Field.require "cap" int <|
-                                                                                \cap ->
-                                                                                    Field.require "base" int <|
-                                                                                        \base ->
-                                                                                            Field.require "unreadable" string <|
-                                                                                                \unreadable ->
-                                                                                                    Field.require "LocationExpr" string <|
-                                                                                                        \locationExpr ->
-                                                                                                            Field.require "DeclLine" int <|
-                                                                                                                \declLine ->
-                                                                                                                    Json.Decode.succeed
-                                                                                                                        { name = name
-                                                                                                                        , addr = addr
-                                                                                                                        , onlyAddr = onlyAddr
-                                                                                                                        , type_ = type_
-                                                                                                                        , realType = realType
-                                                                                                                        , flags = flags
-                                                                                                                        , kind = kind
-                                                                                                                        , value = value
-                                                                                                                        , len = len
-                                                                                                                        , cap = cap
-                                                                                                                        , base = base
-                                                                                                                        , unreadable = unreadable
-                                                                                                                        , locationExpr = locationExpr
-                                                                                                                        , declLine = declLine
-                                                                                                                        }
+                                                                            Field.require "children" (list variableDecoder) <|
+                                                                                \children ->
+                                                                                    Field.require "cap" int <|
+                                                                                        \cap ->
+                                                                                            Field.require "base" int <|
+                                                                                                \base ->
+                                                                                                    Field.require "unreadable" string <|
+                                                                                                        \unreadable ->
+                                                                                                            Field.require "LocationExpr" string <|
+                                                                                                                \locationExpr ->
+                                                                                                                    Field.require "DeclLine" int <|
+                                                                                                                        \declLine ->
+                                                                                                                            Json.Decode.succeed
+                                                                                                                                (VariableI
+                                                                                                                                    { name = name
+                                                                                                                                    , addr = addr
+                                                                                                                                    , onlyAddr = onlyAddr
+                                                                                                                                    , type_ = type_
+                                                                                                                                    , realType = realType
+                                                                                                                                    , flags = flags
+                                                                                                                                    , kind = kind
+                                                                                                                                    , value = value
+                                                                                                                                    , len = len
+                                                                                                                                    , cap = cap
+                                                                                                                                    , children = children
+                                                                                                                                    , base = base
+                                                                                                                                    , unreadable = unreadable
+                                                                                                                                    , locationExpr = locationExpr
+                                                                                                                                    , declLine = declLine
+                                                                                                                                    }
+                                                                                                                                )
 
 
 type alias StackFrame =

@@ -1,6 +1,8 @@
 module Steps.View exposing (..)
 
+import Char
 import Css
+import Css.Global exposing (children)
 import Html as UnSytyled
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
@@ -156,12 +158,48 @@ wrapCode code =
 
 
 varView : Variable -> Html msg
-varView packageVar =
-    li []
-        [ div []
-            [ div [] [ text <| packageVar.name ++ " = " ++ "{" ++ packageVar.type_ ++ "}  " ++ packageVar.value ]
-            ]
-        ]
+varView v =
+    case v of
+        VariableI var ->
+            let
+                value =
+                    case var.type_ of
+                        "string" ->
+                            "\"" ++ var.value ++ "\""
+
+                        _ ->
+                            var.value
+
+                children =
+                    if String.startsWith "[]" var.type_ then
+                        var.children
+                            |> List.indexedMap
+                                (\i child ->
+                                    case child of
+                                        VariableI vI ->
+                                            VariableI { vI | name = "[" ++ String.fromInt i ++ "]" ++ vI.name }
+                                )
+
+                    else
+                        var.children
+                            |> List.filter
+                                -- only show exported fields
+                                (\child ->
+                                    case child of
+                                        VariableI vI ->
+                                            String.uncons vI.name
+                                                |> Maybe.map (\( firstChar, _ ) -> Char.isUpper firstChar)
+                                                |> Maybe.withDefault False
+                                )
+            in
+            li []
+                [ p []
+                    [ text <| var.name ++ " = "
+                    , span [ css [ Css.color (Css.hex "979494") ] ] [ text <| "{" ++ var.type_ ++ "}  " ]
+                    , text value
+                    , ul [ css [ Css.listStyleType Css.none ] ] (List.map varView children)
+                    ]
+                ]
 
 
 varsView : String -> Maybe (List Variable) -> Html msg
@@ -177,7 +215,7 @@ varsView title maybeVars =
             else
                 div []
                     [ h3 [] [ text title ]
-                    , ul [] (List.map varView vars)
+                    , ul [ css [ Css.listStyleType Css.none ] ] (List.map varView vars)
                     ]
 
 
