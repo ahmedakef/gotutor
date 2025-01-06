@@ -155,33 +155,36 @@ wrapCode code =
     "```go\n" ++ code ++ "\n```"
 
 
-packageVarsView : List Variable -> Html msg
-packageVarsView packageVars =
-    if List.isEmpty packageVars then
-        div [] []
-
-    else
-        div []
-            [ h2 []
-                [ text "Package Variables"
-                ]
-            , div [] (List.map packageVarView packageVars)
+varView : Variable -> Html msg
+varView packageVar =
+    li []
+        [ div []
+            [ div [] [ text <| packageVar.name ++ " = " ++ "{" ++ packageVar.type_ ++ "}  " ++ packageVar.value ]
             ]
-
-
-packageVarView : Variable -> Html msg
-packageVarView packageVar =
-    div []
-        [ div [] [ text ("Name: " ++ packageVar.name) ]
-        , div [] [ text ("Type: " ++ packageVar.type_) ]
-        , div [] [ text ("Value: " ++ packageVar.value) ]
         ]
+
+
+varsView : String -> Maybe (List Variable) -> Html msg
+varsView title maybeVars =
+    case maybeVars of
+        Nothing ->
+            div [] []
+
+        Just vars ->
+            if List.isEmpty vars then
+                div [] []
+
+            else
+                div []
+                    [ h3 [] [ text title ]
+                    , ul [] (List.map varView vars)
+                    ]
 
 
 programVisualizer : VisualizeState -> Html Msg
 programVisualizer state =
     div []
-        [ packageVarsView state.packageVars
+        [ varsView "Global Variables:" (Just state.packageVars)
         , goroutineView state.lastStep
         , stackView state.stack
         ]
@@ -203,12 +206,36 @@ stackView stack =
 
 frameView : StackFrame -> Html Msg
 frameView frame =
+    let
+        fileName =
+            String.split "/" frame.file
+                |> List.reverse
+                |> List.head
+                |> Maybe.withDefault frame.file
+    in
     div [ css borderStyle, onMouseEnter (Highlight frame.line), onMouseLeave (Unhighlight frame.line) ]
-        [ div [] [ text <| frame.function.name ]
+        [ div [] [ text <| removeMainPrefix frame.function.name ]
         , hr [] []
-        , div [] [ text <| "File: " ++ frame.file ]
-        , div [] [ text <| "Line: " ++ String.fromInt frame.line ]
+        , div [] [ text <| "Loc: " ++ fileName ++ ":" ++ String.fromInt frame.line ]
+        , varsView "arguments:" frame.arguments
+        , varsView "locals:" frame.locals
         ]
+
+
+removeMainPrefix : String -> String
+removeMainPrefix str =
+    let
+        prefix =
+            "main."
+
+        prefixLength =
+            String.length prefix
+    in
+    if String.startsWith prefix str then
+        String.dropLeft prefixLength str
+
+    else
+        str
 
 
 goroutineView : Maybe Step -> Html msg
