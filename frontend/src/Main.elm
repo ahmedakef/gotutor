@@ -2,6 +2,7 @@ module Main exposing (..)
 
 import Browser
 import Browser.Navigation as Nav
+import Css
 import Html.Styled as Html exposing (..)
 import Html.Styled.Attributes exposing (..)
 import Steps.Steps as Steps
@@ -114,6 +115,7 @@ view model =
                 , inlineCss Styles.requiredShStyles
                 , navigation
                 , Html.map StepsMsg (StepsView.view model.state)
+                , pageFooter
                 ]
     in
     { title = title
@@ -123,11 +125,35 @@ view model =
 
 navigation : Html msg
 navigation =
-    div [ css [ Styles.container, Styles.flexCenter ] ]
+    header [ css [ Styles.container, Styles.flexCenter, Css.borderBottom3 (Css.px 1) Css.solid (Css.hex "ddd") ] ]
         [ horizontalUL
-            [ viewLink "home"
-            , viewLink "about"
+            [ viewLink "About" "#about" "_self"
+            , viewLink "Github" "https://github.com/ahmedakef/gotutor" "_blank"
             ]
+        ]
+
+
+pageFooter : Html msg
+pageFooter =
+    footer
+        [ id "about"
+        , css
+            [ Css.borderTop3 (Css.px 1) Css.solid (Css.hex "ddd")
+            , Css.paddingTop (Css.px 20)
+            , Css.paddingLeft (Css.px 20)
+            ]
+        ]
+        [ text "Gotutor is a trial to show program execution steps."
+        , br [] []
+        , text "It's very welcomed to help by contributing to the project."
+        , br [] []
+        , text "the project only shows the main Goroutine now as descriped in "
+        , a [ href "https://github.com/ahmedakef/gotutor?tab=readme-ov-file#limitations", css [ Css.textDecoration Css.none ] ] [ text "Limitations" ]
+        , text "."
+        , br [] []
+        , text "copyright © 2024 by "
+        , a [ href "https://www.linkedin.com/in/ahmedakef4/", css [ Css.textDecoration Css.none ] ] [ text "Ahmed Akef" ]
+        , text "."
         ]
 
 
@@ -137,9 +163,15 @@ horizontalUL items =
         (List.map (\item -> li [ css [ Styles.horizontalLiStyle ] ] [ item ]) items)
 
 
-viewLink : String -> Html msg
-viewLink path =
-    a [ href ("/" ++ path), css [ Styles.navItems ] ] [ text path ]
+viewLink : String -> String -> String -> Html msg
+viewLink content link targetPage =
+    a
+        [ href link
+        , target targetPage
+        , css [ Styles.navItems ]
+        ]
+        [ text content
+        ]
 
 
 inlineCss : String -> Html msg

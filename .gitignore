@@ -12,3 +12,4 @@ frontend/elm-stuff/*
 frontend/index.html
 frontend/main.txt
 frontend/src/main.js
+frontend/compiledJs/*

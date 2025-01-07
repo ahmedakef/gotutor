@@ -3,6 +3,7 @@ module Steps.View exposing (..)
 import Char
 import Css
 import Css.Global exposing (children)
+import Helpers.Hex
 import Html as UnSytyled
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
@@ -24,37 +25,33 @@ view state =
             div []
                 [ div [ css [ Styles.container ] ]
                     [ div [ css [ Styles.flexColumn ] ]
-                        [ h1 [] [ text "Steps of your Go Program:" ]
+                        [ h1 [] [ text "Visualize your Go Program:" ]
                         ]
                     ]
                 , div [ css [ Styles.container ] ]
-                    [ div [ css [ Styles.flexColumn, Styles.flexCenter ] ]
-                        [ div []
-                            [ codeView visualizeState
-                            , div [ css [ Styles.flexCenter, Css.margin2 (Css.px 20) (Css.px 0) ] ]
+                    [ div [ css [ Css.displayFlex, Styles.flexColumn, Styles.flexCenter ] ]
+                        [ codeView visualizeState
+                        , div [ css [ Css.displayFlex, Styles.flexCenter, Css.margin2 (Css.px 20) (Css.px 0) ] ]
+                            [ div []
                                 [ div []
-                                    [ div []
-                                        [ input
-                                            [ type_ "range"
-                                            , Html.Styled.Attributes.min "0"
-                                            , Html.Styled.Attributes.max (String.fromInt (List.length stepsState.steps))
-                                            , Html.Styled.Attributes.value (String.fromInt stepsState.position)
-                                            , onInput (String.toInt >> Maybe.withDefault 0 >> SliderChange)
-                                            ]
-                                            []
+                                    [ input
+                                        [ type_ "range"
+                                        , Html.Styled.Attributes.min "0"
+                                        , Html.Styled.Attributes.max (String.fromInt (List.length stepsState.steps))
+                                        , Html.Styled.Attributes.value (String.fromInt stepsState.position)
+                                        , onInput (String.toInt >> Maybe.withDefault 0 >> SliderChange)
                                         ]
-                                    , button [ onClick Prev, css [ buttonStyle, Css.margin4 (Css.px 0) (Css.px 10) (Css.px 0) (Css.px 0) ] ] [ text "< Prev" ]
-                                    , button [ onClick Next, css [ buttonStyle ] ] [ text "Next >" ]
+                                        []
                                     ]
-                                , div [ css [ Css.margin2 (Css.px 10) (Css.px 0) ] ]
-                                    [ text ("Step " ++ String.fromInt stepsState.position ++ " of " ++ (List.length stepsState.steps |> String.fromInt))
-                                    ]
+                                , button [ onClick Prev, css [ buttonStyle, Css.marginRight (Css.px 10) ] ] [ text "< Prev" ]
+                                , button [ onClick Next, css [ buttonStyle, Css.marginLeft (Css.px 10) ] ] [ text "Next >" ]
+                                ]
+                            , div [ css [ Css.margin2 (Css.px 10) (Css.px 0) ] ]
+                                [ text ("Step " ++ String.fromInt stepsState.position ++ " of " ++ (List.length stepsState.steps |> String.fromInt))
                                 ]
                             ]
                         ]
-                    , div [ css [ Styles.flexColumn ] ]
-                        [ programVisualizer visualizeState
-                        ]
+                    , div [ css [ Css.displayFlex, Styles.flexColumn, Styles.flexCenter ] ] [ programVisualizer visualizeState ]
                     ]
                 ]
 
@@ -199,8 +196,10 @@ varView v =
                           else
                             css []
                         ]
-                        [ text <| var.name ++ " = "
-                        , span [ css [ Css.color (Css.hex "979494") ] ] [ text <| "{" ++ var.type_ ++ "}  " ]
+                        [ text <| removeMainPrefix var.name ++ " = "
+                        , span [ css [ Css.color (Css.hex "979494") ] ]
+                            [ text <| "{" ++ var.type_ ++ " | " ++ (var.addr |> Helpers.Hex.intToHex |> String.slice 0 8) ++ "}  "
+                            ]
                         , text value
                         ]
                     , ul [ css [ Css.listStyleType Css.none ] ] (List.map varView children)
@@ -229,9 +228,19 @@ varsView title maybeVars attributes =
 
 programVisualizer : VisualizeState -> Html Msg
 programVisualizer state =
-    div []
-        [ varsView "Global Variables:" (Just state.packageVars) [ css [ Styles.marginBottom 10 ] ]
-        , goroutineView state.lastStep
+    div
+        [ css
+            [ Css.border3 (Css.px 1) Css.solid (Css.hex "ddd")
+            , Css.borderRadius (Css.px 5)
+            , Css.padding2 (Css.px 10) (Css.px 50)
+            , Css.width (Css.pct 80)
+            ]
+        ]
+        [ goroutineView state.lastStep
+        , varsView
+            "Global Variables:"
+            (Just state.packageVars)
+            [ css [ Css.marginBottom (Css.px 10) ] ]
         , stackView state.stack
         ]
 
@@ -245,7 +254,7 @@ stackView stack =
         details [ attribute "open" "" ]
             [ summary []
                 [ b []
-                    [ text "Stacktrace"
+                    [ text "Stacktrace:"
                     ]
                 ]
             , ul [ css [ Css.listStyleType Css.none ] ]
@@ -260,7 +269,7 @@ stackView stack =
                                                 [ arrow
                                                 , up
                                                 , Css.position Css.relative
-                                                , Css.left (Css.pct 25)
+                                                , Css.left (Css.pct 50)
                                                 ]
                                             ]
                                             []
@@ -289,15 +298,14 @@ frameView frame =
     div
         [ css
             [ borderStyle
-            , Css.width (Css.pct 50)
             , Css.backgroundColor (Css.hex "f2f0ec")
             ]
         , onMouseEnter (Highlight frame.line)
         , onMouseLeave (Unhighlight frame.line)
         ]
-        [ div [ css [ Styles.flexCenter ] ] [ b [] [ text <| removeMainPrefix frame.function.name ] ]
-        , div [ css [ Css.margin3 (Css.px 0) (Css.px 0) (Css.px 10) ] ] [ b [] [ text "Loc: " ], text <| fileName ++ ":" ++ String.fromInt frame.line ]
-        , varsView "arguments:" frame.arguments [ css [ Styles.marginBottom 10 ] ]
+        [ div [ css [ Css.displayFlex, Styles.flexCenter ] ] [ b [] [ text <| removeMainPrefix frame.function.name ] ]
+        , div [ css [ Css.margin3 (Css.px 0) (Css.px 0) (Css.px 3) ] ] [ b [] [ text "Loc: " ], text <| fileName ++ ":" ++ String.fromInt frame.line ]
+        , varsView "arguments:" frame.arguments [ css [ Css.marginBottom (Css.px 10) ] ]
         , varsView "locals:" frame.locals []
         ]
 
@@ -320,23 +328,22 @@ removeMainPrefix str =
 
 goroutineView : Maybe Step -> Html msg
 goroutineView maybeStep =
-    case maybeStep of
-        Nothing ->
-            div [] []
+    let
+        gInfo =
+            case maybeStep of
+                Nothing ->
+                    "Program did not start yet"
 
-        Just step ->
-            details [ attribute "open" "", css [ Css.margin3 (Css.px 0) (Css.px 0) (Css.px 10) ] ]
-                [ summary []
-                    [ b [] [ text "Goroutine Info:" ]
-                    ]
-                , div [ css [ Css.margin3 (Css.px 10) (Css.px 0) (Css.px 0) ] ]
-                    [ ul [ css [ Css.listStyleType Css.none ] ]
-                        [ li []
-                            [ text <| "ID: " ++ String.fromInt step.goroutine.id
-                            ]
-                        ]
-                    ]
-                ]
+                Just step ->
+                    if step.goroutine.id == 1 then
+                        "Main Goroutine"
+
+                    else
+                        "Goroutine: " ++ String.fromInt step.goroutine.id
+    in
+    div [ css [ Css.displayFlex, Styles.flexCenter, Css.marginBottom (Css.px 10) ] ]
+        [ b [] [ text gInfo ]
+        ]
 
 
 borderStyle : Css.Style
@@ -344,7 +351,7 @@ borderStyle =
     Css.batch
         [ Css.border3 (Css.px 1) Css.solid (Css.hex "ccc")
         , Css.padding (Css.px 10)
-        , Css.margin3 (Css.px 0) (Css.px 0) (Css.px 10)
+        , Css.marginBottom (Css.px 10)
         , Css.borderRadius (Css.px 15)
         ]
 

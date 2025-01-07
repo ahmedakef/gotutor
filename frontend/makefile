@@ -1,2 +1,2 @@
 build:
-	elm make src/Main.elm --output=src/main.js
+	./optimize.sh src/Main.elm

@@ -38,8 +38,7 @@ flexColumn =
 flexCenter : Css.Style
 flexCenter =
     Css.batch
-        [ displayFlex
-        , alignItems center
+        [ alignItems center
         , flexDirection column
         ]
 
@@ -51,6 +50,7 @@ horizontalUlStyle =
         , padding (px 0)
         , margin (px 0)
         , displayFlex
+        , fontSize (px 20)
         ]
 
 
@@ -58,6 +58,10 @@ horizontalLiStyle : Css.Style
 horizontalLiStyle =
     Css.batch
         [ marginRight (px 20)
+        , padding (px 5)
+        , borderRadius (px 5)
+        , hover
+            [ backgroundColor (hex "f5f5f5") ]
         ]
 
 
@@ -69,9 +73,9 @@ navItems =
         ]
 
 
-marginBottom : Float -> Css.Style
-marginBottom v =
-    margin3 (px 0) (px 0) (px v)
+noMargin : Css.Style
+noMargin =
+    margin (px 0)
 
 
 requiredShStyles : String
@@ -108,9 +112,9 @@ code.elmsh {
     opacity: 0.3;
 }
 .elmsh-add {
-    background-color: #ddffdd;
+    background-color: #b3e0b3;
     }
 .elmsh-hl {
-    background-color:rgb(220, 229, 239);
+    background-color:#dce5ef;
     }
     """

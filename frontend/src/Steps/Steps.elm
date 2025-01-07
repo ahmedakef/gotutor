@@ -26,7 +26,7 @@ type Msg
 getSteps : Cmd Msg
 getSteps =
     Http.get
-        { url = "http://localhost:8000/example/steps.json"
+        { url = "/example/steps.json"
         , expect = Http.expectJson GotSteps stepsDecoder
         }
 
@@ -34,7 +34,7 @@ getSteps =
 getSourceCode : Cmd Msg
 getSourceCode =
     Http.get
-        { url = "http://localhost:8000/example/main.txt"
+        { url = "/example/main.txt"
         , expect = Http.expectString GotSourceCode
         }
 

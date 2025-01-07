@@ -6,8 +6,6 @@ import (
 
 type Step struct {
 	Goroutine        *api.Goroutine
-	Variables        []api.Variable
-	Args             []api.Variable
 	PackageVariables []api.Variable
 	Stacktrace       []api.Stackframe
 }

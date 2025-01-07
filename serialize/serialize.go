@@ -119,21 +119,6 @@ func (v *Serializer) goToNextLine(ctx context.Context, goroutine *api.Goroutine)
 }
 
 func (v *Serializer) buildStep(ctx context.Context, debugState *api.DebuggerState) (Step, error) {
-	variables, err := v.client.ListLocalVariables(ctx,
-		api.EvalScope{GoroutineID: debugState.SelectedGoroutine.ID},
-		api.LoadConfig{},
-	)
-	if err != nil {
-		v.logger.Info().Msg(fmt.Sprintf("debugState: %#v", debugState))
-		return Step{}, fmt.Errorf("ListLocalVariables: %w", err)
-	}
-	args, err := v.client.ListFunctionArgs(ctx,
-		api.EvalScope{GoroutineID: debugState.SelectedGoroutine.ID},
-		api.LoadConfig{},
-	)
-	if err != nil {
-		return Step{}, fmt.Errorf("ListFunctionArgs: %w", err)
-	}
 
 	packageVars, err := v.client.ListPackageVariables(ctx,
 		"^main.",
@@ -149,8 +134,6 @@ func (v *Serializer) buildStep(ctx context.Context, debugState *api.DebuggerStat
 	}
 	return Step{
 		Goroutine:        debugState.SelectedGoroutine,
-		Variables:        variables,
-		Args:             args,
 		PackageVariables: packageVars,
 		Stacktrace:       stacktrace,
 	}, nil
