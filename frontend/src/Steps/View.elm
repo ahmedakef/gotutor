@@ -192,7 +192,13 @@ varView v =
             in
             li []
                 [ details []
-                    [ summary []
+                    [ summary
+                        [ if List.isEmpty children then
+                            css [ Css.listStyle Css.none ]
+
+                          else
+                            css []
+                        ]
                         [ text <| var.name ++ " = "
                         , span [ css [ Css.color (Css.hex "979494") ] ] [ text <| "{" ++ var.type_ ++ "}  " ]
                         , text value
@@ -244,7 +250,29 @@ stackView stack =
                 ]
             , ul [ css [ Css.listStyleType Css.none ] ]
                 (List.map frameView stack
-                    |> List.map (\element -> li [] [ element ])
+                    |> List.indexedMap
+                        (\idx element ->
+                            li []
+                                ((if idx > 0 then
+                                    [ div [ css [] ]
+                                        [ i
+                                            [ css
+                                                [ arrow
+                                                , up
+                                                , Css.position Css.relative
+                                                , Css.left (Css.pct 25)
+                                                ]
+                                            ]
+                                            []
+                                        ]
+                                    ]
+
+                                  else
+                                    []
+                                 )
+                                    ++ [ element ]
+                                )
+                        )
                 )
             ]
 
@@ -327,4 +355,21 @@ buttonStyle =
         [ Css.backgroundColor (Css.hex "f2f0ec")
         , Css.border3 (Css.px 1) Css.solid (Css.hex "ccc")
         , Css.padding (Css.px 5)
+        ]
+
+
+arrow : Css.Style
+arrow =
+    Css.batch
+        [ Css.border3 (Css.px 0) Css.solid (Css.hex "979494")
+        , Css.borderWidth4 (Css.px 0) (Css.px 3) (Css.px 3) (Css.px 0)
+        , Css.display Css.inlineBlock
+        , Css.padding (Css.px 3)
+        ]
+
+
+up : Css.Style
+up =
+    Css.batch
+        [ Css.transform (Css.rotate (Css.deg -135))
         ]
