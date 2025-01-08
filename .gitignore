@@ -9,4 +9,4 @@ __debug_bin*
 .DS_Store
 */.DS_Store
 frontend/elm-stuff/*
-rontend/compiledJs/*
+frontend/src/compiledJs/*
