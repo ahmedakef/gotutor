@@ -22,7 +22,7 @@ view state =
                 visualizeState =
                     stateToVisualize stepsState
             in
-            div []
+            Html.Styled.main_ []
                 [ div [ css [ Styles.container ] ]
                     [ div [ css [ Styles.flexColumn ] ]
                         [ h1 [] [ text "Visualize your Go Program:" ]

@@ -16,7 +16,19 @@ globalStyles =
         [ Css.Global.body
             [ backgroundColor (hex "FAFAFA")
             , color (hex "484848")
+            , fullHeight
             ]
+        , Css.Global.html
+            [ fullHeight
+            ]
+        ]
+
+
+fullHeight : Css.Style
+fullHeight =
+    batch
+        [ Css.height (pct 100)
+        , margin (px 0)
         ]
 
 

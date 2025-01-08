@@ -6,10 +6,7 @@ bin
 source_debug
 ./steps.json
 __debug_bin*
-frontend/elm-stuff/*
 .DS_Store
 */.DS_Store
-frontend/index.html
-frontend/main.txt
-frontend/src/main.js
-frontend/compiledJs/*
+frontend/elm-stuff/*
+rontend/compiledJs/*

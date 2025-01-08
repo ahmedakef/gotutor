@@ -141,6 +141,9 @@ pageFooter =
             [ Css.borderTop3 (Css.px 1) Css.solid (Css.hex "ddd")
             , Css.paddingTop (Css.px 20)
             , Css.paddingLeft (Css.px 20)
+            , Css.paddingBottom (Css.px 10)
+            , Css.position Css.absolute
+            , Css.bottom (Css.px 0)
             ]
         ]
         [ text "Gotutor is a trial to show program execution steps."
