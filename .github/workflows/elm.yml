@@ -45,6 +45,10 @@ jobs:
 
       - name: Compile to JS
         run: make -C frontend/
+
+      - name: Move example to root
+        run: cp frontend/example frontend/src
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
