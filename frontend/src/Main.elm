@@ -110,7 +110,7 @@ view model =
             "Go tutor"
 
         body =
-            div [ css [ Styles.container, Styles.flexCenter, Css.minHeight (Css.vh 100) ] ]
+            div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.minHeight (Css.vh 100) ] ]
                 [ Styles.globalStyles
                 , inlineCss Styles.requiredShStyles
                 , navigation

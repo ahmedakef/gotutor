@@ -7,4 +7,4 @@ updateExample:
 	jq . steps.json > steps_formatted.json
 	mv steps_formatted.json steps.json
 	cp steps.json frontend/example
-	cp example/main.go frontend/example
+	cp example/main.go frontend/example.txt

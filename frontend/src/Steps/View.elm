@@ -16,20 +16,16 @@ import SyntaxHighlight as SH
 
 view : State -> Html Msg
 view state =
-    main_ [ css [ Styles.container, Css.flexWrap Css.wrap, Css.alignItems Css.center, Css.flex (Css.num 1) ] ]
-        (case state of
-            Success stepsState ->
-                let
-                    visualizeState =
-                        stateToVisualize stepsState
-                in
-                [ div [ css [ Styles.container ] ]
-                    [ div [ css [ Styles.flexColumn ] ]
-                        [ h1 [] [ text "Visualize your Go Program:" ]
-                        ]
-                    ]
+    case state of
+        Success stepsState ->
+            let
+                visualizeState =
+                    stateToVisualize stepsState
+            in
+            main_ [ css [ Css.flex (Css.num 1) ] ]
+                [ div [ css [ Css.paddingLeft (Css.px 10) ] ] [ h1 [] [ text "Visualize your Go Program:" ] ]
                 , div [ css [ Styles.container ] ]
-                    [ div [ css [ Css.displayFlex, Styles.flexColumn, Styles.flexCenter ] ]
+                    [ div [ css [ Css.displayFlex, Css.flex (Css.num 1), Styles.flexCenter ] ]
                         [ codeView visualizeState
                         , div [ css [ Css.displayFlex, Styles.flexCenter, Css.margin2 (Css.px 20) (Css.px 0) ] ]
                             [ div []
@@ -51,16 +47,19 @@ view state =
                                 ]
                             ]
                         ]
-                    , div [ css [ Css.displayFlex, Styles.flexColumn, Styles.flexCenter ] ] [ programVisualizer visualizeState ]
+                    , div [ css [ Css.displayFlex, Css.flex (Css.num 1), Styles.flexCenter ] ] [ programVisualizer visualizeState ]
                     ]
                 ]
 
-            Failure error ->
-                [ pre [ css [ Css.color (Css.hex "#d65287"), Css.fontSize (Css.px 20) ] ] [ text error ] ]
+        Failure error ->
+            main_ [ css [ Css.flex (Css.num 1), Styles.container, Css.justifyContent Css.center, Css.alignItems Css.center ] ]
+                [ pre [ css [ Css.color (Css.hex "#d65287"), Css.fontSize (Css.px 20) ] ] [ text error ]
+                ]
 
-            Loading ->
-                [ pre [ css [ Css.fontSize (Css.px 20) ] ] [ text "Loading..." ] ]
-        )
+        Loading ->
+            main_ [ css [ Css.flex (Css.num 1), Styles.container, Css.justifyContent Css.center, Css.alignItems Css.center ] ]
+                [ pre [ css [ Css.fontSize (Css.px 20) ] ] [ text "Loading..." ]
+                ]
 
 
 type alias VisualizeState =

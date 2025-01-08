@@ -39,14 +39,6 @@ container =
         ]
 
 
-flexColumn : Css.Style
-flexColumn =
-    Css.batch
-        [ flex (num 1)
-        , padding (px 10)
-        ]
-
-
 flexCenter : Css.Style
 flexCenter =
     Css.batch
