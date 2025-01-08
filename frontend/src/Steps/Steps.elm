@@ -72,7 +72,7 @@ update msg state =
                             ( Success { successState | steps = steps }, Cmd.none )
 
                         Err err ->
-                            ( Failure (err |> HttpHelper.errorToString), Cmd.none )
+                            ( Failure ("error while getting program execution steps" ++ HttpHelper.errorToString err), Cmd.none )
 
                 GotSourceCode sourceCodeResult ->
                     case sourceCodeResult of
@@ -80,7 +80,7 @@ update msg state =
                             ( Success { successState | sourceCode = sourceCode }, Cmd.none )
 
                         Err err ->
-                            ( Failure (err |> HttpHelper.errorToString), Cmd.none )
+                            ( Failure ("error while reading program source code" ++ HttpHelper.errorToString err), Cmd.none )
 
                 Next ->
                     if successState.position + 1 > List.length successState.steps then
