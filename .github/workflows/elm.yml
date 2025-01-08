@@ -47,7 +47,7 @@ jobs:
         run: make -C frontend/
 
       - name: Move example to root
-        run: cp frontend/example frontend/src
+        run: cp -r frontend/example frontend/src
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
