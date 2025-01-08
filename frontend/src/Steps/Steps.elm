@@ -116,7 +116,7 @@ update msg state =
                             ( Success (StepsState steps 0 "" Nothing), getSourceCode )
 
                         Err err ->
-                            ( Failure (err |> HttpHelper.errorToString), Cmd.none )
+                            ( Failure ("error while getting program execution steps" ++ HttpHelper.errorToString err), Cmd.none )
 
                 GotSourceCode sourceCodeResult ->
                     case sourceCodeResult of
@@ -124,7 +124,7 @@ update msg state =
                             ( Success (StepsState [] 0 sourceCode Nothing), Cmd.none )
 
                         Err err ->
-                            ( Failure (err |> HttpHelper.errorToString), Cmd.none )
+                            ( Failure ("error while reading program source code" ++ HttpHelper.errorToString err), Cmd.none )
 
                 Next ->
                     ( state, Cmd.none )
