@@ -31,7 +31,17 @@ jobs:
           elm-version: 0.19.1
 
       - name: Setup uglifyjs
-        run: npm install uglify-js
+        run: npm install uglify-js --global
 
       - name: Compile to JS
         run: make -C frontend/
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "frontend/"
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
