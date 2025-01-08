@@ -32,21 +32,6 @@ fullHeight =
         ]
 
 
-container : Css.Style
-container =
-    Css.batch
-        [ displayFlex
-        ]
-
-
-flexCenter : Css.Style
-flexCenter =
-    Css.batch
-        [ alignItems center
-        , flexDirection column
-        ]
-
-
 horizontalUlStyle : Css.Style
 horizontalUlStyle =
     Css.batch

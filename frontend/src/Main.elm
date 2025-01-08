@@ -125,7 +125,7 @@ view model =
 
 navigation : Html msg
 navigation =
-    header [ css [ Styles.container, Css.width (Css.pct 100), Styles.flexCenter, Css.borderBottom3 (Css.px 1) Css.solid (Css.hex "ddd") ] ]
+    header [ css [ Css.displayFlex, Css.width (Css.pct 100), Css.flexDirection Css.column, Css.alignItems Css.center, Css.borderBottom3 (Css.px 1) Css.solid (Css.hex "ddd") ] ]
         [ horizontalUL
             [ viewLink "About" "#about" "_self"
             , viewLink "Github" "https://github.com/ahmedakef/gotutor" "_blank"

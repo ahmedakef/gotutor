@@ -22,12 +22,12 @@ view state =
                 visualizeState =
                     stateToVisualize stepsState
             in
-            main_ [ css [ Css.flex (Css.num 1) ] ]
+            main_ [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.flex (Css.num 1), Css.paddingTop (Css.vh 5) ] ]
                 [ div [ css [ Css.paddingLeft (Css.px 10) ] ] [ h1 [] [ text "Visualize your Go Program:" ] ]
-                , div [ css [ Styles.container ] ]
-                    [ div [ css [ Css.displayFlex, Css.flex (Css.num 1), Styles.flexCenter ] ]
+                , div [ css [ Css.displayFlex, Css.flex (Css.num 1) ] ]
+                    [ div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.alignItems Css.center, Css.flex (Css.num 1) ] ]
                         [ codeView visualizeState
-                        , div [ css [ Css.displayFlex, Styles.flexCenter, Css.margin2 (Css.px 20) (Css.px 0) ] ]
+                        , div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.margin2 (Css.px 20) (Css.px 0) ] ]
                             [ div []
                                 [ div []
                                     [ input
@@ -47,17 +47,17 @@ view state =
                                 ]
                             ]
                         ]
-                    , div [ css [ Css.displayFlex, Css.flex (Css.num 1), Styles.flexCenter ] ] [ programVisualizer visualizeState ]
+                    , div [ css [ Css.displayFlex, Css.flex (Css.num 1), Css.flexDirection Css.column, Css.alignItems Css.center ] ] [ programVisualizer visualizeState ]
                     ]
                 ]
 
         Failure error ->
-            main_ [ css [ Css.flex (Css.num 1), Styles.container, Css.justifyContent Css.center, Css.alignItems Css.center ] ]
+            main_ [ css [ Css.flex (Css.num 1), Css.displayFlex, Css.justifyContent Css.center, Css.alignItems Css.center ] ]
                 [ pre [ css [ Css.color (Css.hex "#d65287"), Css.fontSize (Css.px 20) ] ] [ text error ]
                 ]
 
         Loading ->
-            main_ [ css [ Css.flex (Css.num 1), Styles.container, Css.justifyContent Css.center, Css.alignItems Css.center ] ]
+            main_ [ css [ Css.flex (Css.num 1), Css.displayFlex, Css.justifyContent Css.center, Css.alignItems Css.center ] ]
                 [ pre [ css [ Css.fontSize (Css.px 20) ] ] [ text "Loading..." ]
                 ]
 
@@ -303,7 +303,7 @@ frameView frame =
         , onMouseEnter (Highlight frame.line)
         , onMouseLeave (Unhighlight frame.line)
         ]
-        [ div [ css [ Css.displayFlex, Styles.flexCenter ] ] [ b [] [ text <| removeMainPrefix frame.function.name ] ]
+        [ div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.alignItems Css.center ] ] [ b [] [ text <| removeMainPrefix frame.function.name ] ]
         , div [ css [ Css.margin3 (Css.px 0) (Css.px 0) (Css.px 3) ] ] [ b [] [ text "Loc: " ], text <| fileName ++ ":" ++ String.fromInt frame.line ]
         , varsView "arguments:" frame.arguments [ css [ Css.marginBottom (Css.px 10) ] ]
         , varsView "locals:" frame.locals []
@@ -341,7 +341,7 @@ goroutineView maybeStep =
                     else
                         "Goroutine: " ++ String.fromInt step.goroutine.id
     in
-    div [ css [ Css.displayFlex, Styles.flexCenter, Css.marginBottom (Css.px 10) ] ]
+    div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.alignItems Css.center, Css.marginBottom (Css.px 10) ] ]
         [ b [] [ text gInfo ]
         ]
 
