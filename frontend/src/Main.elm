@@ -110,7 +110,7 @@ view model =
             "Go tutor"
 
         body =
-            div []
+            div [ css [ Styles.container, Styles.flexCenter, Css.minHeight (Css.vh 100) ] ]
                 [ Styles.globalStyles
                 , inlineCss Styles.requiredShStyles
                 , navigation
@@ -125,7 +125,7 @@ view model =
 
 navigation : Html msg
 navigation =
-    header [ css [ Styles.container, Styles.flexCenter, Css.borderBottom3 (Css.px 1) Css.solid (Css.hex "ddd") ] ]
+    header [ css [ Styles.container, Css.width (Css.pct 100), Styles.flexCenter, Css.borderBottom3 (Css.px 1) Css.solid (Css.hex "ddd") ] ]
         [ horizontalUL
             [ viewLink "About" "#about" "_self"
             , viewLink "Github" "https://github.com/ahmedakef/gotutor" "_blank"
@@ -137,26 +137,31 @@ pageFooter : Html msg
 pageFooter =
     footer
         [ id "about"
-        , css
-            [ Css.borderTop3 (Css.px 1) Css.solid (Css.hex "ddd")
-            , Css.paddingTop (Css.px 20)
-            , Css.paddingLeft (Css.px 20)
-            , Css.paddingBottom (Css.px 10)
-            , Css.position Css.absolute
-            , Css.bottom (Css.px 0)
-            ]
+        , css [ Css.width (Css.pct 100) ]
         ]
-        [ text "Gotutor is a trial to show program execution steps."
-        , br [] []
-        , text "It's very welcomed to help by contributing to the project."
-        , br [] []
-        , text "the project only shows the main Goroutine now as descriped in "
-        , a [ href "https://github.com/ahmedakef/gotutor?tab=readme-ov-file#limitations", css [ Css.textDecoration Css.none ] ] [ text "Limitations" ]
-        , text "."
-        , br [] []
-        , text "copyright © 2024 by "
-        , a [ href "https://www.linkedin.com/in/ahmedakef4/", css [ Css.textDecoration Css.none ] ] [ text "Ahmed Akef" ]
-        , text "."
+        [ div
+            [ css
+                [ Css.borderTop3
+                    (Css.px 1)
+                    Css.solid
+                    (Css.hex "ddd")
+                , Css.paddingTop (Css.px 20)
+                , Css.paddingLeft (Css.px 20)
+                , Css.paddingBottom (Css.px 10)
+                ]
+            ]
+            [ text "Gotutor is a trial to show program execution steps."
+            , br [] []
+            , text "It's very welcomed to help by contributing to the project."
+            , br [] []
+            , text "the project only shows the main Goroutine now as descriped in "
+            , a [ href "https://github.com/ahmedakef/gotutor?tab=readme-ov-file#limitations", css [ Css.textDecoration Css.none ] ] [ text "Limitations" ]
+            , text "."
+            , br [] []
+            , text "copyright © 2024 by "
+            , a [ href "https://www.linkedin.com/in/ahmedakef4/", css [ Css.textDecoration Css.none ] ] [ text "Ahmed Akef" ]
+            , text "."
+            ]
         ]
 
 

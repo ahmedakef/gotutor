@@ -72,7 +72,7 @@ update msg state =
                             ( Success { successState | steps = steps }, Cmd.none )
 
                         Err err ->
-                            ( Failure ("error while getting program execution steps" ++ HttpHelper.errorToString err), Cmd.none )
+                            ( Failure ("error while getting program execution steps: " ++ HttpHelper.errorToString err), Cmd.none )
 
                 GotSourceCode sourceCodeResult ->
                     case sourceCodeResult of
@@ -80,7 +80,7 @@ update msg state =
                             ( Success { successState | sourceCode = sourceCode }, Cmd.none )
 
                         Err err ->
-                            ( Failure ("error while reading program source code" ++ HttpHelper.errorToString err), Cmd.none )
+                            ( Failure ("error while reading program source code: " ++ HttpHelper.errorToString err), Cmd.none )
 
                 Next ->
                     if successState.position + 1 > List.length successState.steps then
@@ -116,7 +116,7 @@ update msg state =
                             ( Success (StepsState steps 0 "" Nothing), getSourceCode )
 
                         Err err ->
-                            ( Failure ("error while getting program execution steps" ++ HttpHelper.errorToString err), Cmd.none )
+                            ( Failure ("error while getting program execution steps: " ++ HttpHelper.errorToString err), Cmd.none )
 
                 GotSourceCode sourceCodeResult ->
                     case sourceCodeResult of
@@ -124,7 +124,7 @@ update msg state =
                             ( Success (StepsState [] 0 sourceCode Nothing), Cmd.none )
 
                         Err err ->
-                            ( Failure ("error while reading program source code" ++ HttpHelper.errorToString err), Cmd.none )
+                            ( Failure ("error while reading program source code: " ++ HttpHelper.errorToString err), Cmd.none )
 
                 Next ->
                     ( state, Cmd.none )

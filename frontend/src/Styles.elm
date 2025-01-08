@@ -69,7 +69,7 @@ horizontalUlStyle =
 horizontalLiStyle : Css.Style
 horizontalLiStyle =
     Css.batch
-        [ marginRight (px 20)
+        [ margin2 (px 0) (px 10)
         , padding (px 5)
         , borderRadius (px 5)
         , hover

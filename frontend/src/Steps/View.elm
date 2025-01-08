@@ -16,13 +16,13 @@ import SyntaxHighlight as SH
 
 view : State -> Html Msg
 view state =
-    case state of
-        Success stepsState ->
-            let
-                visualizeState =
-                    stateToVisualize stepsState
-            in
-            Html.Styled.main_ []
+    main_ [ css [ Styles.container, Css.flexWrap Css.wrap, Css.alignItems Css.center, Css.flex (Css.num 1) ] ]
+        (case state of
+            Success stepsState ->
+                let
+                    visualizeState =
+                        stateToVisualize stepsState
+                in
                 [ div [ css [ Styles.container ] ]
                     [ div [ css [ Styles.flexColumn ] ]
                         [ h1 [] [ text "Visualize your Go Program:" ]
@@ -55,11 +55,12 @@ view state =
                     ]
                 ]
 
-        Failure error ->
-            div [] [ pre [] [ text error ] ]
+            Failure error ->
+                [ pre [ css [ Css.color (Css.hex "#d65287"), Css.fontSize (Css.px 20) ] ] [ text error ] ]
 
-        Loading ->
-            div [] [ text "Loading..." ]
+            Loading ->
+                [ pre [ css [ Css.fontSize (Css.px 20) ] ] [ text "Loading..." ] ]
+        )
 
 
 type alias VisualizeState =

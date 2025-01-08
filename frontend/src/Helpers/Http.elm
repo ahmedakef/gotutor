@@ -22,7 +22,7 @@ errorToString error =
             "Verify your information and try again"
 
         Http.BadStatus num ->
-            "Unknown error" ++ String.fromInt num
+            "Unknown error " ++ String.fromInt num
 
         Http.BadBody errorMessage ->
             errorMessage
