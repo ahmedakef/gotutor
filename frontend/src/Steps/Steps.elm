@@ -26,7 +26,7 @@ type Msg
 getSteps : Cmd Msg
 getSteps =
     Http.get
-        { url = "/example/steps.json"
+        { url = "gotutor/initialProgram/steps.json"
         , expect = Http.expectJson GotSteps stepsDecoder
         }
 
@@ -34,7 +34,7 @@ getSteps =
 getSourceCode : Cmd Msg
 getSourceCode =
     Http.get
-        { url = "/example/main.txt"
+        { url = "gotutor/initialProgram/main.txt"
         , expect = Http.expectString GotSourceCode
         }
 
@@ -113,7 +113,7 @@ update msg state =
                 GotSteps gotStepsResult ->
                     case gotStepsResult of
                         Ok steps ->
-                            ( Success (StepsState steps 0 "" Nothing), getSourceCode )
+                            ( Success (StepsState steps 0 "" Nothing), Cmd.none )
 
                         Err err ->
                             ( Failure ("Error while getting program execution steps: " ++ HttpHelper.errorToString err), Cmd.none )

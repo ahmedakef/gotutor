@@ -6,5 +6,5 @@ updateExample:
 	./main exec example/source_debug
 	jq . steps.json > steps_formatted.json
 	mv steps_formatted.json steps.json
-	cp steps.json frontend/example
-	cp example/main.go frontend/example.txt
+	cp steps.json frontend/src/initialProgram
+	cp example/main.go frontend/src/initialProgram/example.txt

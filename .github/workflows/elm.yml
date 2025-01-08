@@ -47,7 +47,9 @@ jobs:
         run: make -C frontend/
 
       - name: Move example to root
-        run: cp -r frontend/example frontend/src
+        run: |
+          mkdir -p frontend/src/gotutor
+          cp -r frontend/src/initialProgram frontend/src/gotutor/initialProgram # since the pogram is server under https://ahmedakef.github.io/gotutor/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

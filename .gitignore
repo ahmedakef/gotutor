@@ -1,6 +1,6 @@
 main
 source
-gotutor
+./gotutor
 .idea/*
 bin
 source_debug
@@ -10,3 +10,4 @@ __debug_bin*
 */.DS_Store
 frontend/elm-stuff/*
 frontend/src/compiledJs/*
+frontend/src/gotutor
