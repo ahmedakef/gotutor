@@ -11,3 +11,4 @@ __debug_bin*
 frontend/elm-stuff/*
 frontend/src/compiledJs/*
 frontend/src/gotutor
+restate-data/*
