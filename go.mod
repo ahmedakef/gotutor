@@ -1,11 +1,8 @@
-module gotutor
+module github.com/ahmedakef/gotutor
 
 go 1.22.6
 
-replace github.com/ahmedakef/gotutor => ./
-
 require (
-	github.com/ahmedakef/gotutor v0.0.0-00010101000000-000000000000
 	github.com/go-delve/delve v1.24.0
 	github.com/rs/zerolog v1.33.0
 	github.com/spf13/cobra v1.8.1
