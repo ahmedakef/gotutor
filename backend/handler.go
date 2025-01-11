@@ -9,7 +9,6 @@ import (
 	"github.com/ahmedakef/gotutor/dlv"
 	"github.com/ahmedakef/gotutor/gateway"
 	"github.com/ahmedakef/gotutor/serialize"
-	"github.com/go-delve/delve/pkg/gobuild"
 	restate "github.com/restatedev/sdk-go"
 	"github.com/rs/zerolog"
 	"golang.org/x/exp/rand"
@@ -37,11 +36,17 @@ type GetExecutionStepsRequest struct {
 func (h *Handler) GetExecutionSteps(ctx restate.Context, req GetExecutionStepsRequest) ([]serialize.Step, error) {
 	port := generateRandomPort()
 	addr := fmt.Sprintf(":%d", port)
-	dir := fmt.Sprintf("sources/%d", port)
-	err := os.MkdirAll(fmt.Sprintf("sources/%d", port), os.ModePerm)
+	dir := fmt.Sprintf("sources/%d/", port)
+	err := os.MkdirAll(dir, os.ModePerm)
 	if err != nil {
 		return nil, restate.TerminalError(fmt.Errorf("failed to create sources directory: %w", err))
 	}
+	defer func() {
+		err := os.RemoveAll(dir)
+		if err != nil {
+			h.logger.Error().Err(err).Msg("failed to remove sources directory")
+		}
+	}()
 	// wrtie the source code to a file
 	sourcePath := fmt.Sprintf("%s/main.go", dir)
 	file, err := os.OpenFile(sourcePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
@@ -53,18 +58,8 @@ func (h *Handler) GetExecutionSteps(ctx restate.Context, req GetExecutionStepsRe
 		return nil, restate.TerminalError(fmt.Errorf("failed to write to %s file: %w", sourcePath, err))
 	}
 	defer file.Close()
-	// delete the file after the function returns
-	defer func() {
-		err := os.Remove(sourcePath)
-		if err != nil {
-			h.logger.Error().Err(err).Msg("failed to remove source file")
-		}
-	}()
 
 	binaryPath, err := dlv.Build(sourcePath, dir)
-	if binaryPath != "" {
-		defer gobuild.Remove(binaryPath)
-	}
 	if err != nil {
 		return nil, restate.TerminalError(fmt.Errorf("failed to build binary: %w", err))
 	}
