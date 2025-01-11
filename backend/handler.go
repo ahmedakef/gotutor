@@ -66,7 +66,7 @@ func (h *Handler) GetExecutionSteps(ctx restate.Context, req GetExecutionStepsRe
 	multipleGoroutines := false
 	steps, err := h.getSteps(ctx, addr, multipleGoroutines)
 	if err != nil {
-		return nil, restate.TerminalError(fmt.Errorf("get and write steps: %w", err))
+		return nil, fmt.Errorf("get and write steps: %w", err)
 	}
 
 	select {
