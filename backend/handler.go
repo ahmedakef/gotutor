@@ -12,7 +12,6 @@ import (
 	restate "github.com/restatedev/sdk-go"
 	"github.com/rs/zerolog"
 	"golang.org/x/exp/rand"
-	"gopkg.in/square/go-jose.v2/json"
 )
 
 // Handler is a struct which represents a Restate service; reflection will turn exported methods into service handlers
@@ -36,10 +35,9 @@ type GetExecutionStepsRequest struct {
 func (h *Handler) GetExecutionSteps(ctx restate.Context, req GetExecutionStepsRequest) ([]serialize.Step, error) {
 	port := generateRandomPort()
 	addr := fmt.Sprintf(":%d", port)
-	dir := fmt.Sprintf("sources/%d/", port)
-	err := os.MkdirAll(dir, os.ModePerm)
+	dir, err := prepareTempDir(port)
 	if err != nil {
-		return nil, restate.TerminalError(fmt.Errorf("failed to create sources directory: %w", err))
+		return nil, restate.TerminalError(fmt.Errorf("failed to prepare sources directory: %w", err))
 	}
 	defer func() {
 		err := os.RemoveAll(dir)
@@ -47,17 +45,11 @@ func (h *Handler) GetExecutionSteps(ctx restate.Context, req GetExecutionStepsRe
 			h.logger.Error().Err(err).Msg("failed to remove sources directory")
 		}
 	}()
-	// wrtie the source code to a file
 	sourcePath := fmt.Sprintf("%s/main.go", dir)
-	file, err := os.OpenFile(sourcePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	err = writeSourceCodeToFile(sourcePath, req.SourceCode)
 	if err != nil {
-		return nil, restate.TerminalError(fmt.Errorf("failed to create %s file: %w", sourcePath, err))
+		return nil, restate.TerminalError(fmt.Errorf("failed to write source code to file: %w", err))
 	}
-	_, err = file.WriteString(req.SourceCode)
-	if err != nil {
-		return nil, restate.TerminalError(fmt.Errorf("failed to write to %s file: %w", sourcePath, err))
-	}
-	defer file.Close()
 
 	binaryPath, err := dlv.Build(sourcePath, dir)
 	if err != nil {
@@ -84,15 +76,12 @@ func (h *Handler) GetExecutionSteps(ctx restate.Context, req GetExecutionStepsRe
 		}
 	default:
 	}
-	h.logger.Info().Msg("execution steps retrieved successfully")
-	ss, _ := json.Marshal(steps)
-	h.logger.Info().Msg(string(ss))
-	// Respond to caller
+
 	return steps, nil
 }
 
 func (h *Handler) getSteps(ctx context.Context, addr string, multipleGoroutines bool) ([]serialize.Step, error) {
-	client, err := h.dlvGatewayClient(addr)
+	client, err := dlvGatewayClient(addr)
 	if err != nil {
 		return nil, fmt.Errorf("create dlvGatewayClient: %w", err)
 	}
@@ -113,7 +102,7 @@ func (h *Handler) getSteps(ctx context.Context, addr string, multipleGoroutines 
 	return steps, nil
 }
 
-func (h *Handler) dlvGatewayClient(addr string) (*gateway.Debug, error) {
+func dlvGatewayClient(addr string) (*gateway.Debug, error) {
 	rpcClient, err := dlv.Connect(addr)
 	if err != nil {
 		return nil, fmt.Errorf("connect to server: %w", err)
@@ -126,4 +115,27 @@ func (h *Handler) dlvGatewayClient(addr string) (*gateway.Debug, error) {
 func generateRandomPort() int {
 	rand.Seed(uint64(time.Now().UnixNano()))
 	return rand.Intn(65535-1024) + 1024
+}
+
+func prepareTempDir(randomPort int) (string, error) {
+	dir := fmt.Sprintf("sources/%d/", randomPort)
+	err := os.MkdirAll(dir, os.ModePerm)
+	if err != nil {
+		return "", fmt.Errorf("create sources directory: %w", err)
+	}
+	return dir, nil
+}
+
+func writeSourceCodeToFile(sourcePath, sourceCode string) error {
+	file, err := os.OpenFile(sourcePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		return fmt.Errorf("create %s file: %w", sourcePath, err)
+	}
+	defer file.Close()
+
+	_, err = file.WriteString(sourceCode)
+	if err != nil {
+		return fmt.Errorf("write to %s file: %w", sourcePath, err)
+	}
+	return nil
 }
