@@ -1,8 +1,6 @@
 package dlv
 
 import (
-	"fmt"
-	"os"
 	"runtime"
 
 	"github.com/go-delve/delve/pkg/gobuild"
@@ -10,23 +8,20 @@ import (
 )
 
 // given a sourcePath, build the binary in temporary directory and return the path to the binary
-func Build(sourcePath string) (string, bool) {
+func Build(sourcePath string, outputPrefix string) (string, error) {
 	args := []string{sourcePath}
-	debugName, success := buildBinary(args, false)
-	if !success {
-		return "", false
-	}
-	return debugName, true
+	debugName, err := buildBinary(args, outputPrefix, false)
+	return debugName, err
 }
 
-func buildBinary(args []string, isTest bool) (string, bool) {
+func buildBinary(args []string, outputPrefix string, isTest bool) (string, error) {
 	buildFlags := getBuildFlags()
 	var debugName string
 	var err error
 	if isTest {
-		debugName = gobuild.DefaultDebugBinaryPath("debug.test")
+		debugName = gobuild.DefaultDebugBinaryPath(outputPrefix + "debug.test")
 	} else {
-		debugName = gobuild.DefaultDebugBinaryPath("__debug_bin")
+		debugName = gobuild.DefaultDebugBinaryPath(outputPrefix + "__debug_bin")
 	}
 
 	if isTest {
@@ -34,11 +29,8 @@ func buildBinary(args []string, isTest bool) (string, bool) {
 	} else {
 		err = gobuild.GoBuild(debugName, args, buildFlags)
 	}
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		return "", false
-	}
-	return debugName, true
+
+	return debugName, err
 }
 
 func getBuildFlags() string {

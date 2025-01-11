@@ -5,10 +5,10 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"github.com/rs/zerolog"
 	"time"
+
+	"github.com/rs/zerolog"
 
 	"github.com/ahmedakef/gotutor/dlv"
 	"github.com/go-delve/delve/pkg/gobuild"
@@ -34,9 +34,9 @@ func debug(cmd *cobra.Command, args []string) error {
 	if len(args) == 1 {
 		sourcePath = args[0]
 	}
-	binaryPath, ok := dlv.Build(sourcePath)
-	if !ok {
-		return errors.New("failed to build binary")
+	binaryPath, err := dlv.Build(sourcePath, "")
+	if err != nil {
+		return fmt.Errorf("failed to build binary: %w", err)
 	}
 	defer gobuild.Remove(binaryPath)
 	debugServerErr := make(chan error, 1)
