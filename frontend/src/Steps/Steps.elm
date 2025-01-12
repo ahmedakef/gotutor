@@ -1,8 +1,8 @@
 module Steps.Steps exposing (..)
 
 import Helpers.Http as HttpHelper
-import Html exposing (s)
 import Http
+import Json.Encode
 import Steps.Decoder exposing (..)
 
 
@@ -29,6 +29,7 @@ type State
 type Mode
     = Edit
     | View
+    | WaitingSteps
 
 
 type alias Scroll =
@@ -59,16 +60,25 @@ type Msg
 -- load data
 
 
-getSteps : Cmd Msg
-getSteps =
+getSteps : String -> Cmd Msg
+getSteps sourceCode =
+    Http.post
+        { url = "localhost:8080/Handler/GetExecutionSteps"
+        , body = Http.jsonBody (Json.Encode.object [ ( "source_code", Json.Encode.string sourceCode ) ])
+        , expect = Http.expectJson GotSteps stepsDecoder
+        }
+
+
+getInitSteps : Cmd Msg
+getInitSteps =
     Http.get
         { url = "gotutor/initialProgram/steps.json"
         , expect = Http.expectJson GotSteps stepsDecoder
         }
 
 
-getSourceCode : Cmd Msg
-getSourceCode =
+getInitSourceCode : Cmd Msg
+getInitSourceCode =
     Http.get
         { url = "gotutor/initialProgram/main.txt"
         , expect = Http.expectString GotSourceCode
@@ -87,7 +97,7 @@ update msg state =
                 GotSteps gotStepsResult ->
                     case gotStepsResult of
                         Ok steps ->
-                            ( Success { successState | steps = steps }, Cmd.none )
+                            ( Success { successState | steps = steps, mode = View }, Cmd.none )
 
                         Err err ->
                             ( Failure ("Error while getting program execution steps: " ++ HttpHelper.errorToString err), Cmd.none )
@@ -110,7 +120,7 @@ update msg state =
                     ( Success { successState | scroll = scroll }, Cmd.none )
 
                 Visualize ->
-                    ( Success { successState | mode = View }, Cmd.none )
+                    ( Success { successState | mode = WaitingSteps }, getSteps successState.sourceCode )
 
                 Next ->
                     if successState.position + 1 > List.length successState.steps then

@@ -164,7 +164,7 @@ codeView state =
                             (UnSytyled.pre [] [ UnSytyled.code [ Html.Attributes.class "elmsh" ] [ UnSytyled.text state.sourceCode ] ])
                         |> Html.Styled.fromUnstyled
 
-                Edit ->
+                _ ->
                     SH.noLang state.sourceCode
                         |> Result.map (SH.toBlockHtml (Just 1))
                         |> Result.withDefault
@@ -180,7 +180,7 @@ codeView state =
                     |> Json.map OnScroll
                 )
             , value state.sourceCode
-            , readonly (state.mode == View)
+            , readonly (not (state.mode == View))
             , class "code-style"
             , class "code-textarea"
             , class "code-textarea-lc"
@@ -203,6 +203,9 @@ editOrViewButton mode =
 
         View ->
             button [ onClick EditCode, css [ buttonStyle, Css.marginTop (Css.px 10) ] ] [ text "Edit Code" ]
+
+        WaitingSteps ->
+            p [ css [ Css.marginTop (Css.px 10) ] ] [ text "Waiting for execution steps" ]
 
 
 varView : Variable -> Html msg

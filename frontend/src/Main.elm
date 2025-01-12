@@ -45,10 +45,10 @@ init _ url key =
             Model key url Steps.Loading
 
         getSteps =
-            Cmd.map StepsMsg Steps.getSteps
+            Cmd.map StepsMsg Steps.getInitSteps
 
         getSourceCode =
-            Cmd.map StepsMsg Steps.getSourceCode
+            Cmd.map StepsMsg Steps.getInitSourceCode
 
         combinedCmd =
             Cmd.batch [ getSteps, getSourceCode ]
