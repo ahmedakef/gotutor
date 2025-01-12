@@ -5,12 +5,13 @@ import Css
 import Css.Global exposing (children)
 import Helpers.Hex
 import Html as UnSytyled
+import Html.Attributes
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events exposing (..)
+import Json.Decode as Json
 import Steps.Decoder exposing (..)
 import Steps.Steps exposing (..)
-import Styles
 import SyntaxHighlight as SH
 
 
@@ -27,7 +28,8 @@ view state =
                 , div [ css [ Css.displayFlex, Css.flex (Css.num 1) ] ]
                     [ div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.alignItems Css.center, Css.flex (Css.num 1) ] ]
                         [ codeView visualizeState
-                        , div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.margin2 (Css.px 20) (Css.px 0) ] ]
+                        , editOrViewButton visualizeState.mode
+                        , div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.marginTop (Css.px 10) ] ]
                             [ div []
                                 [ div []
                                     [ input
@@ -67,8 +69,10 @@ type alias VisualizeState =
     , stack : List StackFrame
     , packageVars : List Variable
     , sourceCode : String
+    , scroll : Scroll
     , currentLine : Maybe Int
     , highlightedLine : Maybe Int
+    , mode : Mode
     }
 
 
@@ -102,12 +106,14 @@ stateToVisualize stepsState =
             , stack = callHierarchy
             , packageVars = packageVars
             , sourceCode = stepsState.sourceCode
+            , scroll = stepsState.scroll
             , currentLine = currentLine
             , highlightedLine = stepsState.highlightedLine
+            , mode = stepsState.mode
             }
 
         Nothing ->
-            VisualizeState lastStep [] [] stepsState.sourceCode Nothing Nothing
+            VisualizeState lastStep [] [] stepsState.sourceCode stepsState.scroll Nothing Nothing stepsState.mode
 
 
 filterUserFrames : List StackFrame -> List StackFrame
@@ -116,7 +122,7 @@ filterUserFrames stack =
         |> List.filter (\frame -> String.endsWith "main.go" frame.file)
 
 
-codeView : VisualizeState -> Html msg
+codeView : VisualizeState -> Html Msg
 codeView state =
     let
         currentLine =
@@ -135,21 +141,68 @@ codeView state =
             else
                 Maybe.map (\_ -> SH.Highlight) state.highlightedLine
     in
-    div
-        []
-        [ SH.noLang state.sourceCode
-            |> Result.map (SH.highlightLines highlightModeHighlightedLine (highlightedLine - 1) highlightedLine)
-            |> Result.map (SH.highlightLines highlightModeCurrentLine (currentLine - 1) currentLine)
-            |> Result.map (SH.toBlockHtml (Just 1))
-            |> Result.withDefault
-                (UnSytyled.pre [] [ UnSytyled.code [] [ UnSytyled.text state.sourceCode ] ])
-            |> Html.Styled.fromUnstyled
+    div [ class "code-container" ]
+        [ div
+            [ class "code-view-container"
+            , class "code-style"
+            , style "transform"
+                ("translate("
+                    ++ String.fromFloat -state.scroll.left
+                    ++ "px, "
+                    ++ String.fromFloat -state.scroll.top
+                    ++ "px)"
+                )
+            , css [ Css.property "will-change" "transform", Css.pointerEvents Css.none ]
+            ]
+            [ case state.mode of
+                View ->
+                    SH.noLang state.sourceCode
+                        |> Result.map (SH.highlightLines highlightModeHighlightedLine (highlightedLine - 1) highlightedLine)
+                        |> Result.map (SH.highlightLines highlightModeCurrentLine (currentLine - 1) currentLine)
+                        |> Result.map (SH.toBlockHtml (Just 1))
+                        |> Result.withDefault
+                            (UnSytyled.pre [] [ UnSytyled.code [ Html.Attributes.class "elmsh" ] [ UnSytyled.text state.sourceCode ] ])
+                        |> Html.Styled.fromUnstyled
+
+                Edit ->
+                    SH.noLang state.sourceCode
+                        |> Result.map (SH.toBlockHtml (Just 1))
+                        |> Result.withDefault
+                            (UnSytyled.pre [] [ UnSytyled.code [ Html.Attributes.class "elmsh" ] [ UnSytyled.text state.sourceCode ] ])
+                        |> Html.Styled.fromUnstyled
+            ]
+        , textarea
+            [ onInput CodeUpdated
+            , on "scroll"
+                (Json.map2 Scroll
+                    (Json.at [ "target", "scrollTop" ] Json.float)
+                    (Json.at [ "target", "scrollLeft" ] Json.float)
+                    |> Json.map OnScroll
+                )
+            , value state.sourceCode
+            , readonly (state.mode == View)
+            , class "code-style"
+            , class "code-textarea"
+            , class "code-textarea-lc"
+            , spellcheck False
+            ]
+            []
         ]
 
 
 wrapCode : String -> String
 wrapCode code =
     "```go\n" ++ code ++ "\n```"
+
+
+editOrViewButton : Mode -> Html Msg
+editOrViewButton mode =
+    case mode of
+        Edit ->
+            button [ onClick Visualize, css [ buttonStyle, Css.marginTop (Css.px 10) ] ] [ text "Visualize Steps" ]
+
+        View ->
+            button [ onClick EditCode, css [ buttonStyle, Css.marginTop (Css.px 10) ] ] [ text "Edit Code" ]
 
 
 varView : Variable -> Html msg
@@ -332,7 +385,7 @@ goroutineView maybeStep =
         gInfo =
             case maybeStep of
                 Nothing ->
-                    "Program did not start yet"
+                    "Program did not start yet, Press 'Next >'"
 
                 Just step ->
                     if step.goroutine.id == 1 then
@@ -362,6 +415,7 @@ buttonStyle =
         [ Css.backgroundColor (Css.hex "f2f0ec")
         , Css.border3 (Css.px 1) Css.solid (Css.hex "ccc")
         , Css.padding (Css.px 5)
+        , Css.hover [ Css.backgroundColor (Css.hex "e0e0e0") ]
         ]
 
 

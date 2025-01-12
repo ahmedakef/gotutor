@@ -112,7 +112,6 @@ view model =
         body =
             div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.minHeight (Css.vh 100) ] ]
                 [ Styles.globalStyles
-                , inlineCss Styles.requiredShStyles
                 , navigation
                 , Html.map StepsMsg (StepsView.view model.state)
                 , pageFooter

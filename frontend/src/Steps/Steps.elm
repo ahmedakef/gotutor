@@ -1,8 +1,40 @@
 module Steps.Steps exposing (..)
 
 import Helpers.Http as HttpHelper
+import Html exposing (s)
 import Http
 import Steps.Decoder exposing (..)
+
+
+
+-- Model
+
+
+type alias StepsState =
+    { mode : Mode
+    , steps : List Step
+    , position : Int
+    , sourceCode : String
+    , highlightedLine : Maybe Int
+    , scroll : Scroll
+    }
+
+
+type State
+    = Success StepsState
+    | Failure String
+    | Loading
+
+
+type Mode
+    = Edit
+    | View
+
+
+type alias Scroll =
+    { top : Float
+    , left : Float
+    }
 
 
 
@@ -12,6 +44,10 @@ import Steps.Decoder exposing (..)
 type Msg
     = GotSteps (Result Http.Error (List Step))
     | GotSourceCode (Result Http.Error String)
+    | EditCode
+    | OnScroll Scroll
+    | CodeUpdated String
+    | Visualize
     | Next
     | Prev
     | SliderChange Int
@@ -40,24 +76,6 @@ getSourceCode =
 
 
 
--- Model
-
-
-type alias StepsState =
-    { steps : List Step
-    , position : Int
-    , sourceCode : String
-    , highlightedLine : Maybe Int
-    }
-
-
-type State
-    = Success StepsState
-    | Failure String
-    | Loading
-
-
-
 -- Update
 
 
@@ -81,6 +99,18 @@ update msg state =
 
                         Err err ->
                             ( Failure ("Error while reading program source code: " ++ HttpHelper.errorToString err), Cmd.none )
+
+                CodeUpdated code ->
+                    ( Success { successState | sourceCode = code }, Cmd.none )
+
+                EditCode ->
+                    ( Success { successState | mode = Edit }, Cmd.none )
+
+                OnScroll scroll ->
+                    ( Success { successState | scroll = scroll }, Cmd.none )
+
+                Visualize ->
+                    ( Success { successState | mode = View }, Cmd.none )
 
                 Next ->
                     if successState.position + 1 > List.length successState.steps then
@@ -113,7 +143,7 @@ update msg state =
                 GotSteps gotStepsResult ->
                     case gotStepsResult of
                         Ok steps ->
-                            ( Success (StepsState steps 0 "" Nothing), Cmd.none )
+                            ( Success (StepsState View steps 0 "" Nothing (Scroll 0 0)), Cmd.none )
 
                         Err err ->
                             ( Failure ("Error while getting program execution steps: " ++ HttpHelper.errorToString err), Cmd.none )
@@ -121,22 +151,10 @@ update msg state =
                 GotSourceCode sourceCodeResult ->
                     case sourceCodeResult of
                         Ok sourceCode ->
-                            ( Success (StepsState [] 0 sourceCode Nothing), Cmd.none )
+                            ( Success (StepsState View [] 0 sourceCode Nothing (Scroll 0 0)), Cmd.none )
 
                         Err err ->
                             ( Failure ("Error while reading program source code: " ++ HttpHelper.errorToString err), Cmd.none )
 
-                Next ->
-                    ( state, Cmd.none )
-
-                Prev ->
-                    ( state, Cmd.none )
-
-                SliderChange _ ->
-                    ( state, Cmd.none )
-
-                Highlight _ ->
-                    ( state, Cmd.none )
-
-                Unhighlight _ ->
+                _ ->
                     ( state, Cmd.none )
