@@ -180,7 +180,7 @@ codeView state =
                     |> Json.map OnScroll
                 )
             , value state.sourceCode
-            , readonly (not (state.mode == View))
+            , readonly (not (state.mode == Edit))
             , class "code-style"
             , class "code-textarea"
             , class "code-textarea-lc"
@@ -205,7 +205,7 @@ editOrViewButton mode =
             button [ onClick EditCode, css [ buttonStyle, Css.marginTop (Css.px 10) ] ] [ text "Edit Code" ]
 
         WaitingSteps ->
-            p [ css [ Css.marginTop (Css.px 10) ] ] [ text "Waiting for execution steps" ]
+            p [ css [ Css.marginTop (Css.px 10), Css.marginBottom (Css.px 0) ] ] [ text "Waiting for execution steps... ⏳" ]
 
 
 varView : Variable -> Html msg
@@ -292,7 +292,7 @@ programVisualizer state =
             , Css.width (Css.pct 80)
             ]
         ]
-        [ goroutineView state.lastStep
+        [ goroutineView state
         , varsView
             "Global Variables:"
             (Just state.packageVars)
@@ -382,23 +382,28 @@ removeMainPrefix str =
         str
 
 
-goroutineView : Maybe Step -> Html msg
-goroutineView maybeStep =
+goroutineView : VisualizeState -> Html msg
+goroutineView state =
     let
         gInfo =
-            case maybeStep of
-                Nothing ->
-                    "Program did not start yet, Press 'Next >'"
+            case state.mode of
+                WaitingSteps ->
+                    "Waiting for backend to get execution steps... ⏳"
 
-                Just step ->
-                    if step.goroutine.id == 1 then
-                        "Main Goroutine"
+                _ ->
+                    case state.lastStep of
+                        Nothing ->
+                            "Program did not start yet, Press 'Next >'"
 
-                    else
-                        "Goroutine: " ++ String.fromInt step.goroutine.id
+                        Just step ->
+                            if step.goroutine.id == 1 then
+                                "Main Goroutine"
+
+                            else
+                                "Goroutine: " ++ String.fromInt step.goroutine.id
     in
     div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.alignItems Css.center, Css.marginBottom (Css.px 10) ] ]
-        [ b [] [ text gInfo ]
+        [ p [ css [ Css.fontSize (Css.rem 1.5) ] ] [ text gInfo ]
         ]
 
 
