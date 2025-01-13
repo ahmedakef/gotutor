@@ -34,10 +34,10 @@ view state =
                                 [ div []
                                     [ input
                                         [ type_ "range"
-                                        , Html.Styled.Attributes.min "0"
+                                        , Html.Styled.Attributes.min "1"
                                         , Html.Styled.Attributes.max (String.fromInt (List.length stepsState.steps))
                                         , Html.Styled.Attributes.value (String.fromInt stepsState.position)
-                                        , onInput (String.toInt >> Maybe.withDefault 0 >> SliderChange)
+                                        , onInput (String.toInt >> Maybe.withDefault 1 >> SliderChange)
                                         ]
                                         []
                                     ]
@@ -393,7 +393,7 @@ goroutineView state =
                 _ ->
                     case state.lastStep of
                         Nothing ->
-                            "Program did not start yet, Press 'Next >'"
+                            "step is empty, try change the slider"
 
                         Just step ->
                             if step.goroutine.id == 1 then

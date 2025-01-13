@@ -103,7 +103,7 @@ update msg state =
                 GotSteps gotStepsResult ->
                     case gotStepsResult of
                         Ok steps ->
-                            ( Success { successState | steps = steps, mode = View }, Cmd.none )
+                            ( Success { successState | steps = steps, position = 1, mode = View }, Cmd.none )
 
                         Err err ->
                             ( Failure ("Error while getting program execution steps: " ++ HttpHelper.errorToString err), Cmd.none )
@@ -159,7 +159,7 @@ update msg state =
                 GotSteps gotStepsResult ->
                     case gotStepsResult of
                         Ok steps ->
-                            ( Success (StepsState View steps 0 "" Nothing (Scroll 0 0)), Cmd.none )
+                            ( Success (StepsState View steps 1 "" Nothing (Scroll 0 0)), Cmd.none )
 
                         Err err ->
                             ( Failure ("Error while getting program execution steps: " ++ HttpHelper.errorToString err), Cmd.none )
