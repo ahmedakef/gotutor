@@ -19,10 +19,7 @@ type Handler struct {
 	logger zerolog.Logger
 }
 
-func newHandler() *Handler {
-	logger := zerolog.New(
-		zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339},
-	).Level(zerolog.TraceLevel).With().Timestamp().Caller().Logger()
+func newHandler(logger zerolog.Logger) *Handler {
 	return &Handler{
 		logger: logger,
 	}

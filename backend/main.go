@@ -2,19 +2,23 @@ package main
 
 import (
 	"context"
-	"log/slog"
 	"os"
+	"time"
 
 	restate "github.com/restatedev/sdk-go"
 	"github.com/restatedev/sdk-go/server"
+	"github.com/rs/zerolog"
 )
 
 func main() {
-	server := server.NewRestate().
-		Bind(restate.Reflect(newHandler()))
+	logger := zerolog.New(
+		zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339},
+	).Level(zerolog.TraceLevel).With().Timestamp().Caller().Logger()
 
-	if err := server.Start(context.Background(), ":9080"); err != nil {
-		slog.Error("application exited unexpectedly", "err", err.Error())
-		os.Exit(1)
+	rs := server.NewRestate().
+		Bind(restate.Reflect(newHandler(logger)))
+
+	if err := rs.Start(context.Background(), ":9080"); err != nil {
+		logger.Fatal().Err(err).Msg("failed to start HTTP server")
 	}
 }
