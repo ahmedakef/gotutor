@@ -17,6 +17,7 @@ type alias StepsState =
     , sourceCode : String
     , highlightedLine : Maybe Int
     , scroll : Scroll
+    , flashMessage : Maybe String
     }
 
 
@@ -106,7 +107,13 @@ update msg state =
                             ( Success { successState | steps = steps, position = 1, mode = View }, Cmd.none )
 
                         Err err ->
-                            ( Failure ("Error while getting program execution steps: " ++ HttpHelper.errorToString err), Cmd.none )
+                            case successState.mode of
+                                WaitingSteps ->
+                                    -- waiting after clicking visualize
+                                    ( Success { successState | mode = Edit, steps = [], flashMessage = Just ("Error received from backend: " ++ HttpHelper.errorToString err) }, Cmd.none )
+
+                                _ ->
+                                    ( Failure ("Error while getting example program execution steps: " ++ HttpHelper.errorToString err), Cmd.none )
 
                 GotSourceCode sourceCodeResult ->
                     case sourceCodeResult of
@@ -159,7 +166,7 @@ update msg state =
                 GotSteps gotStepsResult ->
                     case gotStepsResult of
                         Ok steps ->
-                            ( Success (StepsState View steps 1 "" Nothing (Scroll 0 0)), Cmd.none )
+                            ( Success (StepsState View steps 1 "" Nothing (Scroll 0 0) (Just "")), Cmd.none )
 
                         Err err ->
                             ( Failure ("Error while getting program execution steps: " ++ HttpHelper.errorToString err), Cmd.none )
@@ -167,7 +174,7 @@ update msg state =
                 GotSourceCode sourceCodeResult ->
                     case sourceCodeResult of
                         Ok sourceCode ->
-                            ( Success (StepsState View [] 0 sourceCode Nothing (Scroll 0 0)), Cmd.none )
+                            ( Success (StepsState View [] 0 sourceCode Nothing (Scroll 0 0) (Just "")), Cmd.none )
 
                         Err err ->
                             ( Failure ("Error while reading program source code: " ++ HttpHelper.errorToString err), Cmd.none )

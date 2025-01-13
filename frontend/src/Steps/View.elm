@@ -29,7 +29,7 @@ view state =
                     [ div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.alignItems Css.center, Css.flex (Css.num 1) ] ]
                         [ codeView visualizeState
                         , editOrViewButton visualizeState.mode
-                        , div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.marginTop (Css.px 10) ] ]
+                        , div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.alignItems Css.center, Css.marginTop (Css.px 10) ] ]
                             [ div []
                                 [ div []
                                     [ input
@@ -141,7 +141,7 @@ codeView state =
             else
                 Maybe.map (\_ -> SH.Highlight) state.highlightedLine
     in
-    div [ class "code-container" ]
+    div [ css [ borderStyle ], class "code-container" ]
         [ div
             [ class "code-view-container"
             , class "code-style"
@@ -285,13 +285,7 @@ varsView title maybeVars attributes =
 programVisualizer : VisualizeState -> Html Msg
 programVisualizer state =
     div
-        [ css
-            [ Css.border3 (Css.px 1) Css.solid (Css.hex "ddd")
-            , Css.borderRadius (Css.px 5)
-            , Css.padding2 (Css.px 10) (Css.px 50)
-            , Css.width (Css.pct 80)
-            ]
-        ]
+        [ css [ borderStyle, Css.padding2 (Css.px 10) (Css.px 50), Css.width (Css.pct 80) ] ]
         [ goroutineView state
         , varsView
             "Global Variables:"
@@ -353,7 +347,7 @@ frameView frame =
     in
     div
         [ css
-            [ borderStyle
+            [ frameBorderStyle
             , Css.backgroundColor (Css.hex "f2f0ec")
             ]
         , onMouseEnter (Highlight frame.line)
@@ -409,6 +403,14 @@ goroutineView state =
 
 borderStyle : Css.Style
 borderStyle =
+    Css.batch
+        [ Css.border3 (Css.px 1) Css.solid (Css.hex "ddd")
+        , Css.borderRadius (Css.px 5)
+        ]
+
+
+frameBorderStyle : Css.Style
+frameBorderStyle =
     Css.batch
         [ Css.border3 (Css.px 1) Css.solid (Css.hex "ccc")
         , Css.padding (Css.px 10)
