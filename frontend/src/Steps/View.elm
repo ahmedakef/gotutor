@@ -145,7 +145,18 @@ codeView state =
             else
                 Maybe.map (\_ -> SH.Highlight) state.highlightedLine
     in
-    div [ css [ borderStyle ], class "code-container" ]
+    div
+        [ css
+            [ borderStyle
+            , case state.mode of
+                Edit ->
+                    Css.backgroundColor (Css.hex "fff")
+
+                _ ->
+                    Css.backgroundColor (Css.hex "ff5f5f5ff")
+            ]
+        , class "code-container"
+        ]
         [ div
             [ class "code-view-container"
             , class "code-style"
