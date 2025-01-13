@@ -17,7 +17,7 @@ type alias StepsState =
     , sourceCode : String
     , highlightedLine : Maybe Int
     , scroll : Scroll
-    , flashMessage : Maybe String
+    , errorMessage : Maybe String
     }
 
 
@@ -110,7 +110,7 @@ update msg state =
                             case successState.mode of
                                 WaitingSteps ->
                                     -- waiting after clicking visualize
-                                    ( Success { successState | mode = Edit, steps = [], flashMessage = Just ("Error received from backend: " ++ HttpHelper.errorToString err) }, Cmd.none )
+                                    ( Success { successState | mode = Edit, steps = [], position = 0, errorMessage = Just ("Error received from backend: " ++ HttpHelper.errorToString err) }, Cmd.none )
 
                                 _ ->
                                     ( Failure ("Error while getting example program execution steps: " ++ HttpHelper.errorToString err), Cmd.none )
@@ -133,7 +133,7 @@ update msg state =
                     ( Success { successState | scroll = scroll }, Cmd.none )
 
                 Visualize ->
-                    ( Success { successState | mode = WaitingSteps }, getSteps successState.sourceCode )
+                    ( Success { successState | mode = WaitingSteps, steps = [], position = 0 }, getSteps successState.sourceCode )
 
                 Next ->
                     if successState.position + 1 > List.length successState.steps then
@@ -166,7 +166,7 @@ update msg state =
                 GotSteps gotStepsResult ->
                     case gotStepsResult of
                         Ok steps ->
-                            ( Success (StepsState View steps 1 "" Nothing (Scroll 0 0) (Just "")), Cmd.none )
+                            ( Success (StepsState View steps 1 "" Nothing (Scroll 0 0) Nothing), Cmd.none )
 
                         Err err ->
                             ( Failure ("Error while getting program execution steps: " ++ HttpHelper.errorToString err), Cmd.none )
@@ -174,7 +174,7 @@ update msg state =
                 GotSourceCode sourceCodeResult ->
                     case sourceCodeResult of
                         Ok sourceCode ->
-                            ( Success (StepsState View [] 0 sourceCode Nothing (Scroll 0 0) (Just "")), Cmd.none )
+                            ( Success (StepsState View [] 0 sourceCode Nothing (Scroll 0 0) Nothing), Cmd.none )
 
                         Err err ->
                             ( Failure ("Error while reading program source code: " ++ HttpHelper.errorToString err), Cmd.none )

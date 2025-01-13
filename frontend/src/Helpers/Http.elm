@@ -16,7 +16,7 @@ errorToString error =
             "Unable to reach the server, check your network connection"
 
         Http.BadStatus 500 ->
-            "The server had a problem, try again later"
+            "The server had a problem, try again later, or change your request"
 
         Http.BadStatus 400 ->
             "Verify your information and try again"

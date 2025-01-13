@@ -49,7 +49,9 @@ view state =
                                 ]
                             ]
                         ]
-                    , div [ css [ Css.displayFlex, Css.flex (Css.num 1), Css.flexDirection Css.column, Css.alignItems Css.center ] ] [ programVisualizer visualizeState ]
+                    , div [ css [ Css.displayFlex, Css.flex (Css.num 1), Css.flexDirection Css.column, Css.alignItems Css.center ] ]
+                        [ programVisualizer visualizeState
+                        ]
                     ]
                 ]
 
@@ -73,6 +75,7 @@ type alias VisualizeState =
     , currentLine : Maybe Int
     , highlightedLine : Maybe Int
     , mode : Mode
+    , flashMessage : Maybe String
     }
 
 
@@ -110,10 +113,11 @@ stateToVisualize stepsState =
             , currentLine = currentLine
             , highlightedLine = stepsState.highlightedLine
             , mode = stepsState.mode
+            , flashMessage = stepsState.errorMessage
             }
 
         Nothing ->
-            VisualizeState lastStep [] [] stepsState.sourceCode stepsState.scroll Nothing Nothing stepsState.mode
+            VisualizeState lastStep [] [] stepsState.sourceCode stepsState.scroll Nothing Nothing stepsState.mode stepsState.errorMessage
 
 
 filterUserFrames : List StackFrame -> List StackFrame
@@ -285,7 +289,17 @@ varsView title maybeVars attributes =
 programVisualizer : VisualizeState -> Html Msg
 programVisualizer state =
     div
-        [ css [ borderStyle, Css.padding2 (Css.px 10) (Css.px 50), Css.width (Css.pct 80) ] ]
+        [ css
+            ([ borderStyle, Css.padding2 (Css.px 10) (Css.px 50), Css.width (Css.pct 80) ]
+                ++ (case state.flashMessage of
+                        Just _ ->
+                            [ Css.backgroundColor (Css.hex "f5c6cb") ]
+
+                        Nothing ->
+                            []
+                   )
+            )
+        ]
         [ goroutineView state
         , varsView
             "Global Variables:"
@@ -380,25 +394,30 @@ goroutineView : VisualizeState -> Html msg
 goroutineView state =
     let
         gInfo =
-            case state.mode of
-                WaitingSteps ->
-                    "Waiting for backend to get execution steps... ⏳"
+            case state.flashMessage of
+                Just msg ->
+                    msg
 
-                _ ->
-                    case state.lastStep of
-                        Nothing ->
-                            "step is empty, try change the slider"
+                Nothing ->
+                    case state.mode of
+                        WaitingSteps ->
+                            "Waiting for backend to get execution steps... ⏳"
 
-                        Just step ->
-                            if step.goroutine.id == 1 then
-                                "Main Goroutine"
+                        _ ->
+                            case state.lastStep of
+                                Nothing ->
+                                    "step is empty, try change the slider"
 
-                            else
-                                "Goroutine: " ++ String.fromInt step.goroutine.id
+                                Just step ->
+                                    if step.goroutine.id == 1 then
+                                        "Main Goroutine"
+
+                                    else
+                                        "Goroutine: " ++ String.fromInt step.goroutine.id
     in
-    div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.alignItems Css.center, Css.marginBottom (Css.px 10) ] ]
-        [ p [ css [ Css.fontSize (Css.rem 1.5) ] ] [ text gInfo ]
-        ]
+    div
+        [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.alignItems Css.center, Css.marginBottom (Css.px 10) ] ]
+        [ p [ css [ Css.fontSize (Css.rem 1.5) ] ] [ text gInfo ] ]
 
 
 borderStyle : Css.Style
