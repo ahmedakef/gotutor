@@ -63,10 +63,16 @@ type Msg
 
 getSteps : String -> Cmd Msg
 getSteps sourceCode =
-    Http.post
-        { url = "http://localhost:8080/Handler/GetExecutionSteps"
+    Http.request
+        { method = "POST"
+        , headers =
+            [ Http.header "Authorization" ("Bearer " ++ "key_10uzQuWRXs7INU41qdqDe0a.FbaLJCEJ2daXJCoNPmKsxz3VUPnR3d7dU4WKnv1gLvSR")
+            ]
+        , url = "https://201jhj1vqwsk20me57hggnvabsp.env.us.restate.cloud:8080/Handler/GetExecutionSteps"
         , body = Http.jsonBody (Json.Encode.object [ ( "source_code", Json.Encode.string sourceCode ) ])
         , expect = Http.expectJson GotSteps stepsDecoder
+        , timeout = Just (60 * 1000) -- ms
+        , tracker = Nothing
         }
 
 
