@@ -1,9 +1,26 @@
 module Steps.Steps exposing (..)
 
+import Helpers.Common as Common
 import Helpers.Http as HttpHelper
 import Http
 import Json.Encode
 import Steps.Decoder exposing (..)
+
+
+
+-- Init
+
+
+init : ( State, Cmd Msg )
+init =
+    let
+        initialModel =
+            Loading
+
+        combinedCmd =
+            Cmd.batch [ getInitSteps, getInitSourceCode ]
+    in
+    ( initialModel, combinedCmd )
 
 
 
@@ -61,14 +78,23 @@ type Msg
 -- load data
 
 
-getSteps : String -> Cmd Msg
-getSteps sourceCode =
+getSteps : String -> Common.Env -> Cmd Msg
+getSteps sourceCode env =
+    let
+        backendUrl =
+            case env of
+                Common.Dev ->
+                    "http://localhost:8080"
+
+                Common.Prod ->
+                    "https://201jhj1vqwsk20me57hggnvabsp.env.us.restate.cloud:8080"
+    in
     Http.request
         { method = "POST"
         , headers =
             [ Http.header "Authorization" ("Bearer " ++ "key_10uzQuWRXs7INU41qdqDe0a.FbaLJCEJ2daXJCoNPmKsxz3VUPnR3d7dU4WKnv1gLvSR")
             ]
-        , url = "https://201jhj1vqwsk20me57hggnvabsp.env.us.restate.cloud:8080/Handler/GetExecutionSteps"
+        , url = backendUrl ++ "/Handler/GetExecutionSteps"
         , body = Http.jsonBody (Json.Encode.object [ ( "source_code", Json.Encode.string sourceCode ) ])
         , expect = Http.expectJson GotSteps stepsDecoder
         , timeout = Just (60 * 1000) -- ms
@@ -96,8 +122,8 @@ getInitSourceCode =
 -- Update
 
 
-update : Msg -> State -> ( State, Cmd Msg )
-update msg state =
+update : Msg -> State -> Common.Env -> ( State, Cmd Msg )
+update msg state env =
     case state of
         Success successState ->
             case msg of
@@ -133,7 +159,7 @@ update msg state =
                     ( Success { successState | scroll = scroll }, Cmd.none )
 
                 Visualize ->
-                    ( Success { successState | mode = WaitingSteps, steps = [], position = 0 }, getSteps successState.sourceCode )
+                    ( Success { successState | mode = WaitingSteps, steps = [], position = 0 }, getSteps successState.sourceCode env )
 
                 Next ->
                     if successState.position + 1 > List.length successState.steps then

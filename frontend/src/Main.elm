@@ -3,6 +3,7 @@ module Main exposing (..)
 import Browser
 import Browser.Navigation as Nav
 import Css
+import Helpers.Common as Common
 import Html.Styled as Html exposing (..)
 import Html.Styled.Attributes exposing (..)
 import Steps.Steps as Steps
@@ -32,28 +33,27 @@ main =
 
 
 type alias Model =
-    { key : Nav.Key
+    { env : Common.Env
+    , key : Nav.Key
     , url : Url.Url
     , state : Steps.State
     }
 
 
+
+-- Init
+
+
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init _ url key =
     let
+        ( stepsState, stepsCmd ) =
+            Steps.init
+
         initialModel =
-            Model key url Steps.Loading
-
-        getSteps =
-            Cmd.map StepsMsg Steps.getInitSteps
-
-        getSourceCode =
-            Cmd.map StepsMsg Steps.getInitSourceCode
-
-        combinedCmd =
-            Cmd.batch [ getSteps, getSourceCode ]
+            Model Common.Dev key url stepsState
     in
-    ( initialModel, combinedCmd )
+    ( initialModel, Cmd.map StepsMsg stepsCmd )
 
 
 
@@ -85,7 +85,7 @@ update msg model =
         StepsMsg stepsMsg ->
             let
                 ( state, cmd ) =
-                    Steps.update stepsMsg model.state
+                    Steps.update stepsMsg model.state model.env
             in
             ( { model | state = state }, Cmd.map StepsMsg cmd )
 
