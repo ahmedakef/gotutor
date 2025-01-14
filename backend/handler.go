@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"time"
 
@@ -34,7 +35,7 @@ func (h *Handler) GetExecutionSteps(ctx restate.Context, req GetExecutionStepsRe
 	addr := fmt.Sprintf(":%d", port)
 	dir, err := prepareTempDir(port)
 	if err != nil {
-		return nil, restate.TerminalError(fmt.Errorf("failed to prepare sources directory: %w", err))
+		return nil, restate.TerminalError(fmt.Errorf("failed to prepare sources directory: %w", err), http.StatusInternalServerError)
 	}
 	defer func() {
 		err := os.RemoveAll(dir)
@@ -45,12 +46,12 @@ func (h *Handler) GetExecutionSteps(ctx restate.Context, req GetExecutionStepsRe
 	sourcePath := fmt.Sprintf("%s/main.go", dir)
 	err = writeSourceCodeToFile(sourcePath, req.SourceCode)
 	if err != nil {
-		return nil, restate.TerminalError(fmt.Errorf("failed to write source code to file: %w", err))
+		return nil, restate.TerminalError(fmt.Errorf("failed to write source code to file: %w", err), http.StatusInternalServerError)
 	}
 
 	binaryPath, err := dlv.Build(sourcePath, dir)
 	if err != nil {
-		return nil, restate.TerminalError(fmt.Errorf("failed to build binary: %w", err))
+		return nil, restate.TerminalError(fmt.Errorf("failed to build binary: %w", err), http.StatusBadRequest)
 	}
 
 	debugServerErr := make(chan error, 1)
