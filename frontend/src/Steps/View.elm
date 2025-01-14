@@ -25,7 +25,7 @@ view state =
             in
             main_ [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.flex (Css.num 1), Css.paddingTop (Css.vh 5) ] ]
                 [ div [ css [ Css.paddingLeft (Css.px 10) ] ] [ h1 [] [ text "Visualize your Go Program:" ] ]
-                , div [ css [ Css.displayFlex, Css.flex (Css.num 1) ] ]
+                , div [ css [ Css.displayFlex, Css.flexWrap Css.wrap, Css.flex (Css.num 1) ] ]
                     [ div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.alignItems Css.center, Css.flex (Css.num 1) ] ]
                         [ codeView visualizeState
                         , editOrViewButton visualizeState.mode
@@ -212,12 +212,21 @@ wrapCode code =
 
 editOrViewButton : Mode -> Html Msg
 editOrViewButton mode =
+    let
+        bStyle =
+            Css.batch
+                [ buttonStyle
+                , Css.marginTop (Css.px 10)
+                , Css.width (Css.rem 20)
+                , Css.height (Css.rem 3)
+                ]
+    in
     case mode of
         Edit ->
-            button [ onClick Visualize, css [ buttonStyle, Css.marginTop (Css.px 10) ] ] [ text "Visualize Steps" ]
+            button [ onClick Visualize, css [ bStyle ] ] [ text "Visualize Steps" ]
 
         View ->
-            button [ onClick EditCode, css [ buttonStyle, Css.marginTop (Css.px 10) ] ] [ text "Edit Code" ]
+            button [ onClick EditCode, css [ bStyle ] ] [ text "Edit Code" ]
 
         WaitingSteps ->
             p [ css [ Css.marginTop (Css.px 10), Css.marginBottom (Css.px 0) ] ] [ text "Waiting for execution steps... ⏳" ]
