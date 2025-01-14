@@ -63,14 +63,8 @@ type Msg
 
 getSteps : String -> Cmd Msg
 getSteps sourceCode =
-    let
-        prefix =
-            "http://localhost:9090/"
-
-        -- TODO: remove when fixing CORS issue
-    in
     Http.post
-        { url = prefix ++ "http://localhost:8080/Handler/GetExecutionSteps"
+        { url = "http://localhost:8080/Handler/GetExecutionSteps"
         , body = Http.jsonBody (Json.Encode.object [ ( "source_code", Json.Encode.string sourceCode ) ])
         , expect = Http.expectJson GotSteps stepsDecoder
         }

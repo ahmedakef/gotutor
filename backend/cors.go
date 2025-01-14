@@ -2,11 +2,21 @@ package main
 
 import "net/http"
 
+// Allowed origins
+var allowedOrigins = map[string]bool{
+	"http://localhost:8000":       true,
+	"https://ahmedakef.github.io": true,
+}
+
 // CORS Middleware
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Set CORS headers
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:8000")            // Allow requests from this origin. Use "*" for any origin only in development
+		origin := r.Header.Get("Origin")
+		if allowedOrigins[origin] {
+			// Set CORS headers
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Vary", "Origin")
+		}
 
 		// Handle preflight requests (OPTIONS requests)
 		if r.Method == "OPTIONS" {
