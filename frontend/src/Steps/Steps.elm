@@ -130,7 +130,7 @@ update msg state env =
                 GotSteps gotStepsResult ->
                     case gotStepsResult of
                         Ok steps ->
-                            ( Success { successState | steps = steps, position = 1, mode = View }, Cmd.none )
+                            ( Success { successState | steps = steps, position = 1, mode = View, errorMessage = Nothing }, Cmd.none )
 
                         Err err ->
                             case successState.mode of
