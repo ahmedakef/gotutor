@@ -153,7 +153,7 @@ codeView state =
                     Css.backgroundColor (Css.hex "fff")
 
                 _ ->
-                    Css.backgroundColor (Css.hex "ff5f5f5ff")
+                    Css.backgroundColor Css.transparent
             ]
         , class "code-container"
         ]
