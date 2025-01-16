@@ -2,6 +2,8 @@ module github.com/ahmedakef/gotutor/backend
 
 go 1.22.6
 
+replace github.com/ahmedakef/gotutor => ../
+
 require (
 	github.com/ahmedakef/gotutor v0.0.0-20250111015430-2764702fae93
 	github.com/restatedev/sdk-go v0.13.2

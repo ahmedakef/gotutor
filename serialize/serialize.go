@@ -90,7 +90,19 @@ func (v *Serializer) goToNextLine(ctx context.Context, goroutine *api.Goroutine)
 	}
 
 	var exited bool
-	if isInMainDotGo(debugState.SelectedGoroutine.CurrentLoc.File) {
+	invokingGoroutine, err := v.isInvokingGoroutine(debugState.SelectedGoroutine.CurrentLoc.File, debugState.SelectedGoroutine.CurrentLoc.Line)
+	if err != nil {
+		return Step{}, true, fmt.Errorf("goroutine: %d, isInvokingGoroutine: %w", goroutine.ID, err)
+	}
+	if invokingGoroutine {
+		debugState, err = v.client.Next(ctx)
+		if err != nil {
+			return Step{}, true, fmt.Errorf("step: %w", err)
+		}
+		if debugState.Exited {
+			return Step{}, true, nil
+		}
+	} else if isInMainDotGo(debugState.SelectedGoroutine.CurrentLoc.File) {
 		debugState, err = v.client.Step(ctx)
 		if err != nil {
 			return Step{}, true, fmt.Errorf("step: %w", err)
@@ -116,7 +128,7 @@ func (v *Serializer) goToNextLine(ctx context.Context, goroutine *api.Goroutine)
 			v.logger.Info().Any("debugState", debugState).Msg("read exit signal")
 			return Step{}, true, nil
 		}
-	} else { // in a function in runtime that but still have user code in one of the frames
+	} else { // in a function in runtime but still have user code in one of the frames
 		debugState, exited, err = v.continueToFirstFrameInMainDotGo(ctx, debugState)
 		if err != nil {
 			return Step{}, true, fmt.Errorf("continueToFirstFrameInMainDotGo: %w", err)
@@ -450,6 +462,32 @@ func (v *Serializer) continueToFirstFrameInMainDotGo(ctx context.Context, debugS
 
 func equalLocation(loc1, loc2 api.Location) bool {
 	return loc1.File == loc2.File && loc1.Line == loc2.Line
+}
+
+func (v *Serializer) isInvokingGoroutine(filePath string, line int) (bool, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return false, fmt.Errorf("error opening file: %w", err)
+	}
+	defer func() {
+		err := file.Close()
+		if err != nil {
+			v.logger.Error().Err(err).Msg("error closing file")
+		}
+	}()
+
+	scanner := bufio.NewScanner(file)
+	lineNumber := 0
+	for scanner.Scan() {
+		lineNumber++
+		if lineNumber == line {
+			return strings.Contains(scanner.Text(), "go "), nil
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return false, fmt.Errorf("error reading file: %w", err)
+	}
+	return false, nil
 }
 
 // getNextLine takes a file and line of current statement and returns the next line that has statement
