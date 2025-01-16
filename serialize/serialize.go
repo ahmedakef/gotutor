@@ -99,7 +99,7 @@ func (v *Serializer) goToNextLine(ctx context.Context, goroutine *api.Goroutine)
 			v.logger.Info().Any("debugState", debugState).Msg("read exit signal")
 			return Step{}, true, nil
 		}
-	} else if equalLocation(debugState.SelectedGoroutine.CurrentLoc, odebugState.SelectedGoroutine.UserCurrentLoc) { // if not in runtime
+	} else if equalLocation(debugState.SelectedGoroutine.CurrentLoc, debugState.SelectedGoroutine.UserCurrentLoc) { // if not in runtime
 		debugState, err = v.client.StepOut(ctx)
 		if err != nil {
 			return Step{}, true, fmt.Errorf("stepOut: %w", err)
@@ -117,7 +117,7 @@ func (v *Serializer) goToNextLine(ctx context.Context, goroutine *api.Goroutine)
 			return Step{}, true, nil
 		}
 	} else { // in a function in runtime that but still have user code in one of the frames
-		debugState, exited, err = v.continueToFirstFrameInMainDotGo(ctx, odebugState)
+		debugState, exited, err = v.continueToFirstFrameInMainDotGo(ctx, debugState)
 		if err != nil {
 			return Step{}, true, fmt.Errorf("continueToFirstFrameInMainDotGo: %w", err)
 		}
