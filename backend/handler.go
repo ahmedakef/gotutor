@@ -51,7 +51,7 @@ func (h *Handler) GetExecutionSteps(ctx restate.Context, req GetExecutionStepsRe
 
 	binaryPath, err := dlv.Build(sourcePath, dir)
 	if err != nil {
-		return nil, restate.TerminalError(fmt.Errorf("build binary: %w", err), http.StatusBadRequest)
+		return nil, restate.TerminalError(fmt.Errorf("failed to build binary: %w", err), http.StatusBadRequest)
 	}
 	client, err := dlv.RunServerAndGetClient(binaryPath, sourcePath, dlv.GetBuildFlags(), debugger.ExecutingGeneratedFile)
 	if err != nil {

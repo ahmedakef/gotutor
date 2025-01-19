@@ -61,7 +61,7 @@ type alias Scroll =
 
 
 type Msg
-    = GotSteps (Result Http.Error (List Step))
+    = GotSteps (Result String (List Step))
     | GotSourceCode (Result Http.Error String)
     | EditCode
     | OnScroll Scroll
@@ -96,7 +96,7 @@ getSteps sourceCode env =
             ]
         , url = backendUrl ++ "/Handler/GetExecutionSteps"
         , body = Http.jsonBody (Json.Encode.object [ ( "source_code", Json.Encode.string sourceCode ) ])
-        , expect = Http.expectJson GotSteps stepsDecoder
+        , expect = HttpHelper.expectJson GotSteps stepsDecoder
         , timeout = Just (60 * 1000) -- ms
         , tracker = Nothing
         }
@@ -106,7 +106,7 @@ getInitSteps : Cmd Msg
 getInitSteps =
     Http.get
         { url = "gotutor/initialProgram/steps.json"
-        , expect = Http.expectJson GotSteps stepsDecoder
+        , expect = HttpHelper.expectJson GotSteps stepsDecoder
         }
 
 
@@ -136,10 +136,10 @@ update msg state env =
                             case successState.mode of
                                 WaitingSteps ->
                                     -- waiting after clicking visualize
-                                    ( Success { successState | mode = Edit, steps = [], position = 0, errorMessage = Just ("Error received from backend: " ++ HttpHelper.errorToString err) }, Cmd.none )
+                                    ( Success { successState | mode = Edit, steps = [], position = 0, errorMessage = Just err }, Cmd.none )
 
                                 _ ->
-                                    ( Failure ("Error while getting example program execution steps: " ++ HttpHelper.errorToString err), Cmd.none )
+                                    ( Failure ("Error while getting example program execution steps: " ++ err), Cmd.none )
 
                 GotSourceCode sourceCodeResult ->
                     case sourceCodeResult of
@@ -195,7 +195,7 @@ update msg state env =
                             ( Success (StepsState View steps 1 "" Nothing (Scroll 0 0) Nothing), Cmd.none )
 
                         Err err ->
-                            ( Failure ("Error while getting program execution steps: " ++ HttpHelper.errorToString err), Cmd.none )
+                            ( Failure ("Error while getting program execution steps: " ++ err), Cmd.none )
 
                 GotSourceCode sourceCodeResult ->
                     case sourceCodeResult of
