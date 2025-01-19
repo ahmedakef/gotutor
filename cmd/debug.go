@@ -6,12 +6,12 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/rs/zerolog"
 
 	"github.com/ahmedakef/gotutor/dlv"
 	"github.com/go-delve/delve/pkg/gobuild"
+	"github.com/go-delve/delve/service/debugger"
 	"github.com/spf13/cobra"
 )
 
@@ -30,41 +30,35 @@ to quickly create a Cobra application.`,
 }
 
 func debug(cmd *cobra.Command, args []string) error {
+	multipleGoroutines, err := cmd.Flags().GetBool("multiple-goroutines")
+	if err != nil {
+		return fmt.Errorf("failed to get multiple-goroutines flag: %w", err)
+	}
+
+	ctx, cancel := context.WithCancel(cmd.Context())
+	defer cancel()
+	logger := ctx.Value("logger").(zerolog.Logger)
+
 	sourcePath := ""
 	if len(args) == 1 {
 		sourcePath = args[0]
 	}
 	binaryPath, err := dlv.Build(sourcePath, "")
 	if err != nil {
-		return fmt.Errorf("failed to build binary: %w", err)
+		logger.Error().Err(err).Msg("failed to build binary")
+		return nil
 	}
 	defer gobuild.Remove(binaryPath)
-	debugServerErr := make(chan error, 1)
-	go func() {
-		err := dlv.RunDebugServer(binaryPath, addr)
-		debugServerErr <- err
-	}()
-	time.Sleep(1 * time.Second)
 
-	ctx, cancel := context.WithCancel(cmd.Context())
-	defer cancel()
-	logger := ctx.Value("logger").(zerolog.Logger)
-	multipleGoroutines, err := cmd.Flags().GetBool("multiple-goroutines")
+	client, err := dlv.RunServerAndGetClient(binaryPath, sourcePath, dlv.GetBuildFlags(), debugger.ExecutingGeneratedFile)
 	if err != nil {
-		return fmt.Errorf("failed to get multiple-goroutines flag: %w", err)
+		return fmt.Errorf("failed to connect: %w", err)
 	}
-	err = getAndWriteSteps(ctx, logger, multipleGoroutines)
+
+	err = getAndWriteSteps(ctx, client, logger, multipleGoroutines)
 	if err != nil {
 		logger.Error().Err(err).Msg("getAndWriteSteps")
 		return nil
-	}
-
-	select {
-	case err := <-debugServerErr:
-		if err != nil {
-			logger.Error().Err(err).Msg("debugServer error occurred")
-		}
-	default:
 	}
 
 	return nil

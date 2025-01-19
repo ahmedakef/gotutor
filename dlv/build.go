@@ -7,7 +7,7 @@ import (
 	"github.com/go-delve/delve/pkg/goversion"
 )
 
-// given a sourcePath, build the binary in temporary directory and return the path to the binary
+// Build builds the binary in temporary directory and return the path to the binary given a sourcePath
 func Build(sourcePath string, outputPrefix string) (string, error) {
 	args := []string{sourcePath}
 	debugName, err := buildBinary(args, outputPrefix, false)
@@ -15,7 +15,7 @@ func Build(sourcePath string, outputPrefix string) (string, error) {
 }
 
 func buildBinary(args []string, outputPrefix string, isTest bool) (string, error) {
-	buildFlags := getBuildFlags()
+	buildFlags := GetBuildFlags()
 	var debugName string
 	var err error
 	if isTest {
@@ -33,7 +33,8 @@ func buildBinary(args []string, outputPrefix string, isTest bool) (string, error
 	return debugName, err
 }
 
-func getBuildFlags() string {
+// GetBuildFlags returns the default build flags for the current platform
+func GetBuildFlags() string {
 	buildFlagsDefault := ""
 	if runtime.GOOS == "windows" {
 		ver, _ := goversion.Installed()

@@ -5,16 +5,8 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"os"
 	"time"
-
-	"github.com/ahmedakef/gotutor/serialize"
-
-	"github.com/ahmedakef/gotutor/gateway"
-
-	"github.com/ahmedakef/gotutor/dlv"
 
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
@@ -51,53 +43,4 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().Bool("multiple-goroutines", false, "handle multiple goroutines // not well supported yet")
-}
-
-func dlvGatewayClient(logger zerolog.Logger) (*gateway.Debug, error) {
-	rpcClient, err := dlv.Connect(addr)
-	if err != nil {
-		logger.Error().Err(err).Msg("failed to connect to server")
-		return nil, fmt.Errorf("failed to connect to server: %w", err)
-	}
-	client := gateway.NewDebug(rpcClient)
-	return client, nil
-
-}
-
-func getAndWriteSteps(ctx context.Context, logger zerolog.Logger, multipleGoroutines bool) error {
-	client, err := dlvGatewayClient(logger)
-	if err != nil {
-		return fmt.Errorf("failed to create dlvGatewayClient: %w", err)
-	}
-
-	defer func() {
-		logger.Info().Msg("killing the debugger")
-		err = client.Detach(true)
-		if err != nil {
-			logger.Error().Err(err).Msg("failed to halt the execution")
-		}
-	}()
-
-	serializer := serialize.NewSerializer(client, logger, multipleGoroutines)
-	steps, err := serializer.ExecutionSteps(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get execution steps: %w", err)
-	}
-	// put the result in steps.json file
-	file, err := os.OpenFile("steps.json", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
-	if err != nil {
-		return fmt.Errorf("failed to open steps.json file: %w", err)
-	}
-	defer file.Close()
-
-	err = json.NewEncoder(file).Encode(steps)
-	if err != nil {
-		return fmt.Errorf("failed to encode steps: %w", err)
-	}
-	// Explicitly flush the file buffer
-	err = file.Sync()
-	if err != nil {
-		return fmt.Errorf("failed to flush file buffer: %w", err)
-	}
-	return nil
 }

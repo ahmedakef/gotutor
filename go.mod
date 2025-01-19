@@ -10,6 +10,7 @@ require (
 
 require (
 	github.com/cilium/ebpf v0.11.0 // indirect
+	github.com/google/go-dap v0.12.0 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect

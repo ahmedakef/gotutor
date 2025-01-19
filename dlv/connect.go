@@ -6,11 +6,72 @@ import (
 	"net"
 	"strings"
 
+	"github.com/ahmedakef/gotutor/gateway"
 	"github.com/go-delve/delve/pkg/logflags"
+	"github.com/go-delve/delve/pkg/proc"
+	"github.com/go-delve/delve/service"
+	"github.com/go-delve/delve/service/api"
+	"github.com/go-delve/delve/service/debugger"
 	"github.com/go-delve/delve/service/rpc2"
+	"github.com/go-delve/delve/service/rpccommon"
 )
 
-func Connect(addr string) (*rpc2.RPCClient, error) {
+func RunServerAndGetClient(debugName string, target string, buildFlags string, kind debugger.ExecuteKind) (*gateway.Debug, error) {
+	listener, clientConn := service.ListenerPipe()
+	defer listener.Close()
+
+	disconnectChan := make(chan struct{})
+	// Create and start a debugger server
+	processArgs := []string{debugName, target}
+	server := rpccommon.NewServer(&service.Config{
+		Listener:           listener,
+		ProcessArgs:        processArgs,
+		AcceptMulti:        false,
+		APIVersion:         2,
+		CheckLocalConnUser: true,
+		DisconnectChan:     disconnectChan,
+		Debugger: debugger.Config{
+			AttachPid:             0,
+			WorkingDir:            ".",
+			Backend:               "default",
+			CoreFile:              "",
+			Foreground:            false,
+			Packages:              []string{},
+			BuildFlags:            buildFlags,
+			ExecuteKind:           debugger.ExecutingGeneratedFile,
+			DebugInfoDirectories:  []string{},
+			CheckGoVersion:        true,
+			TTY:                   "",
+			Stdin:                 "",
+			Stdout:                proc.OutputRedirect{Path: ""},
+			Stderr:                proc.OutputRedirect{Path: ""},
+			DisableASLR:           false,
+			RrOnProcessPid:        0,
+			AttachWaitFor:         "",
+			AttachWaitForInterval: 1,
+			AttachWaitForDuration: 0,
+		},
+	})
+
+	if err := server.Run(); err != nil {
+		if errors.Is(err, api.ErrNotExecutable) {
+			switch kind {
+			case debugger.ExecutingGeneratedFile:
+				return nil, errors.New("can not debug non-main package")
+			case debugger.ExecutingExistingFile:
+				return nil, fmt.Errorf("%s is not executable\n", processArgs[0])
+			default:
+				// fallthrough
+			}
+		}
+		return nil, err
+	}
+
+	return newClientFromConn(listener.Addr().String(), clientConn)
+
+}
+
+func Connect(addr string) (*gateway.Debug, error) {
 	var clientConn net.Conn
 	if clientConn = netDial(addr); clientConn == nil {
 		return nil, errors.New("already logged")
@@ -29,7 +90,19 @@ func Connect(addr string) (*rpc2.RPCClient, error) {
 			}
 		}
 	}
-	return client, nil
+	return gateway.NewDebug(client), nil
+}
+
+func newClientFromConn(addr string, clientConn net.Conn) (*gateway.Debug, error) {
+	var client *rpc2.RPCClient
+	if clientConn == nil { // I don't understand the code exactly just copied it from dlv
+		if clientConn = netDial(addr); clientConn == nil {
+			return nil, errors.New("already logged")
+		}
+	}
+	client = rpc2.NewClientFromConn(clientConn)
+	return gateway.NewDebug(client), nil
+
 }
 
 const unixAddrPrefix = "unix:"

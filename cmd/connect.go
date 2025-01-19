@@ -6,6 +6,8 @@ package cmd
 import (
 	"context"
 	"fmt"
+
+	"github.com/ahmedakef/gotutor/dlv"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 )
@@ -31,7 +33,19 @@ func connect(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to get multiple-goroutines flag: %w", err)
 	}
-	err = getAndWriteSteps(ctx, logger, multipleGoroutines)
+
+	addr, err := cmd.Flags().GetString("address")
+	if err != nil {
+		return fmt.Errorf("failed to get address flag: %w", err)
+	}
+
+	client, err := dlv.Connect(addr)
+	if err != nil {
+		logger.Error().Err(err).Msg("failed to connect to server")
+		return nil
+	}
+
+	err = getAndWriteSteps(ctx, client, logger, multipleGoroutines)
 	if err != nil {
 		logger.Error().Err(err).Msg("getAndWriteSteps")
 		return nil
@@ -40,5 +54,6 @@ func connect(cmd *cobra.Command, args []string) error {
 }
 
 func init() {
+	connectCmd.Flags().String("address", ":8083", "address of the server to connect to")
 	rootCmd.AddCommand(connectCmd)
 }

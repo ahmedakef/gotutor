@@ -6,14 +6,13 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/rs/zerolog"
-	"time"
 
 	"github.com/ahmedakef/gotutor/dlv"
+	"github.com/go-delve/delve/service/debugger"
+	"github.com/rs/zerolog"
+
 	"github.com/spf13/cobra"
 )
-
-var addr = ":8083"
 
 // execCmd represents the exec command
 var execCmd = &cobra.Command{
@@ -30,37 +29,30 @@ to quickly create a Cobra application.`,
 }
 
 func execute(cmd *cobra.Command, args []string) error {
+	multipleGoroutines, err := cmd.Flags().GetBool("multiple-goroutines")
+	if err != nil {
+		return fmt.Errorf("failed to get multiple-goroutines flag: %w", err)
+	}
+
+	ctx, cancel := context.WithCancel(cmd.Context())
+	defer cancel()
+	logger := ctx.Value("logger").(zerolog.Logger)
+
 	binaryPath := "."
 	if len(args) == 1 {
 		binaryPath = args[0]
 	}
 
-	debugServerErr := make(chan error, 1)
-	go func() {
-		err := dlv.RunDebugServer(binaryPath, addr)
-		debugServerErr <- err
-	}()
-	time.Sleep(1 * time.Second)
-
-	ctx, cancel := context.WithCancel(cmd.Context())
-	defer cancel()
-	logger := ctx.Value("logger").(zerolog.Logger)
-	multipleGoroutines, err := cmd.Flags().GetBool("multiple-goroutines")
+	client, err := dlv.RunServerAndGetClient(binaryPath, "", dlv.GetBuildFlags(), debugger.ExecutingGeneratedFile)
 	if err != nil {
-		return fmt.Errorf("failed to get multiple-goroutines flag: %w", err)
-	}
-	err = getAndWriteSteps(ctx, logger, multipleGoroutines)
-	if err != nil {
-		logger.Error().Err(err).Msg("getAndWriteSteps")
+		logger.Error().Err(err).Msg("failed to connect to server")
 		return nil
 	}
 
-	select {
-	case err := <-debugServerErr:
-		if err != nil {
-			logger.Error().Err(err).Msg("debugServer error occurred")
-		}
-	default:
+	err = getAndWriteSteps(ctx, client, logger, multipleGoroutines)
+	if err != nil {
+		logger.Error().Err(err).Msg("getAndWriteSteps")
+		return nil
 	}
 	return nil
 
