@@ -10,6 +10,7 @@ import (
 	"github.com/ahmedakef/gotutor/dlv"
 	"github.com/ahmedakef/gotutor/gateway"
 	"github.com/ahmedakef/gotutor/serialize"
+	"github.com/go-delve/delve/service/debugger"
 	restate "github.com/restatedev/sdk-go"
 	"github.com/rs/zerolog"
 	"golang.org/x/exp/rand"
@@ -32,7 +33,6 @@ type GetExecutionStepsRequest struct {
 
 func (h *Handler) GetExecutionSteps(ctx restate.Context, req GetExecutionStepsRequest) ([]serialize.Step, error) {
 	port := generateRandomPort()
-	addr := fmt.Sprintf(":%d", port)
 	dir, err := prepareTempDir(port)
 	if err != nil {
 		return nil, restate.TerminalError(fmt.Errorf("failed to prepare sources directory: %w", err), http.StatusInternalServerError)
@@ -51,42 +51,27 @@ func (h *Handler) GetExecutionSteps(ctx restate.Context, req GetExecutionStepsRe
 
 	binaryPath, err := dlv.Build(sourcePath, dir)
 	if err != nil {
-		return nil, restate.TerminalError(fmt.Errorf("failed to build binary: %w", err), http.StatusBadRequest)
+		return nil, restate.TerminalError(fmt.Errorf("build binary: %w", err), http.StatusBadRequest)
 	}
-
-	debugServerErr := make(chan error, 1)
-	go func() {
-		err := dlv.RunDebugServer(binaryPath, addr)
-		debugServerErr <- err
-	}()
-	time.Sleep(1 * time.Second)
+	client, err := dlv.RunServerAndGetClient(binaryPath, sourcePath, dlv.GetBuildFlags(), debugger.ExecutingGeneratedFile)
+	if err != nil {
+		return nil, restate.TerminalError(fmt.Errorf("runServerAndGetClient: %w", err), http.StatusInternalServerError)
+	}
 
 	multipleGoroutines := false
-	steps, err := h.getSteps(ctx, addr, multipleGoroutines)
+	steps, err := h.getSteps(ctx, client, multipleGoroutines)
 	if err != nil {
 		return nil, fmt.Errorf("get and write steps: %w", err)
-	}
-
-	select {
-	case err := <-debugServerErr:
-		if err != nil {
-			h.logger.Error().Err(err).Msg("debugServer error occurred")
-		}
-	default:
 	}
 
 	return steps, nil
 }
 
-func (h *Handler) getSteps(ctx context.Context, addr string, multipleGoroutines bool) ([]serialize.Step, error) {
-	client, err := dlvGatewayClient(addr)
-	if err != nil {
-		return nil, fmt.Errorf("create dlvGatewayClient: %w", err)
-	}
+func (h *Handler) getSteps(ctx context.Context, client *gateway.Debug, multipleGoroutines bool) ([]serialize.Step, error) {
 
 	defer func() {
 		h.logger.Info().Msg("killing the debugger")
-		err = client.Detach(true)
+		err := client.Detach(true)
 		if err != nil {
 			h.logger.Error().Err(err).Msg("Halt the execution")
 		}
@@ -98,16 +83,6 @@ func (h *Handler) getSteps(ctx context.Context, addr string, multipleGoroutines 
 		return nil, fmt.Errorf("get execution steps: %w", err)
 	}
 	return steps, nil
-}
-
-func dlvGatewayClient(addr string) (*gateway.Debug, error) {
-	rpcClient, err := dlv.Connect(addr)
-	if err != nil {
-		return nil, fmt.Errorf("connect to server: %w", err)
-	}
-	client := gateway.NewDebug(rpcClient)
-	return client, nil
-
 }
 
 func generateRandomPort() int {

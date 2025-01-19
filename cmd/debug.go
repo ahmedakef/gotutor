@@ -52,7 +52,7 @@ func debug(cmd *cobra.Command, args []string) error {
 
 	client, err := dlv.RunServerAndGetClient(binaryPath, sourcePath, dlv.GetBuildFlags(), debugger.ExecutingGeneratedFile)
 	if err != nil {
-		return fmt.Errorf("failed to connect: %w", err)
+		return fmt.Errorf("runServerAndGetClient: %w", err)
 	}
 
 	err = getAndWriteSteps(ctx, client, logger, multipleGoroutines)

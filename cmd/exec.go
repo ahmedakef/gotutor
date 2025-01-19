@@ -43,9 +43,9 @@ func execute(cmd *cobra.Command, args []string) error {
 		binaryPath = args[0]
 	}
 
-	client, err := dlv.RunServerAndGetClient(binaryPath, "", dlv.GetBuildFlags(), debugger.ExecutingGeneratedFile)
+	client, err := dlv.RunServerAndGetClient(binaryPath, "", dlv.GetBuildFlags(), debugger.ExecutingExistingFile)
 	if err != nil {
-		logger.Error().Err(err).Msg("failed to connect to server")
+		logger.Error().Err(err).Msg("runServerAndGetClient")
 		return nil
 	}
 
