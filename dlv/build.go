@@ -1,6 +1,7 @@
 package dlv
 
 import (
+	"fmt"
 	"runtime"
 
 	"github.com/go-delve/delve/pkg/gobuild"
@@ -24,12 +25,15 @@ func buildBinary(args []string, outputPrefix string, isTest bool) (string, error
 		debugName = gobuild.DefaultDebugBinaryPath(outputPrefix + "__debug_bin")
 	}
 
+	var out []byte
 	if isTest {
-		err = gobuild.GoTestBuild(debugName, args, buildFlags)
+		_, out, err = gobuild.GoTestBuildCombinedOutput(debugName, args, buildFlags)
 	} else {
-		err = gobuild.GoBuild(debugName, args, buildFlags)
+		_, out, err = gobuild.GoBuildCombinedOutput(debugName, args, buildFlags)
 	}
-
+	if err != nil {
+		err = fmt.Errorf("%v%w", string(out), err)
+	}
 	return debugName, err
 }
 
