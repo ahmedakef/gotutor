@@ -276,12 +276,19 @@ varView v =
                           else
                             css []
                         ]
-                        [ text <| removeMainPrefix var.name ++ " = "
-                        , span [ css [ Css.color (Css.hex "979494") ] ]
+                        ([ text <| removeMainPrefix var.name ++ " = "
+                         , span [ css [ Css.color (Css.hex "979494") ] ]
                             [ text <| "{" ++ var.type_ ++ " | " ++ (var.addr |> Helpers.Hex.intToHex |> String.slice 0 8) ++ "}  "
                             ]
-                        , text value
-                        ]
+                         , text value
+                         ]
+                            ++ (if String.startsWith "[]" var.type_ then
+                                    [ sub [] [ text <| "len: " ++ String.fromInt var.len ++ ", cap:" ++ String.fromInt var.cap ] ]
+
+                                else
+                                    []
+                               )
+                        )
                     , ul [ css [ Css.listStyleType Css.none ] ] (List.map varView children)
                     ]
                 ]
