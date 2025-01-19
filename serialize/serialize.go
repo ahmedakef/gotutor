@@ -164,11 +164,42 @@ func (v *Serializer) buildStep(ctx context.Context, debugState *api.DebuggerStat
 	if err != nil {
 		return Step{}, fmt.Errorf("stacktrace: %w", err)
 	}
+
+	goroutines, err := v.getAllGoroutines(ctx)
+	if err != nil {
+		return Step{}, fmt.Errorf("get all goroutines: %w", err)
+	}
+
+	goroutinesData := []GoRoutineData{{ // we want to make the current goroutine the first one
+		Goroutine:  debugState.SelectedGoroutine,
+		Stacktrace: stacktrace,
+	}}
+	goroutines = removeGorotine(goroutines, debugState.SelectedGoroutine)
+	for _, goroutine := range goroutines {
+		stacktrace, err := v.client.Stacktrace(ctx, goroutine.ID, 100, 0, &defaultLoadConfig)
+		if err != nil {
+			return Step{}, fmt.Errorf("goroutine: %d, stacktrace: %w", goroutine.ID, err)
+		}
+		goroutinesData = append(goroutinesData, GoRoutineData{
+			Goroutine:  goroutine,
+			Stacktrace: stacktrace,
+		})
+	}
+
 	return Step{
-		Goroutine:        debugState.SelectedGoroutine,
 		PackageVariables: packageVars,
-		Stacktrace:       stacktrace,
+		GoroutinesData:   goroutinesData,
 	}, nil
+}
+
+func removeGorotine(goroutines []*api.Goroutine, goroutine *api.Goroutine) []*api.Goroutine {
+	var filteredGoroutines []*api.Goroutine
+	for _, g := range goroutines {
+		if g.ID != goroutine.ID {
+			filteredGoroutines = append(filteredGoroutines, g)
+		}
+	}
+	return filteredGoroutines
 }
 
 // stepForwardMultipleGoroutines steps forward in all active goroutines
@@ -203,6 +234,11 @@ func (v *Serializer) stepForwardMultipleGoroutines(ctx context.Context) ([]Step,
 
 	}
 	return allSteps, false, nil
+}
+
+func (v *Serializer) getAllGoroutines(ctx context.Context) ([]*api.Goroutine, error) {
+	goroutines, _, err := v.client.ListGoroutines(ctx, 0, 0)
+	return goroutines, err
 }
 
 func (v *Serializer) getUserGoroutines(ctx context.Context) ([]*api.Goroutine, error) {

@@ -56,12 +56,12 @@ view state =
                 ]
 
         Failure error ->
-            main_ [ css [ Css.flex (Css.num 1), Css.displayFlex, Css.justifyContent Css.center, Css.alignItems Css.center ] ]
+            main_ [ css [ Css.flex (Css.num 1), Css.displayFlex, Css.justifyContent Css.spaceBetween, Css.alignItems Css.center ] ]
                 [ pre [ css [ Css.color (Css.hex "#d65287"), Css.fontSize (Css.px 20) ] ] [ text error ]
                 ]
 
         Loading ->
-            main_ [ css [ Css.flex (Css.num 1), Css.displayFlex, Css.justifyContent Css.center, Css.alignItems Css.center ] ]
+            main_ [ css [ Css.flex (Css.num 1), Css.displayFlex, Css.justifyContent Css.spaceBetween, Css.alignItems Css.center ] ]
                 [ pre [ css [ Css.fontSize (Css.px 20) ] ] [ text "Loading..." ]
                 ]
 
@@ -97,16 +97,17 @@ stateToVisualize stepsState =
                 packageVars =
                     step.packageVars
 
-                callHierarchy =
-                    step.stacktrace
-                        |> filterUserFrames
+                callHierarchies =
+                    List.map (\gd -> gd.stacktrace) step.goroutinesData
+                        |> List.map filterUserFrames
 
                 currentLine =
-                    List.head callHierarchy
+                    List.head callHierarchies
+                        |> Maybe.andThen List.head
                         |> Maybe.map .line
             in
             { lastStep = Just step
-            , stack = callHierarchy
+            , stack = List.head callHierarchies |> Maybe.withDefault []
             , packageVars = packageVars
             , sourceCode = stepsState.sourceCode
             , scroll = stepsState.scroll
@@ -436,11 +437,22 @@ goroutineView state =
                                     "step is empty, try change the slider"
 
                                 Just step ->
-                                    if step.goroutine.id == 1 then
-                                        "Main Goroutine"
+                                    let
+                                        goroutineLine =
+                                            step.goroutinesData
+                                                |> List.head
+                                                |> Maybe.map .goroutine
+                                                |> Maybe.map .id
+                                    in
+                                    case goroutineLine of
+                                        Just 1 ->
+                                            "Main Goroutine: 1"
 
-                                    else
-                                        "Goroutine: " ++ String.fromInt step.goroutine.id
+                                        Just gLine ->
+                                            "Goroutine: " ++ String.fromInt gLine
+
+                                        Nothing ->
+                                            "No Goroutine found"
     in
     div
         [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.alignItems Css.center, Css.marginBottom (Css.px 10) ] ]

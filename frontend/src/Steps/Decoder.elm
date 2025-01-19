@@ -50,8 +50,13 @@ type Variable
 
 
 type alias Step =
+    { packageVars : List Variable
+    , goroutinesData : List GoroutinesData
+    }
+
+
+type alias GoroutinesData =
     { goroutine : Goroutine
-    , packageVars : List Variable
     , stacktrace : List StackFrame
     }
 
@@ -189,9 +194,15 @@ stacktraceDecoder =
 
 stepDecoder : Decoder Step
 stepDecoder =
-    map3 Step
-        (field "Goroutine" goroutineDecoder)
+    map2 Step
         (field "PackageVariables" (list variableDecoder))
+        (field "GoroutinesData" (list goroutinesDataDecoder))
+
+
+goroutinesDataDecoder : Decoder GoroutinesData
+goroutinesDataDecoder =
+    map2 GoroutinesData
+        (field "Goroutine" goroutineDecoder)
         (field "Stacktrace" stacktraceDecoder)
 
 

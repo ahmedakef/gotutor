@@ -4,12 +4,16 @@ import (
 	"github.com/go-delve/delve/service/api"
 )
 
+type GoRoutineData struct {
+	Goroutine  *api.Goroutine
+	Stacktrace []api.Stackframe
+}
+
 type Step struct {
-	Goroutine        *api.Goroutine
 	PackageVariables []api.Variable
-	Stacktrace       []api.Stackframe
+	GoroutinesData   []GoRoutineData
 }
 
 func (s *Step) isValid() bool {
-	return s.Goroutine != nil && s.Goroutine.CurrentLoc.File != ""
+	return len(s.GoroutinesData) > 0 && s.GoroutinesData[0].Goroutine != nil && s.GoroutinesData[0].Goroutine.CurrentLoc.File != ""
 }
