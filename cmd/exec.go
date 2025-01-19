@@ -36,7 +36,7 @@ func execute(cmd *cobra.Command, args []string) error {
 
 	ctx, cancel := context.WithCancel(cmd.Context())
 	defer cancel()
-	logger := ctx.Value("logger").(zerolog.Logger)
+	logger := ctx.Value(loggerKey).(zerolog.Logger)
 
 	binaryPath := "."
 	if len(args) == 1 {

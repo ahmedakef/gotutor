@@ -12,6 +12,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type ctxKey string
+
+const loggerKey ctxKey = "logger"
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "gotutor",
@@ -27,7 +31,7 @@ to quickly create a Cobra application.`,
 			zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339},
 		).Level(zerolog.TraceLevel).With().Timestamp().Caller().Logger()
 
-		ctx := context.WithValue(context.Background(), "logger", logger)
+		ctx := context.WithValue(context.Background(), loggerKey, logger)
 		cmd.SetContext(ctx)
 	},
 }

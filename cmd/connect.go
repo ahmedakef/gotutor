@@ -28,7 +28,7 @@ to quickly create a Cobra application.`,
 func connect(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithCancel(cmd.Context())
 	defer cancel()
-	logger := ctx.Value("logger").(zerolog.Logger)
+	logger := ctx.Value(loggerKey).(zerolog.Logger)
 	multipleGoroutines, err := cmd.Flags().GetBool("multiple-goroutines")
 	if err != nil {
 		return fmt.Errorf("failed to get multiple-goroutines flag: %w", err)
