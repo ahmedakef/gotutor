@@ -49,9 +49,7 @@ view state =
                                 ]
                             ]
                         ]
-                    , div [ css [ Css.displayFlex, Css.flex (Css.num 1), Css.flexDirection Css.column, Css.alignItems Css.center ] ]
-                        [ programVisualizer visualizeState
-                        ]
+                    , programVisualizer visualizeState
                     ]
                 ]
 
@@ -318,21 +316,24 @@ programVisualizer : VisualizeState -> Html Msg
 programVisualizer state =
     div
         [ css
-            ([ borderStyle, Css.padding2 (Css.px 10) (Css.px 50), Css.width (Css.pct 80) ]
-                ++ (case state.flashMessage of
-                        Just _ ->
-                            [ Css.backgroundColor (Css.hex "f5c6cb") ]
-
-                        Nothing ->
-                            []
-                   )
-            )
+            [ Css.flex (Css.num 1)
+            , Css.paddingTop (Css.px 10)
+            , Css.paddingRight (Css.px 10)
+            ]
         ]
-        [ goroutineView state
+        [ backendStateView state
         , varsView
             "Global Variables:"
             (Just state.packageVars)
             [ css [ Css.marginBottom (Css.px 10) ] ]
+        , goroutineView state
+        ]
+
+
+goroutineView : VisualizeState -> Html Msg
+goroutineView state =
+    div [ css [ borderStyle, Css.paddingLeft (Css.px 10), Css.paddingRight (Css.px 10) ] ]
+        [ goroutineInfoView state
         , stackView state.stack
         ]
 
@@ -418,10 +419,10 @@ removeMainPrefix str =
         str
 
 
-goroutineView : VisualizeState -> Html msg
-goroutineView state =
+backendStateView : VisualizeState -> Html Msg
+backendStateView state =
     let
-        gInfo =
+        message =
             case state.flashMessage of
                 Just msg ->
                     msg
@@ -436,27 +437,63 @@ goroutineView state =
                                 Nothing ->
                                     "step is empty, try change the slider"
 
-                                Just step ->
-                                    let
-                                        goroutineLine =
-                                            step.goroutinesData
-                                                |> List.head
-                                                |> Maybe.map .goroutine
-                                                |> Maybe.map .id
-                                    in
-                                    case goroutineLine of
-                                        Just 1 ->
-                                            "Main Goroutine: 1"
+                                Just _ ->
+                                    ""
+    in
+    case message of
+        "" ->
+            div [] []
 
-                                        Just gLine ->
-                                            "Goroutine: " ++ String.fromInt gLine
+        _ ->
+            div
+                [ css
+                    ([ Css.displayFlex
+                     , Css.flexDirection Css.column
+                     , Css.alignItems Css.center
+                     , Css.marginBottom (Css.px 10)
+                     , borderStyle
+                     ]
+                        ++ (case state.flashMessage of
+                                Just _ ->
+                                    [ Css.backgroundColor (Css.hex "f5c6cb") ]
 
-                                        Nothing ->
-                                            "No Goroutine found"
+                                Nothing ->
+                                    []
+                           )
+                    )
+                ]
+                [ p [ css [ Css.fontSize (Css.rem 1.5) ] ] [ text message ] ]
+
+
+goroutineInfoView : VisualizeState -> Html msg
+goroutineInfoView state =
+    let
+        gInfo =
+            case state.lastStep of
+                Nothing ->
+                    ""
+
+                Just step ->
+                    let
+                        goroutineLine =
+                            step.goroutinesData
+                                |> List.head
+                                |> Maybe.map .goroutine
+                                |> Maybe.map .id
+                    in
+                    case goroutineLine of
+                        Just 1 ->
+                            "Main Goroutine: 1"
+
+                        Just gLine ->
+                            "Goroutine: " ++ String.fromInt gLine
+
+                        Nothing ->
+                            "No Goroutine found"
     in
     div
         [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.alignItems Css.center, Css.marginBottom (Css.px 10) ] ]
-        [ p [ css [ Css.fontSize (Css.rem 1.5) ] ] [ text gInfo ] ]
+        [ p [ css [ Css.fontSize (Css.rem 1.3) ] ] [ text gInfo ] ]
 
 
 borderStyle : Css.Style
