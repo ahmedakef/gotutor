@@ -322,31 +322,38 @@ programVisualizer state =
             "Global Variables:"
             (Just state.packageVars)
             [ css [ Css.marginBottom (Css.px 10) ] ]
-        , goroutinesView (state.lastStep |> Maybe.map .goroutinesData)
+        , goroutinesView
+            (state.lastStep
+                |> Maybe.map .goroutinesData
+                |> Maybe.withDefault []
+                |> List.filter (\g -> not (List.isEmpty (filterUserFrames g.stacktrace)))
+            )
         ]
 
 
-goroutinesView : Maybe (List GoroutinesData) -> Html Msg
-goroutinesView mGoroutinesData =
-    case mGoroutinesData of
-        Nothing ->
-            div [] []
-
-        Just goroutinesData ->
-            div
-                [ css
-                    [ Css.displayFlex
-                    , Css.flexDirection Css.row
-                    , Css.flexWrap Css.wrap
-                    , Css.property "justify-content" "space-evenly"
-                    ]
-                ]
-                (List.map goroutineView goroutinesData)
+goroutinesView : List GoroutinesData -> Html Msg
+goroutinesView goroutinesData =
+    div
+        [ css
+            [ Css.displayFlex
+            , Css.flexDirection Css.row
+            , Css.flexWrap Css.wrap
+            , Css.property "justify-content" "space-evenly"
+            ]
+        ]
+        (List.map goroutineView goroutinesData)
 
 
 goroutineView : GoroutinesData -> Html Msg
 goroutineView goroutineData =
-    div [ css [ borderStyle, Css.paddingLeft (Css.px 10), Css.paddingRight (Css.px 10) ] ]
+    div
+        [ css
+            [ borderStyle
+            , Css.paddingLeft (Css.px 10)
+            , Css.paddingRight (Css.px 10)
+            , Css.marginBottom (Css.px 10)
+            ]
+        ]
         [ goroutineInfoView goroutineData
         , stackView (goroutineData.stacktrace |> filterUserFrames)
         ]
