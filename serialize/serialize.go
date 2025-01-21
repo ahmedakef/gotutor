@@ -366,51 +366,30 @@ func (v *Serializer) goToNextLineConsideringJumpingFromOtherGoroutine(ctx contex
 	return step, false, nil
 }
 
-func internalFunction(goroutineFile string) bool {
-	return strings.Contains(goroutineFile, "src/runtime/") ||
-		strings.Contains(goroutineFile, "/libexec/")
-}
-
-// isInMainDotGo checks if the current location is in main.go file
-func isInMainDotGo(goroutineFile string) bool {
-	mainFie := strings.HasSuffix(goroutineFile, "main.go")
-	return mainFie
-}
-
-// goroutineInRuntime checks if the goroutine is in runtime
-// tbh I don't know if empty file means it's in runtime or not
-// this was suggested by copilot
-// anyway we need to not execute step of step out in this case as this case errors out the delve server
-func goroutineInRuntime(goroutineFile string) bool {
-	emptyFile := goroutineFile == "" // calling step out while the goroutine has CurrentLoc.File as empty string cause runtime error in delve server
-
-	return emptyFile
-}
-
-// old functions no longer used
-
-// stepOutToUserCode steps out of the current function until it reaches user code
-func (v *Serializer) stepOutToUserCode(ctx context.Context, debugState *api.DebuggerState) (*api.DebuggerState, bool, error) {
-	var err error
-	v.logger.Info().Msg(fmt.Sprintf("goroutine: %d, stepOutToUserCode", debugState.SelectedGoroutine.ID))
-	v.logger.Info().Msg(fmt.Sprintf("File:Line: %s:%d", debugState.SelectedGoroutine.CurrentLoc.File, debugState.SelectedGoroutine.CurrentLoc.Line))
-	if goroutineInRuntime(debugState.SelectedGoroutine.CurrentLoc.File) {
-		return debugState, false, nil
+func (v *Serializer) isInvokingGoroutine(filePath string, line int) (bool, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return false, fmt.Errorf("error opening file: %w", err)
 	}
-	for !isInMainDotGo(debugState.SelectedGoroutine.CurrentLoc.File) {
-		debugState, err = v.client.StepOut(ctx)
+	defer func() {
+		err := file.Close()
 		if err != nil {
-			return nil, true, fmt.Errorf("StepOut: %w", err)
+			v.logger.Error().Err(err).Msg("error closing file")
 		}
-		if debugState.Exited {
-			return debugState, true, nil
-		}
-		v.logger.Info().Msg(fmt.Sprintf("File:Line: %s:%d\n", debugState.SelectedGoroutine.CurrentLoc.File, debugState.SelectedGoroutine.CurrentLoc.Line))
-		if goroutineInRuntime(debugState.SelectedGoroutine.CurrentLoc.File) {
-			return debugState, false, nil
+	}()
+
+	scanner := bufio.NewScanner(file)
+	lineNumber := 0
+	for scanner.Scan() {
+		lineNumber++
+		if lineNumber == line {
+			return strings.Contains(scanner.Text(), "go "), nil
 		}
 	}
-	return debugState, false, nil
+	if err := scanner.Err(); err != nil {
+		return false, fmt.Errorf("error reading file: %w", err)
+	}
+	return false, nil
 }
 
 func (v *Serializer) continueToUserCode(ctx context.Context, debugState *api.DebuggerState) (*api.DebuggerState, bool, error) {
@@ -496,36 +475,6 @@ func (v *Serializer) continueToFirstFrameInMainDotGo(ctx context.Context, debugS
 	return debugState, false, nil
 }
 
-func equalLocation(loc1, loc2 api.Location) bool {
-	return loc1.File == loc2.File && loc1.Line == loc2.Line
-}
-
-func (v *Serializer) isInvokingGoroutine(filePath string, line int) (bool, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return false, fmt.Errorf("error opening file: %w", err)
-	}
-	defer func() {
-		err := file.Close()
-		if err != nil {
-			v.logger.Error().Err(err).Msg("error closing file")
-		}
-	}()
-
-	scanner := bufio.NewScanner(file)
-	lineNumber := 0
-	for scanner.Scan() {
-		lineNumber++
-		if lineNumber == line {
-			return strings.Contains(scanner.Text(), "go "), nil
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		return false, fmt.Errorf("error reading file: %w", err)
-	}
-	return false, nil
-}
-
 // getNextLine takes a file and line of current statement and returns the next line that has statement
 func (v *Serializer) getNextLine(filePath string, currentLine int) (int, error) {
 	file, err := os.Open(filePath)
@@ -551,4 +500,29 @@ func (v *Serializer) getNextLine(filePath string, currentLine int) (int, error) 
 		return 0, fmt.Errorf("error reading file: %w", err)
 	}
 	return currentLine, nil
+}
+
+func equalLocation(loc1, loc2 api.Location) bool {
+	return loc1.File == loc2.File && loc1.Line == loc2.Line
+}
+
+func internalFunction(goroutineFile string) bool {
+	return strings.Contains(goroutineFile, "src/runtime/") ||
+		strings.Contains(goroutineFile, "/libexec/")
+}
+
+// isInMainDotGo checks if the current location is in main.go file
+func isInMainDotGo(goroutineFile string) bool {
+	mainFie := strings.HasSuffix(goroutineFile, "main.go")
+	return mainFie
+}
+
+// goroutineInRuntime checks if the goroutine is in runtime
+// tbh I don't know if empty file means it's in runtime or not
+// this was suggested by copilot
+// anyway we need to not execute step of step out in this case as this case errors out the delve server
+func goroutineInRuntime(goroutineFile string) bool {
+	emptyFile := goroutineFile == "" // calling step out while the goroutine has CurrentLoc.File as empty string cause runtime error in delve server
+
+	return emptyFile
 }
