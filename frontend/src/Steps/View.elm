@@ -387,30 +387,30 @@ stackView stack =
                     ]
                 ]
             , ul [ css [ Css.listStyleType Css.none ] ]
-                (List.map frameView stack
-                    |> List.indexedMap
-                        (\idx element ->
-                            li []
-                                ((if idx > 0 then
-                                    [ div [ css [] ]
-                                        [ i
-                                            [ css
-                                                [ arrow
-                                                , up
-                                                , Css.position Css.relative
-                                                , Css.left (Css.pct 50)
-                                                ]
-                                            ]
-                                            []
-                                        ]
-                                    ]
+                (case stack of
+                    [] ->
+                        []
 
-                                  else
-                                    []
-                                 )
-                                    ++ [ element ]
+                    first :: rest ->
+                        li [] [ frameView first ]
+                            :: List.map
+                                (\frame ->
+                                    li []
+                                        [ div [ css [] ]
+                                            [ i
+                                                [ css
+                                                    [ arrow
+                                                    , up
+                                                    , Css.position Css.relative
+                                                    , Css.left (Css.pct 50)
+                                                    ]
+                                                ]
+                                                []
+                                            ]
+                                        , frameView frame
+                                        ]
                                 )
-                        )
+                                rest
                 )
             ]
 
