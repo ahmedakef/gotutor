@@ -66,7 +66,6 @@ view state =
 
 type alias VisualizeState =
     { lastStep : Maybe Step
-    , stack : List StackFrame
     , packageVars : List Variable
     , sourceCode : String
     , scroll : Scroll
@@ -95,17 +94,14 @@ stateToVisualize stepsState =
                 packageVars =
                     step.packageVars
 
-                callHierarchies =
-                    List.map (\gd -> gd.stacktrace) step.goroutinesData
-                        |> List.map filterUserFrames
-
                 currentLine =
-                    List.head callHierarchies
+                    List.head step.goroutinesData
+                        |> Maybe.map .stacktrace
+                        |> Maybe.map filterUserFrames
                         |> Maybe.andThen List.head
                         |> Maybe.map .line
             in
             { lastStep = Just step
-            , stack = List.head callHierarchies |> Maybe.withDefault []
             , packageVars = packageVars
             , sourceCode = stepsState.sourceCode
             , scroll = stepsState.scroll
@@ -116,7 +112,7 @@ stateToVisualize stepsState =
             }
 
         Nothing ->
-            VisualizeState lastStep [] [] stepsState.sourceCode stepsState.scroll Nothing Nothing stepsState.mode stepsState.errorMessage
+            VisualizeState lastStep [] stepsState.sourceCode stepsState.scroll Nothing Nothing stepsState.mode stepsState.errorMessage
 
 
 filterUserFrames : List StackFrame -> List StackFrame
@@ -326,15 +322,15 @@ programVisualizer state =
             "Global Variables:"
             (Just state.packageVars)
             [ css [ Css.marginBottom (Css.px 10) ] ]
-        , goroutineView state
+        , goroutineView (state.lastStep |> Maybe.map .goroutinesData |> Maybe.andThen List.head)
         ]
 
 
-goroutineView : VisualizeState -> Html Msg
-goroutineView state =
+goroutineView : Maybe GoroutinesData -> Html Msg
+goroutineView goroutineData =
     div [ css [ borderStyle, Css.paddingLeft (Css.px 10), Css.paddingRight (Css.px 10) ] ]
-        [ goroutineInfoView state
-        , stackView state.stack
+        [ goroutineInfoView goroutineData
+        , stackView (goroutineData |> Maybe.map .stacktrace |> Maybe.map filterUserFrames |> Maybe.withDefault [])
         ]
 
 
@@ -435,7 +431,7 @@ backendStateView state =
                         _ ->
                             case state.lastStep of
                                 Nothing ->
-                                    "step is empty, try change the slider"
+                                    "step is empty, try moving the slider"
 
                                 Just _ ->
                                     ""
@@ -465,31 +461,20 @@ backendStateView state =
                 [ p [ css [ Css.fontSize (Css.rem 1.5) ] ] [ text message ] ]
 
 
-goroutineInfoView : VisualizeState -> Html msg
-goroutineInfoView state =
+goroutineInfoView : Maybe GoroutinesData -> Html msg
+goroutineInfoView mGoroutineData =
     let
         gInfo =
-            case state.lastStep of
+            case mGoroutineData of
                 Nothing ->
-                    ""
+                    "No Goroutine found"
 
-                Just step ->
-                    let
-                        goroutineLine =
-                            step.goroutinesData
-                                |> List.head
-                                |> Maybe.map .goroutine
-                                |> Maybe.map .id
-                    in
-                    case goroutineLine of
-                        Just 1 ->
-                            "Main Goroutine: 1"
+                Just goroutineData ->
+                    if goroutineData.goroutine.id == 1 then
+                        "Main Goroutine: 1"
 
-                        Just gLine ->
-                            "Goroutine: " ++ String.fromInt gLine
-
-                        Nothing ->
-                            "No Goroutine found"
+                    else
+                        "Goroutine: " ++ String.fromInt goroutineData.goroutine.id
     in
     div
         [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.alignItems Css.center, Css.marginBottom (Css.px 10) ] ]
