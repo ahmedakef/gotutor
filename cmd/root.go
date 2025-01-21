@@ -46,5 +46,4 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.PersistentFlags().Bool("multiple-goroutines", false, "handle multiple goroutines // not well supported yet")
 }

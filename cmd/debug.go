@@ -30,10 +30,6 @@ to quickly create a Cobra application.`,
 }
 
 func debug(cmd *cobra.Command, args []string) error {
-	multipleGoroutines, err := cmd.Flags().GetBool("multiple-goroutines")
-	if err != nil {
-		return fmt.Errorf("failed to get multiple-goroutines flag: %w", err)
-	}
 
 	ctx, cancel := context.WithCancel(cmd.Context())
 	defer cancel()
@@ -55,7 +51,7 @@ func debug(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("runServerAndGetClient: %w", err)
 	}
 
-	err = getAndWriteSteps(ctx, client, logger, multipleGoroutines)
+	err = getAndWriteSteps(ctx, client, logger)
 	if err != nil {
 		logger.Error().Err(err).Msg("getAndWriteSteps")
 		return nil

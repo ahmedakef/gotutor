@@ -11,7 +11,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
-func getAndWriteSteps(ctx context.Context, client *gateway.Debug, logger zerolog.Logger, multipleGoroutines bool) error {
+func getAndWriteSteps(ctx context.Context, client *gateway.Debug, logger zerolog.Logger) error {
 
 	defer func() {
 		logger.Info().Msg("killing the debugger")
@@ -21,7 +21,7 @@ func getAndWriteSteps(ctx context.Context, client *gateway.Debug, logger zerolog
 		}
 	}()
 
-	serializer := serialize.NewSerializer(client, logger, multipleGoroutines)
+	serializer := serialize.NewSerializer(client, logger)
 	steps, err := serializer.ExecutionSteps(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get execution steps: %w", err)

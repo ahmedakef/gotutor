@@ -29,10 +29,6 @@ func connect(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithCancel(cmd.Context())
 	defer cancel()
 	logger := ctx.Value(loggerKey).(zerolog.Logger)
-	multipleGoroutines, err := cmd.Flags().GetBool("multiple-goroutines")
-	if err != nil {
-		return fmt.Errorf("failed to get multiple-goroutines flag: %w", err)
-	}
 
 	addr, err := cmd.Flags().GetString("address")
 	if err != nil {
@@ -45,7 +41,7 @@ func connect(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	err = getAndWriteSteps(ctx, client, logger, multipleGoroutines)
+	err = getAndWriteSteps(ctx, client, logger)
 	if err != nil {
 		logger.Error().Err(err).Msg("getAndWriteSteps")
 		return nil

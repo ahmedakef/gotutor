@@ -58,8 +58,7 @@ func (h *Handler) GetExecutionSteps(ctx restate.Context, req GetExecutionStepsRe
 		return nil, restate.TerminalError(fmt.Errorf("runServerAndGetClient: %w", err), http.StatusInternalServerError)
 	}
 
-	multipleGoroutines := false
-	steps, err := h.getSteps(ctx, client, multipleGoroutines)
+	steps, err := h.getSteps(ctx, client)
 	if err != nil {
 		return nil, fmt.Errorf("get and write steps: %w", err)
 	}
@@ -67,7 +66,7 @@ func (h *Handler) GetExecutionSteps(ctx restate.Context, req GetExecutionStepsRe
 	return steps, nil
 }
 
-func (h *Handler) getSteps(ctx context.Context, client *gateway.Debug, multipleGoroutines bool) ([]serialize.Step, error) {
+func (h *Handler) getSteps(ctx context.Context, client *gateway.Debug) ([]serialize.Step, error) {
 
 	defer func() {
 		h.logger.Info().Msg("killing the debugger")
@@ -77,7 +76,7 @@ func (h *Handler) getSteps(ctx context.Context, client *gateway.Debug, multipleG
 		}
 	}()
 
-	serializer := serialize.NewSerializer(client, h.logger, multipleGoroutines)
+	serializer := serialize.NewSerializer(client, h.logger)
 	steps, err := serializer.ExecutionSteps(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get execution steps: %w", err)
