@@ -322,16 +322,49 @@ programVisualizer state =
             "Global Variables:"
             (Just state.packageVars)
             [ css [ Css.marginBottom (Css.px 10) ] ]
-        , goroutineView (state.lastStep |> Maybe.map .goroutinesData |> Maybe.andThen List.head)
+        , goroutinesView (state.lastStep |> Maybe.map .goroutinesData)
         ]
 
 
-goroutineView : Maybe GoroutinesData -> Html Msg
+goroutinesView : Maybe (List GoroutinesData) -> Html Msg
+goroutinesView mGoroutinesData =
+    case mGoroutinesData of
+        Nothing ->
+            div [] []
+
+        Just goroutinesData ->
+            div
+                [ css
+                    [ Css.displayFlex
+                    , Css.flexDirection Css.row
+                    , Css.flexWrap Css.wrap
+                    , Css.property "justify-content" "space-evenly"
+                    ]
+                ]
+                (List.map goroutineView goroutinesData)
+
+
+goroutineView : GoroutinesData -> Html Msg
 goroutineView goroutineData =
     div [ css [ borderStyle, Css.paddingLeft (Css.px 10), Css.paddingRight (Css.px 10) ] ]
         [ goroutineInfoView goroutineData
-        , stackView (goroutineData |> Maybe.map .stacktrace |> Maybe.map filterUserFrames |> Maybe.withDefault [])
+        , stackView (goroutineData.stacktrace |> filterUserFrames)
         ]
+
+
+goroutineInfoView : GoroutinesData -> Html msg
+goroutineInfoView goroutineData =
+    let
+        gInfo =
+            if goroutineData.goroutine.id == 1 then
+                "Main Goroutine: 1"
+
+            else
+                "Goroutine: " ++ String.fromInt goroutineData.goroutine.id
+    in
+    div
+        [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.alignItems Css.center, Css.marginBottom (Css.px 10) ] ]
+        [ p [ css [ Css.fontSize (Css.rem 1.3) ] ] [ text gInfo ] ]
 
 
 stackView : List StackFrame -> Html Msg
@@ -459,26 +492,6 @@ backendStateView state =
                     )
                 ]
                 [ p [ css [ Css.fontSize (Css.rem 1.5) ] ] [ text message ] ]
-
-
-goroutineInfoView : Maybe GoroutinesData -> Html msg
-goroutineInfoView mGoroutineData =
-    let
-        gInfo =
-            case mGoroutineData of
-                Nothing ->
-                    "No Goroutine found"
-
-                Just goroutineData ->
-                    if goroutineData.goroutine.id == 1 then
-                        "Main Goroutine: 1"
-
-                    else
-                        "Goroutine: " ++ String.fromInt goroutineData.goroutine.id
-    in
-    div
-        [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.alignItems Css.center, Css.marginBottom (Css.px 10) ] ]
-        [ p [ css [ Css.fontSize (Css.rem 1.3) ] ] [ text gInfo ] ]
 
 
 borderStyle : Css.Style
