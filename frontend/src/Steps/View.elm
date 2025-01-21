@@ -130,9 +130,6 @@ codeView state =
         highlightedLine =
             Maybe.withDefault 0 state.highlightedLine
 
-        highlightModeCurrentLine =
-            Maybe.map (\_ -> SH.Add) state.lastStep
-
         highlightModeHighlightedLine =
             if highlightedLine == currentLine then
                 Nothing
@@ -168,7 +165,7 @@ codeView state =
                 View ->
                     SH.noLang state.sourceCode
                         |> Result.map (SH.highlightLines highlightModeHighlightedLine (highlightedLine - 1) highlightedLine)
-                        |> Result.map (SH.highlightLines highlightModeCurrentLine (currentLine - 1) currentLine)
+                        |> Result.map (SH.highlightLines (Just SH.Add) (currentLine - 1) currentLine)
                         |> Result.map (SH.toBlockHtml (Just 1))
                         |> Result.withDefault
                             (UnSytyled.pre [] [ UnSytyled.code [ Html.Attributes.class "elmsh" ] [ UnSytyled.text state.sourceCode ] ])
@@ -302,8 +299,7 @@ varsView title maybeVars attributes =
             else
                 details (attribute "open" "" :: attributes)
                     [ summary []
-                        [ b [] [ text title ]
-                        ]
+                        [ b [] [ text title ] ]
                     , ul [ css [ Css.listStyleType Css.none ] ] (List.map varView vars)
                     ]
 
@@ -381,11 +377,7 @@ stackView stack =
 
     else
         details [ attribute "open" "" ]
-            [ summary []
-                [ b []
-                    [ text "Stacktrace:"
-                    ]
-                ]
+            [ summary [] [ b [] [ text "Stacktrace:" ] ]
             , ul [ css [ Css.listStyleType Css.none ] ]
                 (case stack of
                     [] ->
