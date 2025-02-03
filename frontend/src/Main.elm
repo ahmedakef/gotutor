@@ -136,14 +136,18 @@ pageFooter : Html msg
 pageFooter =
     footer
         [ id "about"
-        , css [ Css.width (Css.pct 100) ]
+        , css
+            [ Css.displayFlex
+            , Css.width (Css.pct 100)
+            , Css.borderTop3
+                (Css.px 1)
+                Css.solid
+                (Css.hex "ddd")
+            ]
         ]
         [ div
             [ css
-                [ Css.borderTop3
-                    (Css.px 1)
-                    Css.solid
-                    (Css.hex "ddd")
+                [ Css.flex (Css.num 1)
                 , Css.paddingTop (Css.px 20)
                 , Css.paddingLeft (Css.px 20)
                 , Css.paddingBottom (Css.px 10)
@@ -161,6 +165,22 @@ pageFooter =
             , a [ href "https://www.linkedin.com/in/ahmedakef4/", css [ Css.textDecoration Css.none ] ] [ text "Ahmed Akef" ]
             , text "."
             ]
+        , div [ css [ Css.displayFlex, Css.justifyContent Css.center, Css.alignItems Css.center, Css.flex (Css.num 1) ] ]
+            [ koFiButton
+            ]
+        ]
+
+
+koFiButton : Html msg
+koFiButton =
+    a [ href "https://ko-fi.com/M4M319RW5Y", target "_blank" ]
+        [ img
+            [ height 36
+            , css [ Css.border (Css.px 0), Css.height (Css.px 36) ]
+            , src "https://storage.ko-fi.com/cdn/kofi6.png?v=6"
+            , alt "Buy Me a Coffee at ko-fi.com"
+            ]
+            []
         ]
 
 
