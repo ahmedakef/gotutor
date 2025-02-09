@@ -165,9 +165,32 @@ pageFooter =
             , a [ href "https://www.linkedin.com/in/ahmedakef4/", css [ Css.textDecoration Css.none ] ] [ text "Ahmed Akef" ]
             , text "."
             ]
-        , div [ css [ Css.displayFlex, Css.justifyContent Css.center, Css.alignItems Css.center, Css.flex (Css.num 1) ] ]
-            [ koFiButton
+        , div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.property "justify-content" "space-evenly", Css.alignItems Css.center, Css.flex (Css.num 1) ] ]
+            [ githubSponsorsButton
+            , koFiButton
             ]
+        ]
+
+
+githubSponsorsButton : Html msg
+githubSponsorsButton =
+    a
+        [ href "https://github.com/sponsors/ahmedakef"
+        , target "_blank"
+        , css
+            [ Css.displayFlex
+            , Css.alignItems Css.center
+            , Css.padding2 (Css.px 5) (Css.px 5)
+            , Css.textDecoration Css.none
+            , Css.fontSize (Css.px 12)
+            , Css.backgroundColor (Css.hex "f6f8fa")
+            , Css.borderRadius (Css.rem 0.375)
+            , Css.border3 (Css.rem 0.0625) Css.solid (Css.hex "d1d9e0")
+            , Css.hover [ Css.backgroundColor (Css.hex "e6eaef") ]
+            ]
+        ]
+        [ img [ height 25, src "github-mark.svg", alt "github logo" ] []
+        , span [ css [ Css.marginLeft (Css.px 10), Css.color (Css.hex "25292e") ] ] [ text "Sponsor Me on GitHub" ]
         ]
 
 
