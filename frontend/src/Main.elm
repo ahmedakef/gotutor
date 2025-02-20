@@ -189,7 +189,7 @@ githubSponsorsButton =
             , Css.hover [ Css.backgroundColor (Css.hex "e6eaef") ]
             ]
         ]
-        [ img [ height 25, src "github-mark.svg", alt "github logo" ] []
+        [ img [ height 25, src "static/github-mark.svg", alt "github logo" ] []
         , span [ css [ Css.marginLeft (Css.px 10), Css.color (Css.hex "25292e") ] ] [ text "Sponsor Me on GitHub" ]
         ]
 
