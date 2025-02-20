@@ -45,6 +45,12 @@ the execution steps will be written to `steps.json` file in the current direcotr
 go install github.com/ahmedakef/gotutor@latest
 ```
 
+## docker
+
+```
+docker build -t gotutor . # or directly use ahmedakef/gotutor image to download it from docker hub
+docker run --rm -v $(pwd)/example/main.go:/data/main.go -v $(pwd)/output/:/root/output gotutor debug /data/main.go
+```
 
 ## Contributing
 
