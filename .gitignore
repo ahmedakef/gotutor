@@ -4,7 +4,7 @@ source
 .idea/*
 bin
 source_debug
-./steps.json
+output/*
 __debug_bin*
 .DS_Store
 */.DS_Store

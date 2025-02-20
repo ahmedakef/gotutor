@@ -26,8 +26,13 @@ func getAndWriteSteps(ctx context.Context, client *gateway.Debug, logger zerolog
 	if err != nil {
 		return fmt.Errorf("failed to get execution steps: %w", err)
 	}
-	// put the result in steps.json file
-	file, err := os.OpenFile("steps.json", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	// make sure the output directory exists
+	err = os.MkdirAll("output", 0755)
+	if err != nil {
+		return fmt.Errorf("failed to create output directory: %w", err)
+	}
+	// put the result in output/steps.json file
+	file, err := os.OpenFile("output/steps.json", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to open steps.json file: %w", err)
 	}
