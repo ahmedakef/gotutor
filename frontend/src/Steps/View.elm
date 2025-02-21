@@ -369,9 +369,25 @@ programOutputView output duration =
 
 goroutinesView : List GoroutinesData -> Html Msg
 goroutinesView goroutinesData =
+    let
+        note =
+            if List.length goroutinesData >= 100 then
+                p [ css [ Css.color (Css.hex "6e7072"), Css.marginBottom (Css.px 5) ] ] [ text "Showing first 100 goroutines only." ]
+
+            else
+                div [] []
+
+        goroutines =
+            if List.length goroutinesData >= 100 then
+                List.take 100 goroutinesData
+
+            else
+                goroutinesData
+    in
     details [ attribute "open" "", css [ Css.marginTop (Css.px 10) ] ]
         [ summary []
             [ p [ css [ Css.display Css.inline, Css.fontSize (Css.rem 1.3) ] ] [ text "Running Goroutines:" ] ]
+        , note
         , div
             [ css
                 [ Css.displayFlex
@@ -380,7 +396,7 @@ goroutinesView goroutinesData =
                 , Css.property "justify-content" "space-evenly"
                 ]
             ]
-            (List.map goroutineView goroutinesData)
+            (List.map goroutineView goroutines)
         ]
 
 
