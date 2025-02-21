@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -55,10 +56,15 @@ func (h *Handler) GetExecutionSteps(ctx restate.Context, req GetExecutionStepsRe
 	}
 	sourceCodeMapping := fmt.Sprintf("%s/%s:/data/main.go", currentDir, sourcePath)
 	outputMapping := fmt.Sprintf("%s/%s/output:/root/output", currentDir, dataDir)
-	dockerCommand := exec.CommandContext(ctx, "docker", "run", "--rm", "-v", sourceCodeMapping, "-v", outputMapping, "ahmedakef/gotutor", "debug", "/data/main.go")
+	deadlineCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	dockerCommand := exec.CommandContext(deadlineCtx, "docker", "run", "--rm", "-v", sourceCodeMapping, "-v", outputMapping, "ahmedakef/gotutor", "debug", "/data/main.go")
 	out, err := dockerCommand.CombinedOutput()
 	h.logger.Info().Msg(string(out))
 	if err != nil {
+		if deadlineCtx.Err() == context.DeadlineExceeded {
+			return nil, restate.TerminalError(fmt.Errorf("execution timed out, remove infinte loops or long waiting times"), http.StatusRequestTimeout)
+		}
 		return nil, restate.TerminalError(fmt.Errorf("failed to run docker command: %w", err), http.StatusInternalServerError)
 	}
 
