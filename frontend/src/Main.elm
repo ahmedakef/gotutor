@@ -158,11 +158,11 @@ pageFooter =
             , text "It's very welcomed to help by contributing to the project."
             , br [] []
             , text "the project only shows the main Goroutine now as descriped in "
-            , a [ href "https://github.com/ahmedakef/gotutor?tab=readme-ov-file#limitations", css [ Css.textDecoration Css.none ] ] [ text "Limitations" ]
+            , a [ href "https://github.com/ahmedakef/gotutor?tab=readme-ov-file#limitations", target "_blank", css [ Css.textDecoration Css.none ] ] [ text "Limitations" ]
             , text "."
             , br [] []
             , text "copyright © 2024 by "
-            , a [ href "https://www.linkedin.com/in/ahmedakef4/", css [ Css.textDecoration Css.none ] ] [ text "Ahmed Akef" ]
+            , a [ href "https://www.linkedin.com/in/ahmedakef4/", target "_blank", css [ Css.textDecoration Css.none ] ] [ text "Ahmed Akef" ]
             , text "."
             ]
         , div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.property "justify-content" "space-evenly", Css.alignItems Css.center, Css.flex (Css.num 1) ] ]
