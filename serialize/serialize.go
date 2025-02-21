@@ -63,7 +63,7 @@ func (v *Serializer) ExecutionSteps(ctx context.Context) (ExecutionResponse, err
 	duration := time.Since(start)
 	return ExecutionResponse{
 		Steps:    allSteps,
-		Duration: duration,
+		Duration: duration.String(),
 	}, nil
 }
 

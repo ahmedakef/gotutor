@@ -70,6 +70,7 @@ view state =
 type alias VisualizeState =
     { lastStep : Maybe Step
     , output : String
+    , duration : String
     , packageVars : List Variable
     , sourceCode : String
     , scroll : Scroll
@@ -107,6 +108,7 @@ stateToVisualize stepsState =
             in
             { lastStep = Just step
             , output = stepsState.executionResponse.output
+            , duration = stepsState.executionResponse.duration
             , packageVars = packageVars
             , sourceCode = stepsState.sourceCode
             , scroll = stepsState.scroll
@@ -117,7 +119,7 @@ stateToVisualize stepsState =
             }
 
         Nothing ->
-            VisualizeState lastStep "" [] stepsState.sourceCode stepsState.scroll Nothing Nothing stepsState.mode stepsState.errorMessage
+            VisualizeState lastStep "" "" [] stepsState.sourceCode stepsState.scroll Nothing Nothing stepsState.mode stepsState.errorMessage
 
 
 filterUserFrames : List StackFrame -> List StackFrame
@@ -339,12 +341,12 @@ programVisualizer state =
                 |> Maybe.withDefault []
                 |> List.filter (\g -> not (List.isEmpty (filterUserFrames g.stacktrace)))
             )
-        , programOutputView state.output
+        , programOutputView state.output state.duration
         ]
 
 
-programOutputView : String -> Html Msg
-programOutputView output =
+programOutputView : String -> String -> Html Msg
+programOutputView output duration =
     let
         outputWithBR =
             String.split "\n" output
@@ -357,7 +359,9 @@ programOutputView output =
         , div []
             [ p [ css [ Css.padding4 (Css.px 20) (Css.px 20) (Css.px 5) (Css.px 20), Css.backgroundColor (Css.hex "d9d5cf33") ] ]
                 (outputWithBR
-                    ++ [ p [ css [ Css.color (Css.hex "6e7072") ] ] [ text "Output doesn't respect the slider yet." ] ]
+                    ++ [ p [ css [ Css.color (Css.hex "6e7072"), Css.marginBottom (Css.px 5) ] ] [ text <| "Execution time: " ++ duration ]
+                       , p [ css [ Css.color (Css.hex "6e7072"), Css.marginTop (Css.px 5) ] ] [ text "Output doesn't respect the slider yet." ]
+                       ]
                 )
             ]
         ]

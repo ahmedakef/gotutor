@@ -7,14 +7,16 @@ import Json.Decode.Field as Field
 
 type alias ExecutionResponse =
     { steps : List Step
+    , duration : String
     , output : String
     }
 
 
 executionResponseDecoder : Decoder ExecutionResponse
 executionResponseDecoder =
-    map2 ExecutionResponse
+    map3 ExecutionResponse
         (field "steps" stepsDecoder)
+        (field "duration" string)
         (field "output" string)
 
 
