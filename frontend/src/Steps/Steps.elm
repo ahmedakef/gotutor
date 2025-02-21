@@ -87,14 +87,12 @@ getSteps sourceCode env =
                     "http://localhost:8080"
 
                 Common.Prod ->
-                    "https://201jhj1vqwsk20me57hggnvabsp.env.us.restate.cloud:8080"
+                    "https://51.20.44.82:8080"
     in
     Http.request
         { method = "POST"
-        , headers =
-            [ Http.header "Authorization" ("Bearer " ++ "key_10uzQuWRXs7INU41qdqDe0a.FbaLJCEJ2daXJCoNPmKsxz3VUPnR3d7dU4WKnv1gLvSR")
-            ]
-        , url = backendUrl ++ "/Handler/GetExecutionSteps"
+        , headers = []
+        , url = backendUrl ++ "/GetExecutionSteps"
         , body = Http.jsonBody (Json.Encode.object [ ( "source_code", Json.Encode.string sourceCode ) ])
         , expect = HttpHelper.expectJson GotExecutionResponse executionResponseDecoder
         , timeout = Just (60 * 1000) -- ms
