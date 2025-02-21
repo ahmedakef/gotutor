@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/ahmedakef/gotutor/gateway"
 	"github.com/rs/zerolog"
@@ -29,18 +30,19 @@ func NewSerializer(client *gateway.Debug, logger zerolog.Logger) *Serializer {
 	}
 }
 
-func (v *Serializer) ExecutionSteps(ctx context.Context) ([]Step, error) {
+func (v *Serializer) ExecutionSteps(ctx context.Context) (ExecutionResponse, error) {
+	start := time.Now()
 	err := v.initMainBreakPoint(ctx)
 	if err != nil {
-		return nil, err
+		return ExecutionResponse{}, err
 	}
 	debugState, err := v.client.Continue(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("main goroutine: continue")
+		return ExecutionResponse{}, fmt.Errorf("main goroutine: continue")
 	}
 
 	if debugState.Exited {
-		return nil, nil
+		return ExecutionResponse{}, nil
 	}
 
 	var allSteps []Step
@@ -48,7 +50,7 @@ func (v *Serializer) ExecutionSteps(ctx context.Context) ([]Step, error) {
 
 		step, exited, err := v.goToNextLine(ctx, debugState.SelectedGoroutine)
 		if err != nil {
-			return allSteps, err
+			return ExecutionResponse{Steps: allSteps}, err
 		}
 		if step.isValid() {
 			allSteps = append(allSteps, step)
@@ -58,8 +60,11 @@ func (v *Serializer) ExecutionSteps(ctx context.Context) ([]Step, error) {
 		}
 
 	}
-
-	return allSteps, nil
+	duration := time.Since(start)
+	return ExecutionResponse{
+		Steps:    allSteps,
+		Duration: duration,
+	}, nil
 }
 
 func (v *Serializer) initMainBreakPoint(ctx context.Context) error {

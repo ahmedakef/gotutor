@@ -107,7 +107,7 @@ getInitSteps : Cmd Msg
 getInitSteps =
     Http.get
         { url = "gotutor/initialProgram/steps.json"
-        , expect = HttpHelper.expectJson GotSteps stepsDecoder
+        , expect = HttpHelper.expectJson GotExecutionResponse executionResponseDecoder
         }
 
 

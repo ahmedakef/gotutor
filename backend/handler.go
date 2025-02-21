@@ -32,16 +32,11 @@ type GetExecutionStepsRequest struct {
 	SourceCode string `json:"source_code"`
 }
 
-type GetExecutionStepsResponse struct {
-	Steps  []serialize.Step `json:"steps"`
-	Output string           `json:"output"`
-}
-
-func (h *Handler) GetExecutionSteps(ctx restate.Context, req GetExecutionStepsRequest) (GetExecutionStepsResponse, error) {
+func (h *Handler) GetExecutionSteps(ctx restate.Context, req GetExecutionStepsRequest) (serialize.ExecutionResponse, error) {
 	port := generateRandomPort()
 	dataDir, err := prepareTempDir(port)
 	if err != nil {
-		return GetExecutionStepsResponse{}, restate.TerminalError(fmt.Errorf("failed to prepare sources directory: %w", err), http.StatusInternalServerError)
+		return serialize.ExecutionResponse{}, restate.TerminalError(fmt.Errorf("failed to prepare sources directory: %w", err), http.StatusInternalServerError)
 	}
 	defer func() {
 		err := os.RemoveAll(dataDir)
@@ -52,12 +47,12 @@ func (h *Handler) GetExecutionSteps(ctx restate.Context, req GetExecutionStepsRe
 	sourcePath := fmt.Sprintf("%s/main.go", dataDir)
 	err = writeSourceCodeToFile(sourcePath, req.SourceCode)
 	if err != nil {
-		return GetExecutionStepsResponse{}, restate.TerminalError(fmt.Errorf("failed to write source code to file: %w", err), http.StatusInternalServerError)
+		return serialize.ExecutionResponse{}, restate.TerminalError(fmt.Errorf("failed to write source code to file: %w", err), http.StatusInternalServerError)
 	}
 
 	currentDir, err := os.Getwd()
 	if err != nil {
-		return GetExecutionStepsResponse{}, restate.TerminalError(fmt.Errorf("failed to get current directory: %w", err), http.StatusInternalServerError)
+		return serialize.ExecutionResponse{}, restate.TerminalError(fmt.Errorf("failed to get current directory: %w", err), http.StatusInternalServerError)
 	}
 	sourceCodeMapping := fmt.Sprintf("%s/%s:/data/main.go", currentDir, sourcePath)
 	outputMapping := fmt.Sprintf("%s/%s/output:/root/output", currentDir, dataDir)
@@ -67,23 +62,23 @@ func (h *Handler) GetExecutionSteps(ctx restate.Context, req GetExecutionStepsRe
 	out, err := dockerCommand.CombinedOutput()
 	if err != nil {
 		if deadlineCtx.Err() == context.DeadlineExceeded {
-			return GetExecutionStepsResponse{}, restate.TerminalError(fmt.Errorf("execution timed out, remove infinte loops or long waiting times"), http.StatusRequestTimeout)
+			return serialize.ExecutionResponse{}, restate.TerminalError(fmt.Errorf("execution timed out, remove infinte loops or long waiting times"), http.StatusRequestTimeout)
 		}
-		return GetExecutionStepsResponse{}, restate.TerminalError(fmt.Errorf("failed to run docker command: %w", err), http.StatusInternalServerError)
+		return serialize.ExecutionResponse{}, restate.TerminalError(fmt.Errorf("failed to run docker command: %w", err), http.StatusInternalServerError)
 	}
 
 	output, err := readFileToString(fmt.Sprintf("%s/output/steps.json", dataDir))
 	if err != nil {
-		return GetExecutionStepsResponse{}, restate.TerminalError(fmt.Errorf("failed to read output file: %w", err), http.StatusInternalServerError)
+		return serialize.ExecutionResponse{}, restate.TerminalError(fmt.Errorf("failed to read output file: %w", err), http.StatusInternalServerError)
 	}
 	// decode the output
-	var steps []serialize.Step
-	err = json.NewDecoder(strings.NewReader(output)).Decode(&steps)
+	var response serialize.ExecutionResponse
+	err = json.NewDecoder(strings.NewReader(output)).Decode(&response)
 	if err != nil {
-		return GetExecutionStepsResponse{}, restate.TerminalError(fmt.Errorf("failed to decode output: %w", err), http.StatusInternalServerError)
+		return serialize.ExecutionResponse{}, restate.TerminalError(fmt.Errorf("failed to decode output: %w", err), http.StatusInternalServerError)
 	}
-
-	return GetExecutionStepsResponse{Steps: steps, Output: string(out)}, nil
+	response.Output = string(out)
+	return response, nil
 }
 
 func generateRandomPort() int {

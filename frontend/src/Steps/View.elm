@@ -351,7 +351,7 @@ programOutputView output =
                 |> List.map text
                 |> List.intersperse (br [] [])
     in
-    details [ attribute "open" "", css [ Css.marginTop (Css.px 10) ] ]
+    details [ css [ Css.marginTop (Css.px 10) ] ]
         [ summary []
             [ p [ css [ Css.display Css.inline, Css.fontSize (Css.rem 1.3) ] ] [ text "Program Output:" ] ]
         , div []

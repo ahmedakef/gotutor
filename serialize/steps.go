@@ -1,8 +1,16 @@
 package serialize
 
 import (
+	"time"
+
 	"github.com/go-delve/delve/service/api"
 )
+
+type ExecutionResponse struct {
+	Steps    []Step        `json:"steps"`
+	Duration time.Duration `json:"duration"`
+	Output   string        `json:"output"`
+}
 
 type GoRoutineData struct {
 	Goroutine  *api.Goroutine
