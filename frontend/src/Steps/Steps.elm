@@ -61,8 +61,7 @@ type alias Scroll =
 
 
 type Msg
-    = GotSteps (Result String (List Step))
-    | GotExecutionResponse (Result String ExecutionResponse)
+    = GotExecutionResponse (Result String ExecutionResponse)
     | GotSourceCode (Result Http.Error String)
     | EditCode
     | OnScroll Scroll
@@ -140,22 +139,7 @@ update msg state env =
                                     ( Success { successState | mode = Edit, executionResponse = { steps = [], output = "" }, position = 0, errorMessage = Just err }, Cmd.none )
 
                                 _ ->
-                                    ( Failure ("Error while getting  execution steps: " ++ err), Cmd.none )
-
-                GotSteps gotStepsResult ->
-                    -- remove this and make steps.json contain also the output
-                    case gotStepsResult of
-                        Ok steps ->
-                            ( Success { successState | executionResponse = { steps = steps, output = "" }, position = 1, mode = View, errorMessage = Nothing }, Cmd.none )
-
-                        Err err ->
-                            case successState.mode of
-                                WaitingSteps ->
-                                    -- waiting after clicking visualize
-                                    ( Success { successState | mode = Edit, executionResponse = { steps = [], output = "" }, position = 0, errorMessage = Just err }, Cmd.none )
-
-                                _ ->
-                                    ( Failure ("Error while getting example program execution steps: " ++ err), Cmd.none )
+                                    ( Failure ("Error while getting execution steps: " ++ err), Cmd.none )
 
                 GotSourceCode sourceCodeResult ->
                     case sourceCodeResult of
@@ -209,14 +193,6 @@ update msg state env =
                     case gotExecutionStepsResponseResult of
                         Ok gotExecutionStepsResponse ->
                             ( Success (StepsState View gotExecutionStepsResponse 1 "" Nothing (Scroll 0 0) Nothing), Cmd.none )
-
-                        Err err ->
-                            ( Failure ("Error while getting program execution steps: " ++ err), Cmd.none )
-
-                GotSteps gotStepsResult ->
-                    case gotStepsResult of
-                        Ok steps ->
-                            ( Success (StepsState View { steps = steps, output = "" } 1 "" Nothing (Scroll 0 0) Nothing), Cmd.none )
 
                         Err err ->
                             ( Failure ("Error while getting program execution steps: " ++ err), Cmd.none )
