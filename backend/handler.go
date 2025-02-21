@@ -1,16 +1,16 @@
 package main
 
 import (
-	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
+	"os/exec"
+	"strings"
 	"time"
 
-	"github.com/ahmedakef/gotutor/dlv"
-	"github.com/ahmedakef/gotutor/gateway"
 	"github.com/ahmedakef/gotutor/serialize"
-	"github.com/go-delve/delve/service/debugger"
 	restate "github.com/restatedev/sdk-go"
 	"github.com/rs/zerolog"
 	"golang.org/x/exp/rand"
@@ -33,54 +33,46 @@ type GetExecutionStepsRequest struct {
 
 func (h *Handler) GetExecutionSteps(ctx restate.Context, req GetExecutionStepsRequest) ([]serialize.Step, error) {
 	port := generateRandomPort()
-	dir, err := prepareTempDir(port)
+	dataDir, err := prepareTempDir(port)
 	if err != nil {
 		return nil, restate.TerminalError(fmt.Errorf("failed to prepare sources directory: %w", err), http.StatusInternalServerError)
 	}
 	defer func() {
-		err := os.RemoveAll(dir)
+		err := os.RemoveAll(dataDir)
 		if err != nil {
 			h.logger.Error().Err(err).Msg("failed to remove sources directory")
 		}
 	}()
-	sourcePath := fmt.Sprintf("%s/main.go", dir)
+	sourcePath := fmt.Sprintf("%s/main.go", dataDir)
 	err = writeSourceCodeToFile(sourcePath, req.SourceCode)
 	if err != nil {
 		return nil, restate.TerminalError(fmt.Errorf("failed to write source code to file: %w", err), http.StatusInternalServerError)
 	}
 
-	binaryPath, err := dlv.Build(sourcePath, dir)
+	currentDir, err := os.Getwd()
 	if err != nil {
-		return nil, restate.TerminalError(fmt.Errorf("failed to build binary: %w", err), http.StatusBadRequest)
+		return nil, restate.TerminalError(fmt.Errorf("failed to get current directory: %w", err), http.StatusInternalServerError)
 	}
-	client, err := dlv.RunServerAndGetClient(binaryPath, sourcePath, dlv.GetBuildFlags(), debugger.ExecutingGeneratedFile)
+	sourceCodeMapping := fmt.Sprintf("%s/%s:/data/main.go", currentDir, sourcePath)
+	outputMapping := fmt.Sprintf("%s/%s/output:/root/output", currentDir, dataDir)
+	dockerCommand := exec.CommandContext(ctx, "docker", "run", "--rm", "-v", sourceCodeMapping, "-v", outputMapping, "ahmedakef/gotutor", "debug", "/data/main.go")
+	out, err := dockerCommand.CombinedOutput()
+	h.logger.Info().Msg(string(out))
 	if err != nil {
-		return nil, restate.TerminalError(fmt.Errorf("runServerAndGetClient: %w", err), http.StatusInternalServerError)
+		return nil, restate.TerminalError(fmt.Errorf("failed to run docker command: %w", err), http.StatusInternalServerError)
 	}
 
-	steps, err := h.getSteps(ctx, client)
+	output, err := readFileToString(fmt.Sprintf("%s/output/steps.json", dataDir))
 	if err != nil {
-		return nil, fmt.Errorf("get and write steps: %w", err)
+		return nil, restate.TerminalError(fmt.Errorf("failed to read output file: %w", err), http.StatusInternalServerError)
 	}
-
-	return steps, nil
-}
-
-func (h *Handler) getSteps(ctx context.Context, client *gateway.Debug) ([]serialize.Step, error) {
-
-	defer func() {
-		h.logger.Info().Msg("killing the debugger")
-		err := client.Detach(true)
-		if err != nil {
-			h.logger.Error().Err(err).Msg("Halt the execution")
-		}
-	}()
-
-	serializer := serialize.NewSerializer(client, h.logger)
-	steps, err := serializer.ExecutionSteps(ctx)
+	// decode the output
+	var steps []serialize.Step
+	err = json.NewDecoder(strings.NewReader(output)).Decode(&steps)
 	if err != nil {
-		return nil, fmt.Errorf("get execution steps: %w", err)
+		return nil, restate.TerminalError(fmt.Errorf("failed to decode output: %w", err), http.StatusInternalServerError)
 	}
+
 	return steps, nil
 }
 
@@ -90,7 +82,7 @@ func generateRandomPort() int {
 }
 
 func prepareTempDir(randomPort int) (string, error) {
-	dir := fmt.Sprintf("sources/%d/", randomPort)
+	dir := fmt.Sprintf("data/%d", randomPort)
 	err := os.MkdirAll(dir, os.ModePerm)
 	if err != nil {
 		return "", fmt.Errorf("create sources directory: %w", err)
@@ -110,4 +102,18 @@ func writeSourceCodeToFile(sourcePath, sourceCode string) error {
 		return fmt.Errorf("write to %s file: %w", sourcePath, err)
 	}
 	return nil
+}
+
+func readFileToString(filePath string) (string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", fmt.Errorf("open %s file: %w", filePath, err)
+	}
+	defer file.Close()
+
+	contents, err := io.ReadAll(file)
+	if err != nil {
+		return "", fmt.Errorf("read %s file: %w", filePath, err)
+	}
+	return string(contents), nil
 }
