@@ -195,6 +195,16 @@ codeView state =
             , class "code-textarea"
             , class "code-textarea-lc"
             , spellcheck False
+            , css
+                [ Css.cursor
+                    (case state.mode of
+                        Edit ->
+                            Css.text_
+
+                        _ ->
+                            Css.notAllowed
+                    )
+                ]
             ]
             []
         ]
@@ -302,7 +312,7 @@ varsView title maybeVars attributes =
             else
                 details (attribute "open" "" :: attributes)
                     [ summary []
-                        [ b [] [ text title ] ]
+                        [ p [ css [ Css.display Css.inline, Css.fontSize (Css.rem 1.3) ] ] [ text title ] ]
                     , ul [ css [ Css.listStyleType Css.none ] ] (List.map varView vars)
                     ]
 
@@ -332,15 +342,19 @@ programVisualizer state =
 
 goroutinesView : List GoroutinesData -> Html Msg
 goroutinesView goroutinesData =
-    div
-        [ css
-            [ Css.displayFlex
-            , Css.flexDirection Css.row
-            , Css.flexWrap Css.wrap
-            , Css.property "justify-content" "space-evenly"
+    details [ attribute "open" "", css [ Css.marginTop (Css.px 10) ] ]
+        [ summary []
+            [ p [ css [ Css.display Css.inline, Css.fontSize (Css.rem 1.3) ] ] [ text "Running Goroutines:" ] ]
+        , div
+            [ css
+                [ Css.displayFlex
+                , Css.flexDirection Css.row
+                , Css.flexWrap Css.wrap
+                , Css.property "justify-content" "space-evenly"
+                ]
             ]
+            (List.map goroutineView goroutinesData)
         ]
-        (List.map goroutineView goroutinesData)
 
 
 goroutineView : GoroutinesData -> Html Msg
@@ -380,7 +394,7 @@ stackView stack =
 
     else
         details [ attribute "open" "" ]
-            [ summary [] [ b [] [ text "Stacktrace:" ] ]
+            [ summary [] [ b [] [ text "Stack Frames:" ] ]
             , ul [ css [ Css.listStyleType Css.none ] ]
                 (case stack of
                     [] ->
