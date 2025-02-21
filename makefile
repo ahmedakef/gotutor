@@ -1,7 +1,8 @@
 build:
 	go build -o main
-updateExample:
-	go build -o main
+	docker build -t gotutor .
+	docker tag gotutor ahmedakef/gotutor:latest
+updateExample: build
 	go build  -gcflags='all=-N -l' -o example/source_debug example/main.go
 	./main exec example/source_debug
 	jq . steps.json > steps_formatted.json

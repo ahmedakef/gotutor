@@ -28,7 +28,7 @@ func (v *Serializer) stepForwardMultipleGoroutines(ctx context.Context) ([]Step,
 			allSteps = append(allSteps, step)
 		}
 		if exited {
-			v.logger.Info().Msg(fmt.Sprintf("goroutine: %d, read exit signal", goroutine.ID))
+			v.logger.Debug().Msg(fmt.Sprintf("goroutine: %d, read exit signal", goroutine.ID))
 			return allSteps, true, nil
 		}
 
@@ -105,7 +105,7 @@ func (v *Serializer) getGoroutinesState(ctx context.Context) ([]Step, bool, erro
 			steps = append(steps, step)
 		}
 		if exited {
-			v.logger.Info().Msg(fmt.Sprintf("goroutine: %d, read exit signal", goroutine.ID))
+			v.logger.Debug().Msg(fmt.Sprintf("goroutine: %d, read exit signal", goroutine.ID))
 			return steps, true, nil
 		}
 	}
@@ -113,7 +113,7 @@ func (v *Serializer) getGoroutinesState(ctx context.Context) ([]Step, bool, erro
 }
 
 func (v *Serializer) getGoroutineState(ctx context.Context, goroutine *api.Goroutine) (Step, bool, error) {
-	v.logger.Info().Msg(fmt.Sprintf("goroutine: %d, getGoroutineState", goroutine.ID))
+	v.logger.Debug().Msg(fmt.Sprintf("goroutine: %d, getGoroutineState", goroutine.ID))
 
 	debugState, err := v.client.SwitchGoroutine(ctx, goroutine.ID)
 	if err != nil {

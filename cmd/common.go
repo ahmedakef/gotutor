@@ -14,7 +14,7 @@ import (
 func getAndWriteSteps(ctx context.Context, client *gateway.Debug, logger zerolog.Logger) error {
 
 	defer func() {
-		logger.Info().Msg("killing the debugger")
+		logger.Debug().Msg("killing the debugger")
 		err := client.Detach(true)
 		if err != nil {
 			logger.Error().Err(err).Msg("failed to halt the execution")

@@ -29,7 +29,7 @@ init =
 
 type alias StepsState =
     { mode : Mode
-    , steps : List Step
+    , executionResponse : GetExecutionStepsResponse
     , position : Int
     , sourceCode : String
     , highlightedLine : Maybe Int
@@ -62,6 +62,7 @@ type alias Scroll =
 
 type Msg
     = GotSteps (Result String (List Step))
+    | GotExecutionStepsResponse (Result String GetExecutionStepsResponse)
     | GotSourceCode (Result Http.Error String)
     | EditCode
     | OnScroll Scroll
@@ -96,7 +97,7 @@ getSteps sourceCode env =
             ]
         , url = backendUrl ++ "/Handler/GetExecutionSteps"
         , body = Http.jsonBody (Json.Encode.object [ ( "source_code", Json.Encode.string sourceCode ) ])
-        , expect = HttpHelper.expectJson GotSteps stepsDecoder
+        , expect = HttpHelper.expectJson GotExecutionStepsResponse getExecutionStepsResponseDecoder
         , timeout = Just (60 * 1000) -- ms
         , tracker = Nothing
         }
@@ -127,16 +128,31 @@ update msg state env =
     case state of
         Success successState ->
             case msg of
-                GotSteps gotStepsResult ->
-                    case gotStepsResult of
-                        Ok steps ->
-                            ( Success { successState | steps = steps, position = 1, mode = View, errorMessage = Nothing }, Cmd.none )
+                GotExecutionStepsResponse gotExecutionStepsResponseResult ->
+                    case gotExecutionStepsResponseResult of
+                        Ok gotExecutionStepsResponse ->
+                            ( Success { successState | executionResponse = gotExecutionStepsResponse, position = 1, mode = View, errorMessage = Nothing }, Cmd.none )
 
                         Err err ->
                             case successState.mode of
                                 WaitingSteps ->
                                     -- waiting after clicking visualize
-                                    ( Success { successState | mode = Edit, steps = [], position = 0, errorMessage = Just err }, Cmd.none )
+                                    ( Success { successState | mode = Edit, executionResponse = { steps = [], output = "" }, position = 0, errorMessage = Just err }, Cmd.none )
+
+                                _ ->
+                                    ( Failure ("Error while getting  execution steps: " ++ err), Cmd.none )
+
+                GotSteps gotStepsResult ->
+                    -- remove this and make steps.json contain also the output
+                    case gotStepsResult of
+                        Ok steps ->
+                            ( Success { successState | executionResponse = { steps = steps, output = "" }, position = 1, mode = View, errorMessage = Nothing }, Cmd.none )
+
+                        Err err ->
+                            case successState.mode of
+                                WaitingSteps ->
+                                    -- waiting after clicking visualize
+                                    ( Success { successState | mode = Edit, executionResponse = { steps = [], output = "" }, position = 0, errorMessage = Just err }, Cmd.none )
 
                                 _ ->
                                     ( Failure ("Error while getting example program execution steps: " ++ err), Cmd.none )
@@ -159,10 +175,10 @@ update msg state env =
                     ( Success { successState | scroll = scroll }, Cmd.none )
 
                 Visualize ->
-                    ( Success { successState | mode = WaitingSteps, steps = [], position = 0 }, getSteps successState.sourceCode env )
+                    ( Success { successState | mode = WaitingSteps, executionResponse = { steps = [], output = "" }, position = 0 }, getSteps successState.sourceCode env )
 
                 Next ->
-                    if successState.position + 1 > List.length successState.steps then
+                    if successState.position + 1 > List.length successState.executionResponse.steps then
                         ( Success successState, Cmd.none )
 
                     else
@@ -189,10 +205,18 @@ update msg state env =
 
         Loading ->
             case msg of
+                GotExecutionStepsResponse gotExecutionStepsResponseResult ->
+                    case gotExecutionStepsResponseResult of
+                        Ok gotExecutionStepsResponse ->
+                            ( Success (StepsState View gotExecutionStepsResponse 1 "" Nothing (Scroll 0 0) Nothing), Cmd.none )
+
+                        Err err ->
+                            ( Failure ("Error while getting program execution steps: " ++ err), Cmd.none )
+
                 GotSteps gotStepsResult ->
                     case gotStepsResult of
                         Ok steps ->
-                            ( Success (StepsState View steps 1 "" Nothing (Scroll 0 0) Nothing), Cmd.none )
+                            ( Success (StepsState View { steps = steps, output = "" } 1 "" Nothing (Scroll 0 0) Nothing), Cmd.none )
 
                         Err err ->
                             ( Failure ("Error while getting program execution steps: " ++ err), Cmd.none )
@@ -200,7 +224,7 @@ update msg state env =
                 GotSourceCode sourceCodeResult ->
                     case sourceCodeResult of
                         Ok sourceCode ->
-                            ( Success (StepsState View [] 0 sourceCode Nothing (Scroll 0 0) Nothing), Cmd.none )
+                            ( Success (StepsState View { steps = [], output = "" } 0 sourceCode Nothing (Scroll 0 0) Nothing), Cmd.none )
 
                         Err err ->
                             ( Failure ("Error while reading program source code: " ++ HttpHelper.errorToString err), Cmd.none )

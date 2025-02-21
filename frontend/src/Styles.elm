@@ -44,6 +44,7 @@ horizontalUlStyle =
         , padding (px 0)
         , margin (px 0)
         , displayFlex
+        , alignItems center
         , fontSize (px 20)
         ]
 

@@ -29,7 +29,7 @@ to quickly create a Cobra application.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		logger := zerolog.New(
 			zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339},
-		).Level(zerolog.TraceLevel).With().Timestamp().Caller().Logger()
+		).Level(zerolog.InfoLevel).With().Timestamp().Caller().Logger()
 
 		ctx := context.WithValue(context.Background(), loggerKey, logger)
 		cmd.SetContext(ctx)

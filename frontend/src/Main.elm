@@ -124,10 +124,12 @@ view model =
 
 navigation : Html msg
 navigation =
-    header [ css [ Css.displayFlex, Css.width (Css.pct 100), Css.flexDirection Css.column, Css.alignItems Css.center, Css.borderBottom3 (Css.px 1) Css.solid (Css.hex "ddd") ] ]
+    header [ css [ Css.displayFlex, Css.justifyContent Css.center, Css.width (Css.pct 100), Css.borderBottom3 (Css.px 1) Css.solid (Css.hex "ddd") ] ]
         [ horizontalUL
             [ viewLink "About" "#about" "_self"
             , viewLink "Github" "https://github.com/ahmedakef/gotutor" "_blank"
+            , githubSponsorsButton
+            , koFiButton
             ]
         ]
 
@@ -164,10 +166,6 @@ pageFooter =
             , text "copyright © 2024 by "
             , a [ href "https://www.linkedin.com/in/ahmedakef4/", target "_blank", css [ Css.textDecoration Css.none ] ] [ text "Ahmed Akef" ]
             , text "."
-            ]
-        , div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.property "justify-content" "space-evenly", Css.alignItems Css.center, Css.flex (Css.num 1) ] ]
-            [ githubSponsorsButton
-            , koFiButton
             ]
         ]
 

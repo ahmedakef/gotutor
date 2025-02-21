@@ -5,6 +5,19 @@ import Json.Decode exposing (..)
 import Json.Decode.Field as Field
 
 
+type alias GetExecutionStepsResponse =
+    { steps : List Step
+    , output : String
+    }
+
+
+getExecutionStepsResponseDecoder : Decoder GetExecutionStepsResponse
+getExecutionStepsResponseDecoder =
+    map2 GetExecutionStepsResponse
+        (field "steps" stepsDecoder)
+        (field "output" string)
+
+
 type alias Function =
     { name : String
     , value : Int

@@ -38,7 +38,7 @@ view state =
                                     [ input
                                         [ type_ "range"
                                         , Html.Styled.Attributes.min "1"
-                                        , Html.Styled.Attributes.max (String.fromInt (List.length stepsState.steps))
+                                        , Html.Styled.Attributes.max (String.fromInt (List.length stepsState.executionResponse.steps))
                                         , Html.Styled.Attributes.value (String.fromInt stepsState.position)
                                         , onInput (String.toInt >> Maybe.withDefault 1 >> SliderChange)
                                         ]
@@ -48,7 +48,7 @@ view state =
                                 , button [ onClick Next, css [ buttonStyle, Css.marginLeft (Css.px 10) ] ] [ text "Next >" ]
                                 ]
                             , div [ css [ Css.margin2 (Css.px 10) (Css.px 0) ] ]
-                                [ text ("Step " ++ String.fromInt stepsState.position ++ " of " ++ (List.length stepsState.steps |> String.fromInt))
+                                [ text ("Step " ++ String.fromInt stepsState.position ++ " of " ++ (List.length stepsState.executionResponse.steps |> String.fromInt))
                                 ]
                             ]
                         ]
@@ -69,6 +69,7 @@ view state =
 
 type alias VisualizeState =
     { lastStep : Maybe Step
+    , output : String
     , packageVars : List Variable
     , sourceCode : String
     , scroll : Scroll
@@ -83,7 +84,7 @@ stateToVisualize : StepsState -> VisualizeState
 stateToVisualize stepsState =
     let
         stepsSoFar =
-            stepsState.steps
+            stepsState.executionResponse.steps
                 |> List.take stepsState.position
 
         lastStep =
@@ -105,6 +106,7 @@ stateToVisualize stepsState =
                         |> Maybe.map .line
             in
             { lastStep = Just step
+            , output = stepsState.executionResponse.output
             , packageVars = packageVars
             , sourceCode = stepsState.sourceCode
             , scroll = stepsState.scroll
@@ -115,7 +117,7 @@ stateToVisualize stepsState =
             }
 
         Nothing ->
-            VisualizeState lastStep [] stepsState.sourceCode stepsState.scroll Nothing Nothing stepsState.mode stepsState.errorMessage
+            VisualizeState lastStep "" [] stepsState.sourceCode stepsState.scroll Nothing Nothing stepsState.mode stepsState.errorMessage
 
 
 filterUserFrames : List StackFrame -> List StackFrame
@@ -337,6 +339,27 @@ programVisualizer state =
                 |> Maybe.withDefault []
                 |> List.filter (\g -> not (List.isEmpty (filterUserFrames g.stacktrace)))
             )
+        , programOutputView state.output
+        ]
+
+
+programOutputView : String -> Html Msg
+programOutputView output =
+    let
+        outputWithBR =
+            String.split "\n" output
+                |> List.map text
+                |> List.intersperse (br [] [])
+    in
+    details [ attribute "open" "", css [ Css.marginTop (Css.px 10) ] ]
+        [ summary []
+            [ p [ css [ Css.display Css.inline, Css.fontSize (Css.rem 1.3) ] ] [ text "Program Output:" ] ]
+        , div []
+            [ p [ css [ Css.padding4 (Css.px 20) (Css.px 20) (Css.px 5) (Css.px 20), Css.backgroundColor (Css.hex "d9d5cf33") ] ]
+                (outputWithBR
+                    ++ [ p [ css [ Css.color (Css.hex "6e7072") ] ] [ text "Output doesn't respect the slider yet." ] ]
+                )
+            ]
         ]
 
 

@@ -96,7 +96,7 @@ func (v *Serializer) goToNextLine(ctx context.Context, goroutine *api.Goroutine)
 			return Step{}, true, fmt.Errorf("step: %w", err)
 		}
 		if debugState.Exited {
-			v.logger.Info().Any("debugState", debugState).Msg("read exit signal")
+			v.logger.Debug().Any("debugState", debugState).Msg("read exit signal")
 			return Step{}, true, nil
 		}
 	} else if equalLocation(debugState.SelectedGoroutine.CurrentLoc, debugState.SelectedGoroutine.UserCurrentLoc) { // if not in runtime
@@ -113,7 +113,7 @@ func (v *Serializer) goToNextLine(ctx context.Context, goroutine *api.Goroutine)
 			return Step{}, true, fmt.Errorf("continueToUserCode: %w", err)
 		}
 		if exited {
-			v.logger.Info().Any("debugState", debugState).Msg("read exit signal")
+			v.logger.Debug().Any("debugState", debugState).Msg("read exit signal")
 			return Step{}, true, nil
 		}
 	} else { // in a function in runtime but still have user code in one of the frames
@@ -122,7 +122,7 @@ func (v *Serializer) goToNextLine(ctx context.Context, goroutine *api.Goroutine)
 			return Step{}, true, fmt.Errorf("continueToFirstFrameInMainDotGo: %w", err)
 		}
 		if exited {
-			v.logger.Info().Any("debugState", debugState).Msg("read exit signal")
+			v.logger.Debug().Any("debugState", debugState).Msg("read exit signal")
 			return Step{}, true, nil
 		}
 	}
@@ -225,7 +225,7 @@ func (v *Serializer) continueToUserCode(ctx context.Context, debugState *api.Deb
 	if isInMainDotGo(debugState.SelectedGoroutine.CurrentLoc.File) {
 		return debugState, false, nil
 	}
-	v.logger.Info().Msg(fmt.Sprintf("goroutine: %d, continue to user code", debugState.SelectedGoroutine.ID))
+	v.logger.Debug().Msg(fmt.Sprintf("goroutine: %d, continue to user code", debugState.SelectedGoroutine.ID))
 	userCurrentLoc := debugState.SelectedGoroutine.UserCurrentLoc
 	userCurrentLocFile := userCurrentLoc.File
 	userCurrentLocLine, err := v.getNextLine(userCurrentLocFile, userCurrentLoc.Line)
@@ -262,7 +262,7 @@ func (v *Serializer) continueToUserCode(ctx context.Context, debugState *api.Deb
 }
 
 func (v *Serializer) continueToFirstFrameInMainDotGo(ctx context.Context, debugState *api.DebuggerState) (*api.DebuggerState, bool, error) {
-	v.logger.Info().Msg(fmt.Sprintf("goroutine: %d, continueToFirstFrameInMainDotGo", debugState.SelectedGoroutine.ID))
+	v.logger.Debug().Msg(fmt.Sprintf("goroutine: %d, continueToFirstFrameInMainDotGo", debugState.SelectedGoroutine.ID))
 	stack, err := v.client.Stacktrace(ctx, debugState.SelectedGoroutine.ID, 100, 0, nil)
 	if err != nil {
 		return nil, true, fmt.Errorf("goroutine: %d, get stacktrace: %w", debugState.SelectedGoroutine.ID, err)
