@@ -29,7 +29,7 @@ init =
 
 type alias StepsState =
     { mode : Mode
-    , executionResponse : GetExecutionStepsResponse
+    , executionResponse : ExecutionResponse
     , position : Int
     , sourceCode : String
     , highlightedLine : Maybe Int
@@ -62,7 +62,7 @@ type alias Scroll =
 
 type Msg
     = GotSteps (Result String (List Step))
-    | GotExecutionStepsResponse (Result String GetExecutionStepsResponse)
+    | GotExecutionResponse (Result String ExecutionResponse)
     | GotSourceCode (Result Http.Error String)
     | EditCode
     | OnScroll Scroll
@@ -97,7 +97,7 @@ getSteps sourceCode env =
             ]
         , url = backendUrl ++ "/Handler/GetExecutionSteps"
         , body = Http.jsonBody (Json.Encode.object [ ( "source_code", Json.Encode.string sourceCode ) ])
-        , expect = HttpHelper.expectJson GotExecutionStepsResponse getExecutionStepsResponseDecoder
+        , expect = HttpHelper.expectJson GotExecutionResponse executionResponseDecoder
         , timeout = Just (60 * 1000) -- ms
         , tracker = Nothing
         }
@@ -128,7 +128,7 @@ update msg state env =
     case state of
         Success successState ->
             case msg of
-                GotExecutionStepsResponse gotExecutionStepsResponseResult ->
+                GotExecutionResponse gotExecutionStepsResponseResult ->
                     case gotExecutionStepsResponseResult of
                         Ok gotExecutionStepsResponse ->
                             ( Success { successState | executionResponse = gotExecutionStepsResponse, position = 1, mode = View, errorMessage = Nothing }, Cmd.none )
@@ -205,7 +205,7 @@ update msg state env =
 
         Loading ->
             case msg of
-                GotExecutionStepsResponse gotExecutionStepsResponseResult ->
+                GotExecutionResponse gotExecutionStepsResponseResult ->
                     case gotExecutionStepsResponseResult of
                         Ok gotExecutionStepsResponse ->
                             ( Success (StepsState View gotExecutionStepsResponse 1 "" Nothing (Scroll 0 0) Nothing), Cmd.none )

@@ -5,15 +5,15 @@ import Json.Decode exposing (..)
 import Json.Decode.Field as Field
 
 
-type alias GetExecutionStepsResponse =
+type alias ExecutionResponse =
     { steps : List Step
     , output : String
     }
 
 
-getExecutionStepsResponseDecoder : Decoder GetExecutionStepsResponse
-getExecutionStepsResponseDecoder =
-    map2 GetExecutionStepsResponse
+executionResponseDecoder : Decoder ExecutionResponse
+executionResponseDecoder =
+    map2 ExecutionResponse
         (field "steps" stepsDecoder)
         (field "output" string)
 
