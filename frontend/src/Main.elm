@@ -51,7 +51,7 @@ init _ url key =
             Steps.init
 
         initialModel =
-            Model Common.Dev key url stepsState
+            Model Common.Prod key url stepsState
     in
     ( initialModel, Cmd.map StepsMsg stepsCmd )
 
