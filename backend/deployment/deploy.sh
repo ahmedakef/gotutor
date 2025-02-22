@@ -21,3 +21,7 @@ sudo ln -s /etc/nginx/sites-available/gotutor /etc/nginx/sites-enabled/
 sudo yum install -y docker
 sudo service docker start
 sudo usermod -a -G docker ec2-user # Add the ec2-user to the docker group so that you can run Docker commands without using sudo.
+
+
+
+# the letsencrypt cron job: 0 3 5 * * certbot renew --quiet && systemctl restart nginx

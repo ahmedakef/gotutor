@@ -58,7 +58,7 @@ func (h *Handler) GetExecutionSteps(ctx context.Context, req GetExecutionStepsRe
 	defer cancel()
 	dockerCommand := exec.CommandContext(deadlineCtx, "docker", "run", "--rm", "-v", sourceCodeMapping, "-v", outputMapping, "ahmedakef/gotutor", "debug", "/data/main.go")
 	out, err := dockerCommand.CombinedOutput()
-	if err != nil {
+	if err != nil || outputContainsError(string(out)) {
 		if deadlineCtx.Err() == context.DeadlineExceeded {
 			return serialize.ExecutionResponse{}, fmt.Errorf("execution timed out, remove infinte loops or long waiting times")
 		}
@@ -119,4 +119,8 @@ func readFileToString(filePath string) (string, error) {
 		return "", fmt.Errorf("read %s file: %w", filePath, err)
 	}
 	return string(contents), nil
+}
+
+func outputContainsError(output string) bool {
+	return strings.Contains(output, "failed to build binary")
 }
