@@ -10,15 +10,13 @@ import Json.Decode
 
 type alias ErrorResponse =
     { message : String
-    , code : Int
     }
 
 
 errorDecoder : Json.Decode.Decoder ErrorResponse
 errorDecoder =
-    Json.Decode.map2 ErrorResponse
+    Json.Decode.map ErrorResponse
         (Json.Decode.field "message" Json.Decode.string)
-        (Json.Decode.field "code" Json.Decode.int)
 
 
 errorToString : Http.Error -> String
