@@ -62,7 +62,7 @@ func (h *Handler) GetExecutionSteps(ctx context.Context, req GetExecutionStepsRe
 		if deadlineCtx.Err() == context.DeadlineExceeded {
 			return serialize.ExecutionResponse{}, fmt.Errorf("execution timed out, remove infinte loops or long waiting times")
 		}
-		return serialize.ExecutionResponse{}, fmt.Errorf("failed to run docker command: %w", err)
+		return serialize.ExecutionResponse{}, fmt.Errorf("failed to run docker command: %w : %s", err, string(out))
 	}
 
 	output, err := readFileToString(fmt.Sprintf("%s/output/steps.json", dataDir))

@@ -9,6 +9,12 @@ Restart=always
 
 User=ec2-user
 
+# Create a writable directory at /run/gotutor/
+RuntimeDirectory=gotutor
+
+# Change the working directory to /run/gotutor/
+WorkingDirectory=/run/gotutor
+
 [Install]
 
 WantedBy=multi-user.target
