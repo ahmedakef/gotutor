@@ -87,7 +87,7 @@ getSteps sourceCode env =
                     "http://localhost:8080"
 
                 Common.Prod ->
-                    "https://51.20.44.82:8080"
+                    "https://backend.gotutor.dev"
     in
     Http.request
         { method = "POST"
