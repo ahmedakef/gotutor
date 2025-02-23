@@ -13,7 +13,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
-const conccurentRequests = 100
+const conccurentRequests = 5
 
 type GetExecutionStepsRequest struct {
 	SourceCode string `json:"source_code"`
