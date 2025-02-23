@@ -28,5 +28,10 @@ sudo usermod -a -G docker ec2-user # Add the ec2-user to the docker group so tha
 sudo systemctl enable docker
 sudo systemctl start docker
 
+# ssh
+sudo mkdir -p /etc/systemd/system/sshd.service.d
+sudo cp deployment/systemd/system/sshd.service.d/priority.conf /etc/systemd/system/sshd.service.d/priority.conf
+sudo systemctl daemon-reload
+sudo systemctl restart sshd
 
 # the letsencrypt cron job: 0 3 5 * * certbot renew --quiet && systemctl restart nginx
