@@ -72,7 +72,7 @@ func (h *Handler) GetExecutionSteps(ctx context.Context, req GetExecutionStepsRe
 		return serialize.ExecutionResponse{}, fmt.Errorf("failed to get current directory: %w", err)
 	}
 	sourceCodeMapping := fmt.Sprintf("%s/%s:/data/main.go", currentDir, sourcePath)
-	outputMapping := fmt.Sprintf("%s/%s/output:/root/output", currentDir, dataDir)
+	outputMapping := fmt.Sprintf("%s/%s:/root/output", currentDir, dataDir)
 	deadlineCtx, cancel := context.WithTimeout(ctx, 300*time.Second)
 	defer cancel()
 	dockerCommand := exec.CommandContext(deadlineCtx, "docker", "run", "--rm", "-v", sourceCodeMapping, "-v", outputMapping, "ahmedakef/gotutor", "debug", "/data/main.go")
@@ -88,7 +88,7 @@ func (h *Handler) GetExecutionSteps(ctx context.Context, req GetExecutionStepsRe
 		return serialize.ExecutionResponse{}, fmt.Errorf("failed to run docker command: %w : %s", err, outStr)
 	}
 
-	output, err := readFileToString(fmt.Sprintf("%s/output/steps.json", dataDir))
+	output, err := readFileToString(fmt.Sprintf("%s/steps.json", dataDir))
 	if err != nil {
 		return serialize.ExecutionResponse{}, fmt.Errorf("failed to read output file: %w", err)
 	}
