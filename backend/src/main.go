@@ -13,7 +13,7 @@ import (
 
 const (
 	_port          = 8080
-	_maxCacheSize  = 100 * 1024 * 1024 // 100MB
+	_maxCacheSize  = 250 * 1024 * 1024 // 100MB
 	_maxCacheItems = 100
 	_cacheTTL      = 0
 )
