@@ -12,6 +12,7 @@ sudo amazon-linux-extras install epel
 sudo yum install certbot-nginx
 
 # nginx
+# we need to make cloudflare SSL config to be Full not Full (strict) to avoid errors
 sudo cp deployment/nginx/nginx.conf /etc/nginx/nginx.conf
 sudo cp deployment/nginx/sites-available/gotutor.conf /etc/nginx/sites-available/gotutor.conf
 sudo ln -s /etc/nginx/sites-available/gotutor /etc/nginx/sites-enabled/

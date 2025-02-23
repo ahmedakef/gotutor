@@ -539,6 +539,7 @@ backendStateView state =
                      , Css.flexDirection Css.column
                      , Css.alignItems Css.center
                      , Css.marginBottom (Css.px 10)
+                     , Css.padding2 (Css.px 0) (Css.px 15)
                      , borderStyle
                      ]
                         ++ (case state.flashMessage of

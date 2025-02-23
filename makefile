@@ -10,3 +10,4 @@ updateExample: build
 	mv output/steps_formatted.json output/steps.json
 	cp output/steps.json frontend/src/initialProgram
 	cp example/main.go frontend/src/initialProgram/main.txt
+	cp example/main.go backend/load-tests/main.txt
