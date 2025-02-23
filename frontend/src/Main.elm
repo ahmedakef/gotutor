@@ -155,15 +155,15 @@ pageFooter =
                 , Css.paddingBottom (Css.px 10)
                 ]
             ]
-            [ text "GoTutor is a trial to show program execution steps."
+            [ text "GoTutor is an online graphical debugging tool for Go that shows the program's execution steps."
             , br [] []
-            , text "It's very welcomed to help by contributing to the project or suggesting ideas."
+            , text "It's very welcome to help by contributing to the project or suggesting ideas."
             , br [] []
-            , text "The project only follows the main Goroutine now as descriped in "
+            , text "The project only follows the main Goroutine now as described in "
             , a [ href "https://github.com/ahmedakef/gotutor?tab=readme-ov-file#limitations", target "_blank", css [ Css.textDecoration Css.none ] ] [ text "Limitations" ]
             , text "."
             , br [] []
-            , text "copyright © 2024 by "
+            , text "Copyright © 2024 by "
             , a [ href "https://www.linkedin.com/in/ahmedakef4/", target "_blank", css [ Css.textDecoration Css.none ] ] [ text "Ahmed Akef" ]
             , text "."
             ]
