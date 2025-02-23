@@ -27,6 +27,7 @@ view state =
                 [ div [ css [ Css.displayFlex, Css.paddingLeft (Css.px 10), Css.alignItems Css.center ] ]
                     [ img [ height 70, src "static/gopher.png", alt "github logo" ] []
                     , p [ css [ Css.fontSize (Css.rem 1.7) ] ] [ text "Go Program to visualize:" ]
+                    , exampleSelector
                     ]
                 , div [ css [ Css.displayFlex, Css.flexWrap Css.wrap, Css.flex (Css.num 1) ] ]
                     [ div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.alignItems Css.center, Css.flex (Css.num 1) ] ]
@@ -239,6 +240,9 @@ editOrViewButton mode =
 
         WaitingSteps ->
             p [ css [ Css.marginTop (Css.px 10), Css.marginBottom (Css.px 0) ] ] [ text "Waiting for execution steps... ⏳" ]
+
+        WaitingSourceCode ->
+            p [ css [ Css.marginTop (Css.px 10), Css.marginBottom (Css.px 0) ] ] [ text "Waiting for source code... ⏳" ]
 
 
 varView : Variable -> Html msg
@@ -552,6 +556,30 @@ backendStateView state =
                     )
                 ]
                 [ p [ css [ Css.fontSize (Css.rem 1.5) ] ] [ text message ] ]
+
+
+exampleSelector : Html Msg
+exampleSelector =
+    select
+        [ css
+            [ Css.fontSize (Css.rem 1.3)
+            , Css.backgroundColor (Css.hex "fff")
+            , Css.border3 (Css.px 1) Css.solid (Css.hex "ddd")
+            , Css.marginLeft (Css.px 15)
+            , Css.padding (Css.px 2)
+            ]
+        , onInput ExampleSelected
+        ]
+        [ option [ value "gotutor.txt", Html.Styled.Attributes.default True ] [ text "Gotutor Example" ]
+        , option [ value "goroutines.txt" ] [ text "Goroutines" ]
+        , option [ value "hello.txt" ] [ text "Hello, World!" ]
+        , option [ value "fib.txt" ] [ text "Fibonacci Closure" ]
+        , option [ value "pi.txt" ] [ text "Concurrent pi" ]
+        , option [ value "sieve.txt" ] [ text "Concurrent Prime Sieve" ]
+        , option [ value "tree.txt" ] [ text "Tree Comparison" ]
+        , option [ value "http.txt" ] [ text "HTTP Server" ]
+        , option [ value "index-dev.txt" ] [ text "Generic index" ]
+        ]
 
 
 borderStyle : Css.Style

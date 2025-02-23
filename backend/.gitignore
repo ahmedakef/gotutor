@@ -1,4 +1,5 @@
 go
-src/backend
+backend
 restate-data/
 sources/
+data/

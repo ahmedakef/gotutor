@@ -48,6 +48,7 @@ type Mode
     = Edit
     | View
     | WaitingSteps
+    | WaitingSourceCode
 
 
 type alias Scroll =
@@ -63,6 +64,7 @@ type alias Scroll =
 type Msg
     = GotExecutionResponse (Result String ExecutionResponse)
     | GotSourceCode (Result Http.Error String)
+    | GotExampleSourceCode (Result Http.Error String)
     | EditCode
     | OnScroll Scroll
     | CodeUpdated String
@@ -72,6 +74,7 @@ type Msg
     | SliderChange Int
     | Highlight Int
     | Unhighlight Int
+    | ExampleSelected String
 
 
 
@@ -116,6 +119,14 @@ getInitSourceCode =
         }
 
 
+getExampleSourceCode : String -> Cmd Msg
+getExampleSourceCode example =
+    Http.get
+        { url = "examples/" ++ example
+        , expect = Http.expectString GotExampleSourceCode
+        }
+
+
 
 -- Update
 
@@ -137,15 +148,23 @@ update msg state env =
                                     ( Success { successState | mode = Edit, executionResponse = { steps = [], duration = "", output = "" }, position = 0, errorMessage = Just err }, Cmd.none )
 
                                 _ ->
-                                    ( Failure ("Error while getting execution steps: " ++ err), Cmd.none )
+                                    ( Success { successState | mode = Edit, errorMessage = Just ("Error while getting execution steps: " ++ err) }, Cmd.none )
 
                 GotSourceCode sourceCodeResult ->
                     case sourceCodeResult of
                         Ok sourceCode ->
-                            ( Success { successState | sourceCode = sourceCode }, Cmd.none )
+                            ( Success { successState | sourceCode = sourceCode, errorMessage = Nothing }, Cmd.none )
 
                         Err err ->
                             ( Failure ("Error while reading program source code: " ++ HttpHelper.errorToString err), Cmd.none )
+
+                GotExampleSourceCode sourceCodeResult ->
+                    case sourceCodeResult of
+                        Ok sourceCode ->
+                            ( Success { successState | sourceCode = sourceCode, mode = Edit, errorMessage = Nothing }, Cmd.none )
+
+                        Err err ->
+                            ( Success { successState | mode = Edit, errorMessage = Just ("Error while reading example source code: " ++ HttpHelper.errorToString err) }, Cmd.none )
 
                 CodeUpdated code ->
                     ( Success { successState | sourceCode = code }, Cmd.none )
@@ -181,6 +200,9 @@ update msg state env =
 
                 Unhighlight _ ->
                     ( Success { successState | highlightedLine = Nothing }, Cmd.none )
+
+                ExampleSelected example ->
+                    ( Success { successState | mode = WaitingSourceCode }, getExampleSourceCode example )
 
         Failure _ ->
             ( state, Cmd.none )
