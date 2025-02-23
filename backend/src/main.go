@@ -43,7 +43,8 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/GetExecutionSteps", func(w http.ResponseWriter, r *http.Request) {
-		logger.Info().Any("header", r.Header).Msg("request headers")
+		logger.Info().Strs("X-Real-Ip", r.Header["X-Real-Ip"]).Msg("request received")
+
 		var req GetExecutionStepsRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
