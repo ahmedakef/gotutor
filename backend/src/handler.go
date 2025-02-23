@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -72,15 +73,19 @@ func (h *Handler) GetExecutionSteps(ctx context.Context, req GetExecutionStepsRe
 	}
 	sourceCodeMapping := fmt.Sprintf("%s/%s:/data/main.go", currentDir, sourcePath)
 	outputMapping := fmt.Sprintf("%s/%s/output:/root/output", currentDir, dataDir)
-	deadlineCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	deadlineCtx, cancel := context.WithTimeout(ctx, 300*time.Second)
 	defer cancel()
 	dockerCommand := exec.CommandContext(deadlineCtx, "docker", "run", "--rm", "-v", sourceCodeMapping, "-v", outputMapping, "ahmedakef/gotutor", "debug", "/data/main.go")
 	out, err := dockerCommand.CombinedOutput()
-	if err != nil || outputContainsError(string(out)) {
+	outStr := string(out)
+	if outputSanitized, ok := outputContainsError(outStr); ok {
+		return serialize.ExecutionResponse{}, errors.New(outputSanitized)
+	}
+	if err != nil {
 		if deadlineCtx.Err() == context.DeadlineExceeded {
 			return serialize.ExecutionResponse{}, fmt.Errorf("execution timed out, remove infinte loops or long waiting times")
 		}
-		return serialize.ExecutionResponse{}, fmt.Errorf("failed to run docker command: %w : %s", err, string(out))
+		return serialize.ExecutionResponse{}, fmt.Errorf("failed to run docker command: %w : %s", err, outStr)
 	}
 
 	output, err := readFileToString(fmt.Sprintf("%s/output/steps.json", dataDir))
@@ -93,7 +98,7 @@ func (h *Handler) GetExecutionSteps(ctx context.Context, req GetExecutionStepsRe
 	if err != nil {
 		return serialize.ExecutionResponse{}, fmt.Errorf("failed to decode output: %w", err)
 	}
-	response.Output = string(out)
+	response.Output = outStr
 	h.cache.Set(req.SourceCode, response)
 	return response, nil
 }
@@ -140,6 +145,16 @@ func readFileToString(filePath string) (string, error) {
 	return string(contents), nil
 }
 
-func outputContainsError(output string) bool {
-	return strings.Contains(output, "failed to build binary")
+func outputContainsError(output string) (string, bool) {
+	if strings.Contains(output, "failed to build binary") {
+		startLoc := strings.Index(output, "data/main.go")
+		endLoc := strings.Index(output, "exit status")
+		if startLoc == -1 || endLoc == -1 {
+			return "failed to build the binary", true
+		}
+		return output[startLoc : endLoc-2], true
+	} else if strings.Contains(output, "limit reached") {
+		return "failed to get execution steps: limit reached", true
+	}
+	return output, false
 }

@@ -1,6 +1,7 @@
 build:
 	go build -o backend ./src
-
+run: build
+	./backend
 deploy: build
 	sudo cp deployment/nginx/nginx.conf /etc/nginx/nginx.conf
 	sudo cp deployment/nginx/sites-available/gotutor.conf /etc/nginx/sites-available/gotutor.conf

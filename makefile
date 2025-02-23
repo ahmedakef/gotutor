@@ -2,7 +2,7 @@ build:
 	go build -o main
 	docker build -t gotutor .
 	docker tag gotutor ahmedakef/gotutor:latest
-	// docker push ahmedakef/gotutor:latest
+	# docker push ahmedakef/gotutor:latest
 updateExample: build
 	go build  -gcflags='all=-N -l' -o example/source_debug example/main.go
 	./main exec example/source_debug
