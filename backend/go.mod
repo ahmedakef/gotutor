@@ -8,6 +8,7 @@ require (
 	github.com/ahmedakef/gotutor v0.0.0-20250111015430-2764702fae93
 	github.com/rs/zerolog v1.33.0
 	golang.org/x/exp v0.0.0-20250106191152-7588d65b2ba8
+	golang.org/x/sync v0.10.0
 )
 
 require (

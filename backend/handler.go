@@ -13,7 +13,10 @@ import (
 	"github.com/ahmedakef/gotutor/serialize"
 	"github.com/rs/zerolog"
 	"golang.org/x/exp/rand"
+	"golang.org/x/sync/semaphore"
 )
+
+const _allowedConcurrency = 100
 
 // Handler is a struct which represents the backend handler
 type Handler struct {
@@ -31,6 +34,13 @@ type GetExecutionStepsRequest struct {
 }
 
 func (h *Handler) GetExecutionSteps(ctx context.Context, req GetExecutionStepsRequest) (serialize.ExecutionResponse, error) {
+	sem := semaphore.NewWeighted(_allowedConcurrency)
+
+	if err := sem.Acquire(ctx, 1); err != nil {
+		return serialize.ExecutionResponse{}, fmt.Errorf("failed to acquire semaphore: %w", err)
+	}
+	defer sem.Release(1)
+
 	port := generateRandomPort()
 	dataDir, err := prepareTempDir(port)
 	if err != nil {
