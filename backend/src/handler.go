@@ -75,7 +75,7 @@ func (h *Handler) GetExecutionSteps(ctx context.Context, req GetExecutionStepsRe
 	outputMapping := fmt.Sprintf("%s/%s/output:/root/output", currentDir, dataDir)
 	deadlineCtx, cancel := context.WithTimeout(ctx, 300*time.Second)
 	defer cancel()
-	dockerCommand := exec.CommandContext(deadlineCtx, "docker", "run", "--rm", "-v", sourceCodeMapping, "-v", outputMapping, "ahmedakef/gotutor", "debug", "/data/main.go")
+	dockerCommand := exec.CommandContext(deadlineCtx, "docker", "run", "--rm", "--network", "none", "-v", sourceCodeMapping, "-v", outputMapping, "ahmedakef/gotutor", "debug", "/data/main.go")
 	out, err := dockerCommand.CombinedOutput()
 	outStr := string(out)
 	if outputSanitized, ok := outputContainsError(outStr); ok {
