@@ -150,7 +150,7 @@ codeView state =
             [ borderStyle
             , case state.mode of
                 Edit ->
-                    Css.backgroundColor (Css.hex "fff")
+                    Css.backgroundColor (Css.hex "ffffddf7")
 
                 _ ->
                     Css.backgroundColor Css.transparent
