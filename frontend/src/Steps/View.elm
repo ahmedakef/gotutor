@@ -570,7 +570,7 @@ exampleSelector =
             ]
         , onInput ExampleSelected
         ]
-        [ option [ value "gotutor.txt", Html.Styled.Attributes.default True ] [ text "Gotutor Example" ]
+        [ option [ value "gotutor.txt", Html.Styled.Attributes.default True ] [ text "GoTutor Example" ]
         , option [ value "goroutines.txt" ] [ text "Goroutines" ]
         , option [ value "hello.txt" ] [ text "Hello, World!" ]
         , option [ value "fib.txt" ] [ text "Fibonacci Closure" ]
