@@ -1,11 +1,19 @@
 # GoTutor
 
-GoTutor is a project aimed at capturing the execution steps of a Go program by interacting with the Delve debugger server. It retrieves variable values and stack information at each Go statement.
+GoTutor is a project aimed at capturing the execution steps of a Go program by interacting with the Delve debugger server. It retrieves variable values and stack information of all running Goroutines at each Go statement.
+
+https://gotutor.dev/
 
 ## Features
 
-- Captures variable values and stack information at each Go statement
-- In the future, I plan to extend this project to visualize the execution steps, similar to [Python Tutor](https://pythontutor.com/).
+- Capture running Goroutines and its stack frames state at each Go statement of the main Goroutine.
+- Interactive online Debugging tool: https://gotutor.dev/.
+
+## Architecture
+The project is split into three components:
+- CLI tool: that takes a go program and produces `output/steps.json` file which represent the execution steps of the program (exists under `.`)
+- backend: run the CLI tool for the given program and return the execution steps (exists under `backend/`)
+- frontend: the frontend of https://gotutor.dev/ which is build using [elm-lang](https://elm-lang.org/) (exists under `frontend/`)
 
 ## Limitations
 Currently, the project has limitations when handling multiple goroutines. When using `next` or `step` on a single goroutine, all goroutines progress, making it difficult to capture the state of other goroutines. This issue is documented in [Delve Issue #1529](https://github.com/go-delve/delve/issues/1529).
