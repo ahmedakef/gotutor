@@ -17,7 +17,7 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-const _allowedConcurrency = 100
+const _allowedConcurrency = 10
 
 // Handler is a struct which represents the backend handler
 type Handler struct {
