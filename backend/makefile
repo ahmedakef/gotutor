@@ -1,5 +1,5 @@
 build:
-	go build
+	go build -o backend ./src
 
 deploy: build
 	sudo cp deployment/nginx/nginx.conf /etc/nginx/nginx.conf
