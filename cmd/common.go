@@ -11,6 +11,8 @@ import (
 	"github.com/rs/zerolog"
 )
 
+const _stepsLimit = 1000
+
 func getAndWriteSteps(ctx context.Context, client *gateway.Debug, logger zerolog.Logger) error {
 
 	defer func() {
@@ -22,7 +24,7 @@ func getAndWriteSteps(ctx context.Context, client *gateway.Debug, logger zerolog
 	}()
 
 	serializer := serialize.NewSerializer(client, logger)
-	steps, err := serializer.ExecutionSteps(ctx)
+	steps, err := serializer.ExecutionSteps(ctx, _stepsLimit)
 	if err != nil {
 		return fmt.Errorf("failed to get execution steps: %w", err)
 	}

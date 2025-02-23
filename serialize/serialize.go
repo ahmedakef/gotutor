@@ -30,8 +30,9 @@ func NewSerializer(client *gateway.Debug, logger zerolog.Logger) *Serializer {
 	}
 }
 
-func (v *Serializer) ExecutionSteps(ctx context.Context) (ExecutionResponse, error) {
+func (v *Serializer) ExecutionSteps(ctx context.Context, limit int) (ExecutionResponse, error) {
 	start := time.Now()
+	stepsSoFar := 0
 	err := v.initMainBreakPoint(ctx)
 	if err != nil {
 		return ExecutionResponse{}, err
@@ -47,7 +48,10 @@ func (v *Serializer) ExecutionSteps(ctx context.Context) (ExecutionResponse, err
 
 	var allSteps []Step
 	for ctx.Err() == nil {
-
+		stepsSoFar++
+		if stepsSoFar >= limit {
+			return ExecutionResponse{Steps: allSteps, Duration: time.Since(start).String()}, fmt.Errorf("%d limit reached", limit)
+		}
 		step, exited, err := v.goToNextLine(ctx, debugState.SelectedGoroutine)
 		if err != nil {
 			return ExecutionResponse{Steps: allSteps}, err
@@ -60,10 +64,9 @@ func (v *Serializer) ExecutionSteps(ctx context.Context) (ExecutionResponse, err
 		}
 
 	}
-	duration := time.Since(start)
 	return ExecutionResponse{
 		Steps:    allSteps,
-		Duration: duration.String(),
+		Duration: time.Since(start).String(),
 	}, nil
 }
 
