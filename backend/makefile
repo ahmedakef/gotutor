@@ -1,3 +1,6 @@
+build:
+	go build
+
 deploy
 	go build
 	sudo cp deployment/nginx/nginx.conf /etc/nginx/nginx.conf

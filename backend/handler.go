@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ahmedakef/gotutor/backend/cache"
 	"github.com/ahmedakef/gotutor/serialize"
 	"github.com/rs/zerolog"
 	"golang.org/x/exp/rand"
@@ -21,11 +22,13 @@ const _allowedConcurrency = 100
 // Handler is a struct which represents the backend handler
 type Handler struct {
 	logger zerolog.Logger
+	cache  cache.LRUCache
 }
 
-func newHandler(logger zerolog.Logger) *Handler {
+func newHandler(logger zerolog.Logger, cache cache.LRUCache) *Handler {
 	return &Handler{
 		logger: logger,
+		cache:  cache,
 	}
 }
 
@@ -34,8 +37,13 @@ type GetExecutionStepsRequest struct {
 }
 
 func (h *Handler) GetExecutionSteps(ctx context.Context, req GetExecutionStepsRequest) (serialize.ExecutionResponse, error) {
-	sem := semaphore.NewWeighted(_allowedConcurrency)
+	// check if the request is already in the cache
+	cachedResponse, ok := h.cache.Get(req.SourceCode)
+	if ok {
+		return cachedResponse, nil
+	}
 
+	sem := semaphore.NewWeighted(_allowedConcurrency)
 	if err := sem.Acquire(ctx, 1); err != nil {
 		return serialize.ExecutionResponse{}, fmt.Errorf("failed to acquire semaphore: %w", err)
 	}
@@ -86,6 +94,7 @@ func (h *Handler) GetExecutionSteps(ctx context.Context, req GetExecutionStepsRe
 		return serialize.ExecutionResponse{}, fmt.Errorf("failed to decode output: %w", err)
 	}
 	response.Output = string(out)
+	h.cache.Set(req.SourceCode, response)
 	return response, nil
 }
 

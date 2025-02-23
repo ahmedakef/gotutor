@@ -7,10 +7,16 @@ import (
 	"os"
 	"time"
 
+	"github.com/ahmedakef/gotutor/backend/cache"
 	"github.com/rs/zerolog"
 )
 
-const _port = 8080
+const (
+	_port          = 8080
+	_maxCacheSize  = 100 * 1024 * 1024 // 100MB
+	_maxCacheItems = 100
+	_cacheTTL      = 0
+)
 
 type ErrorResponse struct {
 	Message string `json:"message"`
@@ -31,7 +37,9 @@ func main() {
 		zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339},
 	).Level(zerolog.InfoLevel).With().Timestamp().Caller().Logger()
 
-	handler := newHandler(logger)
+	cache := cache.NewLRUCache(_maxCacheSize, _maxCacheItems, _cacheTTL)
+
+	handler := newHandler(logger, cache)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/GetExecutionSteps", func(w http.ResponseWriter, r *http.Request) {
