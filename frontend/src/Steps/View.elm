@@ -562,11 +562,11 @@ exampleSelector : Html Msg
 exampleSelector =
     select
         [ css
-            [ Css.fontSize (Css.rem 1.3)
+            [ Css.fontSize (Css.rem 0.9)
             , Css.backgroundColor (Css.hex "fff")
             , Css.border3 (Css.px 1) Css.solid (Css.hex "ddd")
             , Css.marginLeft (Css.px 15)
-            , Css.padding (Css.px 2)
+            , Css.padding (Css.px 1)
             ]
         , onInput ExampleSelected
         ]
