@@ -5,20 +5,25 @@ import BigInt
 
 
 -- limitation: gives correct results for 23-bit integers only
--- e.g. 13758215386640155000 -> -> 0x32e00000000000 while it should be 0xBEEF000000000178
+-- e.g. 13758215386640155000 -> 0x32e00000000000 while it should be 0xBEEF000000000178
+-- show only last 8 digits of the hex number
 
 
 intToHex : Int -> String
 intToHex n =
     let
-        bigN =
+        hexN =
             BigInt.fromInt n
+                |> BigInt.toHexString
+
+        nStr =
+            String.slice (String.length hexN - 8) (String.length hexN) hexN
     in
     if n < 0 then
-        "-0x" ++ BigInt.toHexString bigN
+        "-0x" ++ nStr
 
     else
-        "0x" ++ BigInt.toHexString bigN
+        "0x" ++ nStr
 
 
 
