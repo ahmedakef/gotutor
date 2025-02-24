@@ -54,7 +54,7 @@ horizontalLiStyle =
     Css.batch
         [ margin2 (px 0) (px 10)
         , padding (px 5)
-        , borderRadius (px 5)
+        , borderRadius (px 2)
         , hover
             [ backgroundColor (hex "f5f5f5") ]
         ]

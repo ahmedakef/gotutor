@@ -124,13 +124,26 @@ view model =
 
 navigation : Html msg
 navigation =
-    header [ css [ Css.displayFlex, Css.justifyContent Css.center, Css.width (Css.pct 100), Css.borderBottom3 (Css.px 1) Css.solid (Css.hex "ddd") ] ]
-        [ horizontalUL
-            [ viewLink "About" "#about" "_self"
-            , viewLink "Github" "https://github.com/ahmedakef/gotutor" "_blank"
-            , githubSponsorsButton
-            , koFiButton
+    header
+        [ css
+            [ Css.displayFlex
+            , Css.justifyContent Css.center
+            , Css.alignItems Css.center
+            , Css.width (Css.pct 100)
+            , Css.borderBottom3 (Css.px 1) Css.solid (Css.hex "ddd")
             ]
+        ]
+        [ div [ css [ Css.flex (Css.num 1), Css.paddingLeft (Css.px 10), Css.paddingTop (Css.px 10) ] ]
+            [ img [ height 27, src "static/logo.svg", alt "github logo" ] []
+            ]
+        , ul [ css [ Styles.horizontalUlStyle, Css.flex (Css.num 2) ] ]
+            (horizontalULItems
+                [ viewLink "About" "#about" "_self"
+                , viewLink "Github" "https://github.com/ahmedakef/gotutor" "_blank"
+                , githubSponsorsButton
+                , koFiButton
+                ]
+            )
         ]
 
 
@@ -205,10 +218,9 @@ koFiButton =
         ]
 
 
-horizontalUL : List (Html msg) -> Html msg
-horizontalUL items =
-    ul [ css [ Styles.horizontalUlStyle ] ]
-        (List.map (\item -> li [ css [ Styles.horizontalLiStyle ] ] [ item ]) items)
+horizontalULItems : List (Html msg) -> List (Html msg)
+horizontalULItems items =
+    List.map (\item -> li [ css [ Styles.horizontalLiStyle ] ] [ item ]) items
 
 
 viewLink : String -> String -> String -> Html msg

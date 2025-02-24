@@ -586,7 +586,7 @@ borderStyle : Css.Style
 borderStyle =
     Css.batch
         [ Css.border3 (Css.px 1) Css.solid (Css.hex "ddd")
-        , Css.borderRadius (Css.px 5)
+        , Css.borderRadius (Css.px 3)
         ]
 
 
@@ -596,7 +596,7 @@ frameBorderStyle =
         [ Css.border3 (Css.px 1) Css.solid (Css.hex "ccc")
         , Css.padding (Css.px 10)
         , Css.marginBottom (Css.px 10)
-        , Css.borderRadius (Css.px 15)
+        , Css.borderRadius (Css.px 7)
         ]
 
 
