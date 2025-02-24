@@ -47,6 +47,6 @@ func GetBuildFlags() string {
 			buildFlagsDefault = "-ldflags='-linkmode internal'"
 		}
 	}
-	//buildFlagsDefault += " -gcflags='all=-N -l'" // Disable optimizations and inlining
+	//buildFlagsDefault += " -gcflags='all=-N -l'" // Disable optimizations and inlining, probably already added in goBuildArgs2 in github.com/go-delve/delve@v1.24.0/pkg/gobuild/gobuild.go
 	return buildFlagsDefault
 }
