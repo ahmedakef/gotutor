@@ -23,20 +23,18 @@ view state =
                 visualizeState =
                     stateToVisualize stepsState
             in
-            main_ [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.flex (Css.num 1), Css.paddingTop (Css.vh 5) ] ]
-                [ div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.paddingLeft (Css.px 10) ] ]
+            main_ [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.flex (Css.num 1), Css.paddingTop (Css.vh 2) ] ]
+                [ div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.alignItems Css.center, Css.paddingBottom (Css.px 20) ] ]
                     [ div [ css [ Css.displayFlex ] ]
                         [ img [ height 70, src "static/gopher.png", alt "github logo" ] []
                         , h1 [ css [ Css.fontSize (Css.rem 1.7) ] ] [ text "An online graphical debugging tool to visualize Go" ]
                         ]
-                    , div [ css [] ]
-                        [ p [] [ text "It shows the state of all the running Goroutines, the state of each stack frame and can go back in time." ]
-                        ]
-                    , div [ css [ Css.paddingBottom (Css.px 10) ] ] [ p [ css [ Css.display Css.inline ] ] [ text "Press Edit Code or select an example to visualize:" ], exampleSelector ]
+                    , p [] [ text "It shows the state of all the running Goroutines, the state of each stack frame and can go back in time." ]
                     ]
                 , div [ css [ Css.displayFlex, Css.flexWrap Css.wrap, Css.flex (Css.num 1) ] ]
                     [ div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.alignItems Css.center, Css.flex (Css.num 1) ] ]
-                        [ codeView visualizeState
+                        [ div [ css [ Css.paddingBottom (Css.px 10) ] ] [ p [ css [ Css.display Css.inline ] ] [ text "Press Edit Code or select an example to visualize:" ], exampleSelector ]
+                        , codeView visualizeState
                         , editOrViewButton visualizeState.mode
                         , div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.alignItems Css.center, Css.marginTop (Css.px 10) ] ]
                             [ div []
