@@ -1,6 +1,8 @@
 module github.com/ahmedakef/gotutor/backend
 
-go 1.22.6
+go 1.23
+
+toolchain go1.24.0
 
 replace github.com/ahmedakef/gotutor => ../
 
@@ -20,7 +22,8 @@ require (
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
-	github.com/stretchr/testify v1.9.0 // indirect
+	github.com/stretchr/testify v1.10.0 // indirect
+	go.etcd.io/bbolt v1.4.0 // indirect
 	golang.org/x/arch v0.13.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

@@ -2,6 +2,7 @@
 Description=Go Application
 
 [Service]
+Environment=ENV=production
 
 ExecStart=/home/ec2-user/gotutor/backend/backend
 

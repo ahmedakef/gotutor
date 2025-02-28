@@ -6,15 +6,16 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/rand"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
 
 	"github.com/ahmedakef/gotutor/backend/src/cache"
+	"github.com/ahmedakef/gotutor/backend/src/db"
 	"github.com/ahmedakef/gotutor/serialize"
 	"github.com/rs/zerolog"
-	"golang.org/x/exp/rand"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -24,12 +25,14 @@ const _allowedConcurrency = 10
 type Handler struct {
 	logger zerolog.Logger
 	cache  cache.LRUCache
+	db     *db.DB
 }
 
-func newHandler(logger zerolog.Logger, cache cache.LRUCache) *Handler {
+func newHandler(logger zerolog.Logger, cache cache.LRUCache, db *db.DB) *Handler {
 	return &Handler{
 		logger: logger,
 		cache:  cache,
+		db:     db,
 	}
 }
 
@@ -38,9 +41,15 @@ type GetExecutionStepsRequest struct {
 }
 
 func (h *Handler) GetExecutionSteps(ctx context.Context, req GetExecutionStepsRequest) (serialize.ExecutionResponse, error) {
+	_, err := h.db.IncrementCallCounter()
+	if err != nil {
+		h.logger.Err(err).Msg("failed to increment call counter")
+	}
+
 	// check if the request is already in the cache
 	cachedResponse, ok := h.cache.Get(req.SourceCode)
 	if ok {
+		h.logger.Info().Msg("cache hit")
 		return cachedResponse, nil
 	}
 
@@ -49,6 +58,10 @@ func (h *Handler) GetExecutionSteps(ctx context.Context, req GetExecutionStepsRe
 		return serialize.ExecutionResponse{}, fmt.Errorf("failed to acquire semaphore: %w", err)
 	}
 	defer sem.Release(1)
+
+	if err := h.db.SaveSourceCode(req.SourceCode); err != nil {
+		h.logger.Err(err).Msg("failed to save source code")
+	}
 
 	port := generateRandomPort()
 	dataDir, err := prepareTempDir(port)
@@ -104,8 +117,8 @@ func (h *Handler) GetExecutionSteps(ctx context.Context, req GetExecutionStepsRe
 }
 
 func generateRandomPort() int {
-	rand.Seed(uint64(time.Now().UnixNano()))
-	return rand.Intn(65535-1024) + 1024
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	return r.Intn(10000)
 }
 
 func prepareTempDir(randomPort int) (string, error) {

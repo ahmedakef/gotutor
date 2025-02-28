@@ -8,14 +8,17 @@ import (
 	"time"
 
 	"github.com/ahmedakef/gotutor/backend/src/cache"
+	"github.com/ahmedakef/gotutor/backend/src/db"
 	"github.com/rs/zerolog"
 )
 
 const (
-	_port          = 8080
-	_maxCacheSize  = 250 * 1024 * 1024 // 100MB
-	_maxCacheItems = 100
-	_cacheTTL      = 0
+	_port             = 8080
+	_maxCacheSize     = 250 * 1024 * 1024 // 100MB
+	_maxCacheItems    = 100
+	_cacheTTL         = 0
+	_callsBucket      = "GetExecutionStepsCalls"
+	_sourceCodeBucket = "SourceCode"
 )
 
 type ErrorResponse struct {
@@ -39,7 +42,18 @@ func main() {
 
 	cache := cache.NewLRUCache(_maxCacheSize, _maxCacheItems, _cacheTTL)
 
-	handler := newHandler(logger, cache)
+	dbPath := "gotutor.db"
+	if os.Getenv("ENV") == "production" {
+		dbPath = "/var/lib/gotutor/data/gotutor.db"
+	}
+
+	db, err := db.New(dbPath)
+	if err != nil {
+		logger.Info().Err(err).Msg("failed to create database")
+	}
+	defer db.Close()
+
+	handler := newHandler(logger, cache, db)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/GetExecutionSteps", func(w http.ResponseWriter, r *http.Request) {
@@ -68,5 +82,4 @@ func main() {
 	if err := http.ListenAndServe(fmt.Sprintf(":%d", _port), corsMiddleware(mux)); err != nil {
 		logger.Fatal().Err(err).Msg("failed to start server")
 	}
-
 }
