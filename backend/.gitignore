@@ -4,3 +4,4 @@ restate-data/
 sources/
 data/
 gotutor.db
+cmd/dbutil/dbutil

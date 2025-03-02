@@ -12,7 +12,7 @@ import Html.Styled.Events exposing (..)
 import Json.Decode as Json
 import Steps.Decoder exposing (..)
 import Steps.Steps exposing (..)
-import SyntaxHighlight as SH
+import SyntaxHighlight.SyntaxHighlight as SH
 
 
 view : State -> Html Msg
@@ -172,9 +172,10 @@ codeView state =
                 )
             , css [ Css.property "will-change" "transform", Css.pointerEvents Css.none ]
             ]
-            [ case state.mode of
+            [ SH.useTheme SH.gitHub |> Html.Styled.fromUnstyled
+            , case state.mode of
                 View ->
-                    SH.noLang state.sourceCode
+                    SH.go state.sourceCode
                         |> Result.map (SH.highlightLines highlightModeHighlightedLine (highlightedLine - 1) highlightedLine)
                         |> Result.map (SH.highlightLines (Just SH.Add) (currentLine - 1) currentLine)
                         |> Result.map (SH.toBlockHtml (Just 1))
@@ -183,7 +184,7 @@ codeView state =
                         |> Html.Styled.fromUnstyled
 
                 _ ->
-                    SH.noLang state.sourceCode
+                    SH.go state.sourceCode
                         |> Result.map (SH.toBlockHtml (Just 1))
                         |> Result.withDefault
                             (UnSytyled.pre [] [ UnSytyled.code [ Html.Attributes.class "elmsh" ] [ UnSytyled.text state.sourceCode ] ])
