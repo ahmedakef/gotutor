@@ -6,9 +6,9 @@ module SyntaxHighlight.SyntaxHighlight.Language.Go exposing
     , toRevTokens
     )
 
-import Parser exposing ((|.), (|=), DeadEnd, Parser, Step(..), andThen, chompIf, getChompedString, loop, map, oneOf, succeed, symbol)
+import Parser exposing ((|.), (|=), DeadEnd, Parser, Step(..), andThen, backtrackable, chompIf, getChompedString, loop, map, oneOf, succeed, symbol)
 import Set exposing (Set)
-import SyntaxHighlight.SyntaxHighlight.Language.Helpers exposing (Delimiter, chompIfThenWhile, delimited, escapable, isEscapable, isLineBreak, isSpace, isWhitespace, thenChompWhile)
+import SyntaxHighlight.SyntaxHighlight.Language.Helpers exposing (Delimiter, chompIfThenWhile, delimited, isLineBreak, isSpace, isWhitespace, thenChompWhile)
 import SyntaxHighlight.SyntaxHighlight.Language.Type as T
 import SyntaxHighlight.SyntaxHighlight.Line exposing (Line)
 import SyntaxHighlight.SyntaxHighlight.Line.Helpers as Line
@@ -26,6 +26,7 @@ type Syntax
     | DeclarationKeyword
     | Type
     | Function
+    | LiteralKeyword
     | Package
     | Operator
     | Param
@@ -46,17 +47,26 @@ mainLoop : List Token -> Parser (Step (List Token) (List Token))
 mainLoop revTokens =
     oneOf
         [ whitespaceOrCommentStep revTokens
-        , chompIf (always True)
+        , stringLiteral
+            |> map (\s -> Loop (s ++ revTokens))
+        , oneOf
+            [ operatorChar
+            , groupChar
+            , number
+            ]
+            |> map (\s -> Loop (s :: revTokens))
+        , chompIfThenWhile isIdentifierNameChar
             |> getChompedString
-            |> map (\b -> Loop (( T.Normal, b ) :: revTokens))
+            |> andThen (keywordParser revTokens)
+            |> map Loop
         , succeed (Done revTokens)
         ]
 
 
 keywordParser : List Token -> String -> Parser (List Token)
 keywordParser revTokens n =
-    if isKeyword n then
-        succeed (( T.C Keyword, n ) :: revTokens)
+    if n == "func" then
+        loop (( T.C DeclarationKeyword, n ) :: revTokens) functionDeclarationLoop
 
     else if isType n then
         succeed (( T.C Type, n ) :: revTokens)
@@ -64,18 +74,61 @@ keywordParser revTokens n =
     else if isPackage n then
         succeed (( T.C Package, n ) :: revTokens)
 
+    else if isKeyword n then
+        succeed (( T.C Keyword, n ) :: revTokens)
+
+    else if isDeclarationKeyword n then
+        succeed (( T.C DeclarationKeyword, n ) :: revTokens)
+
+    else if isLiteralKeyword n then
+        succeed (( T.C LiteralKeyword, n ) :: revTokens)
+
     else
         succeed (( T.Normal, n ) :: revTokens)
+
+
+functionDeclarationLoop : List Token -> Parser (Step (List Token) (List Token))
+functionDeclarationLoop revTokens =
+    oneOf
+        [ whitespaceOrCommentStep revTokens
+        , chompIfThenWhile isIdentifierNameChar
+            |> getChompedString
+            |> map (\b -> Loop (( T.C Function, b ) :: revTokens))
+        , symbol "("
+            |> andThen
+                (\_ -> loop (( T.Normal, "(" ) :: revTokens) argLoop)
+            |> map Loop
+        , succeed (Done revTokens)
+        ]
+
+
+argLoop : List Token -> Parser (Step (List Token) (List Token))
+argLoop revTokens =
+    oneOf
+        [ whitespaceOrCommentStep revTokens
+        , chompIfThenWhile (\c -> not (isCommentChar c || isWhitespace c || c == ',' || c == ')'))
+            |> getChompedString
+            |> andThen (argParser revTokens)
+            |> map Loop
+        , chompIfThenWhile (\c -> c == '/' || c == ',')
+            |> getChompedString
+            |> map (\b -> Loop (( T.Normal, b ) :: revTokens))
+        , succeed (Done revTokens)
+        ]
+
+
+argParser : List Token -> String -> Parser (List Token)
+argParser revTokens n =
+    if isType n || String.startsWith n "[]" then
+        succeed (( T.C Type, n ) :: revTokens)
+
+    else
+        succeed (( T.C Param, n ) :: revTokens)
 
 
 isIdentifierNameChar : Char -> Bool
 isIdentifierNameChar c =
     Char.isAlphaNum c || c == '_' || Char.toCode c > 127
-
-
-isIdentifierStartChar : Char -> Bool
-isIdentifierStartChar c =
-    Char.isAlpha c || c == '_' || Char.toCode c > 127
 
 
 
@@ -86,55 +139,18 @@ number : Parser Token
 number =
     oneOf
         [ hexNumber
-        , octalNumber
-        , float
-        , integer
+        , SyntaxHighlight.SyntaxHighlight.Language.Helpers.number
+        , SyntaxHighlight.SyntaxHighlight.Language.Helpers.numberExponentialNotation
         ]
-        |> map (\s -> ( T.C Number, s ))
+        |> getChompedString
+        |> map (\b -> ( T.C Number, b ))
 
 
-hexNumber : Parser String
+hexNumber : Parser ()
 hexNumber =
-    succeed (\n -> "0x" ++ n)
-        |. symbol "0"
-        |. oneOf [ symbol "x", symbol "X" ]
-        |= getChompedString (chompIfThenWhile isHexDigit)
-
-
-octalNumber : Parser String
-octalNumber =
-    succeed (\n -> "0o" ++ n)
-        |. symbol "0"
-        |. oneOf [ symbol "o", symbol "O" ]
-        |= getChompedString (chompIfThenWhile isOctalDigit)
-
-
-float : Parser String
-float =
-    succeed (++)
-        |= getChompedString (chompIfThenWhile Char.isDigit)
-        |. symbol "."
-        |= getChompedString (chompIfThenWhile Char.isDigit)
-
-
-integer : Parser String
-integer =
-    getChompedString (chompIfThenWhile Char.isDigit)
-
-
-isHexDigit : Char -> Bool
-isHexDigit c =
-    Char.isDigit c || Set.member c hexLetterSet
-
-
-isOctalDigit : Char -> Bool
-isOctalDigit c =
-    c >= '0' && c <= '7'
-
-
-hexLetterSet : Set Char
-hexLetterSet =
-    Set.fromList [ 'a', 'b', 'c', 'd', 'e', 'f', 'A', 'B', 'C', 'D', 'E', 'F' ]
+    succeed ()
+        |. backtrackable (symbol "0x")
+        |. chompIfThenWhile Char.isHexDigit
 
 
 
@@ -143,7 +159,7 @@ hexLetterSet =
 
 isKeyword : String -> Bool
 isKeyword str =
-    Set.member str keywords || Set.member str types
+    Set.member str keywords
 
 
 keywords : Set String
@@ -257,6 +273,20 @@ groupCharSet =
     Set.fromList [ '(', ')', '[', ']', '{', '}', ',', ';' ]
 
 
+isLiteralKeyword : String -> Bool
+isLiteralKeyword str =
+    Set.member str literalKeywordSet
+
+
+literalKeywordSet : Set String
+literalKeywordSet =
+    Set.fromList
+        [ "true"
+        , "false"
+        , "nil"
+        ]
+
+
 
 -- String literal
 
@@ -355,27 +385,6 @@ whitespaceOrCommentStep revTokens =
         ]
 
 
-whitespace : Parser Token
-whitespace =
-    oneOf
-        [ space
-        , lineBreak
-        ]
-
-
-space : Parser Token
-space =
-    chompIfThenWhile isSpace
-        |> getChompedString
-        |> map (\b -> ( T.Normal, b ))
-
-
-lineBreak : Parser Token
-lineBreak =
-    symbol "\n"
-        |> map (\_ -> ( T.LineBreak, "\n" ))
-
-
 lineBreakList : Parser (List Token)
 lineBreakList =
     symbol "\n"
@@ -386,28 +395,31 @@ syntaxToStyle : Syntax -> ( Style.Required, String )
 syntaxToStyle syntax =
     case syntax of
         Number ->
-            ( Style1, "number" )
+            ( Style1, "go-n" )
 
         String ->
-            ( Style2, "string" )
+            ( Style2, "go-s" )
 
         Keyword ->
-            ( Style3, "keyword" )
+            ( Style3, "go-k" )
 
         DeclarationKeyword ->
-            ( Style3, "declaration-keyword" )
+            ( Style3, "go-dk" )
 
         Type ->
-            ( Style4, "type" )
+            ( Style4, "go-t" )
 
         Function ->
-            ( Style5, "function" )
+            ( Style5, "go-f" )
+
+        LiteralKeyword ->
+            ( Style6, "go-lk" )
 
         Package ->
-            ( Style3, "package" )
+            ( Style3, "go-p" )
 
         Operator ->
-            ( Style3, "operator" )
+            ( Style3, "go-o" )
 
         Param ->
-            ( Style3, "param" )
+            ( Style7, "go-param" )
