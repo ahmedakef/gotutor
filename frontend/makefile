@@ -1,4 +1,5 @@
 build:
+	sed -i '' 's/elm.js/elm\.min\.js/g' src/index.html
 	./optimize.sh src/Main.elm
 	mkdir -p src/gotutor/initialProgram
 	cp -r src/initialProgram src/gotutor # since it can be served under https://ahmedakef.github.io/gotutor/

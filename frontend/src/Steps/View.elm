@@ -156,7 +156,7 @@ codeView state =
                     Css.backgroundColor (Css.hex "ffffddf7")
 
                 _ ->
-                    Css.backgroundColor Css.transparent
+                    Css.backgroundColor (Css.hex "ffffff")
             ]
         , class "code-container"
         ]
@@ -172,8 +172,7 @@ codeView state =
                 )
             , css [ Css.property "will-change" "transform", Css.pointerEvents Css.none ]
             ]
-            [ SH.useTheme SH.gitHub |> Html.Styled.fromUnstyled
-            , case state.mode of
+            [ case state.mode of
                 View ->
                     SH.go state.sourceCode
                         |> Result.map (SH.highlightLines highlightModeHighlightedLine (highlightedLine - 1) highlightedLine)
