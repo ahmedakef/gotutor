@@ -67,3 +67,12 @@ Contributions are welcome! Please open an issue or submit a pull request.
 ## License
 
 This project is licensed under the MIT License.
+
+
+## Give a Star! ⭐
+
+If you like this project or are using it to learn or start your own solution, give it a star to get updates on new releases. Your support matters!
+
+## Buy me a coffee
+
+<a href='https://ko-fi.com/M4M319RW5Y' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi6.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
