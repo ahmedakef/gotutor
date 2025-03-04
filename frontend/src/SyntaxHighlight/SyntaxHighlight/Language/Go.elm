@@ -119,7 +119,7 @@ argLoop revTokens =
 
 argParser : List Token -> String -> Parser (List Token)
 argParser revTokens n =
-    if isType n || String.startsWith n "[]" then
+    if isType n || String.startsWith "[]" n then
         succeed (( T.C Type, n ) :: revTokens)
 
     else
