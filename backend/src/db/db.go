@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	bolt "go.etcd.io/bbolt"
 )
@@ -13,6 +14,8 @@ import (
 const (
 	_callsBucket      = "GetExecutionStepsCalls"
 	_sourceCodeBucket = "SourceCode"
+	_codeKey          = "code"
+	_updatedAtKey     = "updated_at"
 )
 
 type DB struct {
@@ -80,18 +83,27 @@ func uint64ToBytes(counter uint64) []byte {
 // SaveSourceCode stores the source code with its hash as the key
 func (db *DB) SaveSourceCode(sourceCode string) error {
 	return db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(_sourceCodeBucket))
-		if b == nil {
+		sourceCodeBucket := tx.Bucket([]byte(_sourceCodeBucket))
+		if sourceCodeBucket == nil {
 			return fmt.Errorf("bucket %s not found", _sourceCodeBucket)
 		}
 
 		hash := sha256.Sum256([]byte(sourceCode))
 		hashSlice := hash[:]
+		codeBucket, err := sourceCodeBucket.CreateBucketIfNotExists(hashSlice)
+		if err != nil {
+			return fmt.Errorf("failed to create bucket: %w", err)
+		}
 		// Check if source code already exists
-		if v := b.Get(hashSlice); v != nil {
+		if v := codeBucket.Get([]byte(_codeKey)); v != nil {
 			return nil
 		}
 
-		return b.Put(hashSlice, []byte(sourceCode))
+		err = codeBucket.Put([]byte(_codeKey), []byte(sourceCode))
+		if err != nil {
+			return fmt.Errorf("failed to save source code: %w", err)
+		}
+
+		return codeBucket.Put([]byte(_updatedAtKey), []byte(time.Now().String()))
 	})
 }
