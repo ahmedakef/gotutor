@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/binary"
 	"flag"
 	"fmt"
 	"log"
@@ -8,6 +9,13 @@ import (
 
 	"github.com/ahmedakef/gotutor/backend/src/db"
 	bolt "go.etcd.io/bbolt"
+)
+
+const (
+	_callsBucket      = "GetExecutionStepsCalls"
+	_sourceCodeBucket = "SourceCode"
+	_codeKey          = "code"
+	_updatedAtKey     = "updated_at"
 )
 
 func main() {
@@ -25,7 +33,7 @@ func main() {
 	defer db.Close()
 
 	err = db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("SourceCode"))
+		b := tx.Bucket([]byte(_sourceCodeBucket))
 		if b == nil {
 			return fmt.Errorf("SourceCode bucket not found")
 		}
@@ -34,19 +42,34 @@ func main() {
 		fmt.Println("=====================================")
 
 		count := 0
-		return b.ForEach(func(k, v []byte) error {
+		err := b.ForEachBucket(func(k []byte) error {
+			codeBucket := b.Bucket(k)
+			code := codeBucket.Get([]byte(_codeKey))
+			updatedAt := codeBucket.Get([]byte(_updatedAtKey))
 			count++
 			fmt.Printf("\nFile %d:\n", count)
 			fmt.Println("Hash:", fmt.Sprintf("%x", k))
 			fmt.Println("Content:")
 			fmt.Println("----------------------------------------")
-			fmt.Println(string(v))
+			fmt.Println(string(code))
+			fmt.Println("Updated at:", string(updatedAt))
 			fmt.Println("----------------------------------------")
 			return nil
 		})
+		if err != nil {
+			return fmt.Errorf("failed to list source code files: %w", err)
+		}
+		callsBuckets := tx.Bucket([]byte(_callsBucket))
+		calls := callsBuckets.Get([]byte(_callsBucket))
+		fmt.Println("total Calls:", bytesToUint64(calls))
+		return nil
 	})
 
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func bytesToUint64(b []byte) uint64 {
+	return binary.BigEndian.Uint64(b)
 }
