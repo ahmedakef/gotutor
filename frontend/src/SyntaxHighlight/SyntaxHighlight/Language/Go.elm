@@ -295,7 +295,8 @@ stringLiteral : Parser (List Token)
 stringLiteral =
     oneOf
         [ rawString
-        , normalString
+        , doubleQuoteString
+        , singleQuoteString
         ]
 
 
@@ -315,8 +316,24 @@ rawString =
     delimited delimiter
 
 
-normalString : Parser (List Token)
-normalString =
+singleQuoteString : Parser (List Token)
+singleQuoteString =
+    let
+        delimiter : Delimiter (T.Token Syntax)
+        delimiter =
+            { start = "'"
+            , end = "'"
+            , isNestable = False
+            , defaultMap = \b -> ( T.C String, b )
+            , innerParsers = []
+            , isNotRelevant = \c -> not (c == '"')
+            }
+    in
+    delimited delimiter
+
+
+doubleQuoteString : Parser (List Token)
+doubleQuoteString =
     let
         delimiter : Delimiter (T.Token Syntax)
         delimiter =
