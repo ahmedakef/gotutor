@@ -40,7 +40,7 @@ view state =
                         , editOrViewButton visualizeState.mode
                         , div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.alignItems Css.center, Css.marginTop (Css.px 10) ] ]
                             [ div []
-                                [ div []
+                                [ div [ css [ Tw.pb_4 ] ]
                                     [ input
                                         [ type_ "range"
                                         , Html.Styled.Attributes.min "1"
@@ -50,8 +50,8 @@ view state =
                                         ]
                                         []
                                     ]
-                                , button [ onClick Prev, css [ buttonStyle, Css.marginRight (Css.px 10) ] ] [ text "< Prev" ]
-                                , button [ onClick Next, css [ buttonStyle, Css.marginLeft (Css.px 10) ] ] [ text "Next >" ]
+                                , button [ onClick Prev, css [ buttonStyle, Tw.mr_4 ] ] [ text "< Prev" ]
+                                , button [ onClick Next, css [ buttonStyle, Tw.ml_4 ] ] [ text "Next >" ]
                                 ]
                             , div [ css [ Css.margin2 (Css.px 10) (Css.px 0) ] ]
                                 [ text ("Step " ++ String.fromInt stepsState.position ++ " of " ++ (List.length stepsState.executionResponse.steps |> String.fromInt))
