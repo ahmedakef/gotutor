@@ -1,0 +1,7 @@
+{
+  "devDependencies": {
+    "elm-tailwind-modules": "^0.5.0",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.17"
+  }
+}

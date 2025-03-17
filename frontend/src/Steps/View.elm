@@ -13,6 +13,8 @@ import Json.Decode as Json
 import Steps.Decoder exposing (..)
 import Steps.Steps exposing (..)
 import SyntaxHighlight.SyntaxHighlight as SH
+import Tailwind.Theme as Tw
+import Tailwind.Utilities as Tw
 
 
 view : State -> Html Msg
