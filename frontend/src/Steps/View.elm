@@ -417,9 +417,12 @@ goroutineView goroutineData =
             , Css.paddingLeft (Css.px 10)
             , Css.paddingRight (Css.px 10)
             , Css.marginBottom (Css.px 10)
+            , Tw.relative
             ]
         ]
-        [ goroutineInfoView goroutineData
+        [
+            img [ src "static/megaphone-gopher.svg", alt "goroutine", css [ Tw.absolute, Tw.w_10, Tw.h_10, Tw.neg_inset_5 ] ] []
+            , goroutineInfoView goroutineData
         , stackView (goroutineData.stacktrace |> filterUserFrames)
         ]
 
