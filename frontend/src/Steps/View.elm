@@ -394,7 +394,7 @@ goroutinesView goroutinesData =
                 goroutinesData
     in
     details [ attribute "open" "", css [ Css.marginTop (Css.px 10) ] ]
-        [ summary []
+        [ summary [css [Tw.mb_5]]
             [ p [ css [ Css.display Css.inline, Css.fontSize (Css.rem 1.3) ] ] [ text "Running Goroutines:" ] ]
         , note
         , div
