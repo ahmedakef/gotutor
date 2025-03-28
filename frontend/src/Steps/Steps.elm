@@ -41,6 +41,7 @@ type alias StepsState =
 
 type alias Config =
     { showOnlyExportedFields : Bool
+    , showMemoryAddresses : Bool
     }
 
 
@@ -82,7 +83,7 @@ type Msg
     | Unhighlight Int
     | ExampleSelected String
     | ShowOnlyExportedFields Bool
-
+    | ShowMemoryAddresses Bool
 
 -- load data
 
@@ -218,6 +219,9 @@ update msg state env =
                 ShowOnlyExportedFields showOnlyExportedFields ->
                     ( Success { successState | config = { currentConfig | showOnlyExportedFields = showOnlyExportedFields } }, Cmd.none )
 
+                ShowMemoryAddresses showMemoryAddresses ->
+                    ( Success { successState | config = { currentConfig | showMemoryAddresses = showMemoryAddresses } }, Cmd.none )
+
         Failure _ ->
             ( state, Cmd.none )
 
@@ -226,7 +230,7 @@ update msg state env =
                 GotExecutionResponse gotExecutionStepsResponseResult ->
                     case gotExecutionStepsResponseResult of
                         Ok executionResponse ->
-                            ( Success (StepsState View executionResponse 1 "" Nothing (Scroll 0 0) Nothing { showOnlyExportedFields = True }), Cmd.none )
+                            ( Success (StepsState View executionResponse 1 "" Nothing (Scroll 0 0) Nothing { showOnlyExportedFields = True, showMemoryAddresses = False }), Cmd.none )
 
                         Err err ->
                             ( Failure ("Error while getting program execution steps: " ++ err), Cmd.none )
@@ -234,7 +238,7 @@ update msg state env =
                 GotSourceCode sourceCodeResult ->
                     case sourceCodeResult of
                         Ok sourceCode ->
-                            ( Success (StepsState View { steps = [], duration = "", output = "" } 0 sourceCode Nothing (Scroll 0 0) Nothing { showOnlyExportedFields = True }), Cmd.none )
+                            ( Success (StepsState View { steps = [], duration = "", output = "" } 0 sourceCode Nothing (Scroll 0 0) Nothing { showOnlyExportedFields = True, showMemoryAddresses = False }), Cmd.none )
 
                         Err err ->
                             ( Failure ("Error while reading program source code: " ++ HttpHelper.errorToString err), Cmd.none )

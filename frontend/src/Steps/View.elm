@@ -301,9 +301,12 @@ varView config v =
                             css []
                         ]
                         ([ text <| removeMainPrefix var.name ++ " = "
-                         , span [ css [ Css.color (Css.hex "979494") ] ]
-                            [ text <| "{" ++ var.type_ ++ " | " ++ (var.addr |> Helpers.Hex.intToHex) ++ "}  "
-                            ]
+                         , if config.showMemoryAddresses then
+                            span [ css [ Css.color (Css.hex "979494") ] ]
+                                [ text <| "{" ++ var.type_ ++ " | " ++ (var.addr |> Helpers.Hex.intToHex) ++ "}  "
+                                ]
+                           else
+                            span [] []
                          , text value
                          ]
                             ++ (if String.startsWith "[]" var.type_ then
@@ -387,12 +390,17 @@ programOutputView output duration =
 
 configView : Config -> Html Msg
 configView config =
-    div [ css [ Tw.mt_5, Tw.flex, Tw.flex_row, Tw.gap_10 ] ]
+    div [ css [  Tw.flex, Tw.flex_row, Tw.gap_10 ] ]
         [ p [ css [ Tw.text_lg ] ] [ text "Config:" ]
         , label [ css [ Tw.flex, Tw.items_center, Tw.gap_2 ] ]
             [ input [ type_ "checkbox", onCheck ShowOnlyExportedFields, checked config.showOnlyExportedFields ] []
             , text " Show only exported fields"
             ]
+        , label [ css [ Tw.flex, Tw.items_center, Tw.gap_2 ] ]
+            [ input [ type_ "checkbox", onCheck ShowMemoryAddresses, checked config.showMemoryAddresses ] []
+            , text " Show memory addresses"
+            ]
+
         ]
 
 
