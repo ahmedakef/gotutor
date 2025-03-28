@@ -301,12 +301,15 @@ varView config v =
                             css []
                         ]
                         ([ text <| removeMainPrefix var.name ++ " = "
-                         , if config.showMemoryAddresses then
-                            span [ css [ Css.color (Css.hex "979494") ] ]
-                                [ text <| "{" ++ var.type_ ++ " | " ++ (var.addr |> Helpers.Hex.intToHex) ++ "}  "
+                         , span [ css [ Css.color (Css.hex "979494") ] ]
+                                [ text <| "{" ++ var.type_
+                                , if config.showMemoryAddresses then
+                                    text <| " | " ++ (var.addr |> Helpers.Hex.intToHex)
+                                else
+                                    text ""
+                                , text "}  "
                                 ]
-                           else
-                            span [] []
+
                          , text value
                          ]
                             ++ (if String.startsWith "[]" var.type_ then
