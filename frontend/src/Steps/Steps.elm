@@ -35,6 +35,12 @@ type alias StepsState =
     , highlightedLine : Maybe Int
     , scroll : Scroll
     , errorMessage : Maybe String
+    , config : Config
+    }
+
+
+type alias Config =
+    { showOnlyExportedFields : Bool
     }
 
 
@@ -75,7 +81,7 @@ type Msg
     | Highlight Int
     | Unhighlight Int
     | ExampleSelected String
-
+    | ShowOnlyExportedFields Bool
 
 
 -- load data
@@ -135,7 +141,12 @@ update : Msg -> State -> Common.Env -> ( State, Cmd Msg )
 update msg state env =
     case state of
         Success successState ->
+            let
+                currentConfig =
+                    successState.config
+            in
             case msg of
+
                 GotExecutionResponse gotExecutionStepsResponseResult ->
                     case gotExecutionStepsResponseResult of
                         Ok executionResponse ->
@@ -204,6 +215,9 @@ update msg state env =
                 ExampleSelected example ->
                     ( Success { successState | mode = WaitingSourceCode }, getExampleSourceCode example )
 
+                ShowOnlyExportedFields showOnlyExportedFields ->
+                    ( Success { successState | config = { currentConfig | showOnlyExportedFields = showOnlyExportedFields } }, Cmd.none )
+
         Failure _ ->
             ( state, Cmd.none )
 
@@ -212,7 +226,7 @@ update msg state env =
                 GotExecutionResponse gotExecutionStepsResponseResult ->
                     case gotExecutionStepsResponseResult of
                         Ok executionResponse ->
-                            ( Success (StepsState View executionResponse 1 "" Nothing (Scroll 0 0) Nothing), Cmd.none )
+                            ( Success (StepsState View executionResponse 1 "" Nothing (Scroll 0 0) Nothing { showOnlyExportedFields = True }), Cmd.none )
 
                         Err err ->
                             ( Failure ("Error while getting program execution steps: " ++ err), Cmd.none )
@@ -220,7 +234,7 @@ update msg state env =
                 GotSourceCode sourceCodeResult ->
                     case sourceCodeResult of
                         Ok sourceCode ->
-                            ( Success (StepsState View { steps = [], duration = "", output = "" } 0 sourceCode Nothing (Scroll 0 0) Nothing), Cmd.none )
+                            ( Success (StepsState View { steps = [], duration = "", output = "" } 0 sourceCode Nothing (Scroll 0 0) Nothing { showOnlyExportedFields = True }), Cmd.none )
 
                         Err err ->
                             ( Failure ("Error while reading program source code: " ++ HttpHelper.errorToString err), Cmd.none )

@@ -84,6 +84,7 @@ type alias VisualizeState =
     , highlightedLine : Maybe Int
     , mode : Mode
     , flashMessage : Maybe String
+    , config : Config
     }
 
 
@@ -122,10 +123,11 @@ stateToVisualize stepsState =
             , highlightedLine = stepsState.highlightedLine
             , mode = stepsState.mode
             , flashMessage = stepsState.errorMessage
+            , config = stepsState.config
             }
 
         Nothing ->
-            VisualizeState lastStep "" "" [] stepsState.sourceCode stepsState.scroll Nothing Nothing stepsState.mode stepsState.errorMessage
+            VisualizeState lastStep "" "" [] stepsState.sourceCode stepsState.scroll Nothing Nothing stepsState.mode stepsState.errorMessage stepsState.config
 
 
 filterUserFrames : List StackFrame -> List StackFrame
@@ -250,8 +252,8 @@ editOrViewButton mode =
             p [ css [ Css.marginTop (Css.px 10), Css.marginBottom (Css.px 0) ] ] [ text "Waiting for source code... ⏳" ]
 
 
-varView : Variable -> Html msg
-varView v =
+varView : Config -> Variable -> Html msg
+varView config v =
     case v of
         VariableI var ->
             let
@@ -274,6 +276,8 @@ varView v =
                                 )
 
                     else
+                        if config.showOnlyExportedFields then
+
                         var.children
                             |> List.filter
                                 -- only show exported fields
@@ -284,6 +288,8 @@ varView v =
                                                 |> Maybe.map (\( firstChar, _ ) -> Char.isUpper firstChar)
                                                 |> Maybe.withDefault False
                                 )
+                        else
+                            var.children
             in
             li []
                 [ details []
@@ -307,13 +313,13 @@ varView v =
                                     []
                                )
                         )
-                    , ul [ css [ Css.listStyleType Css.none ] ] (List.map varView children)
+                    , ul [ css [ Css.listStyleType Css.none ] ] (List.map (varView config) children)
                     ]
                 ]
 
 
-varsView : String -> Maybe (List Variable) -> List (Attribute msg) -> Html msg
-varsView title maybeVars attributes =
+varsView : Config -> String -> Maybe (List Variable) -> List (Attribute msg) -> Html msg
+varsView config title maybeVars attributes =
     case maybeVars of
         Nothing ->
             div [] []
@@ -326,7 +332,7 @@ varsView title maybeVars attributes =
                 details (attribute "open" "" :: attributes)
                     [ summary []
                         [ p [ css [ Css.display Css.inline, Css.fontSize (Css.rem 1.3) ] ] [ text title ] ]
-                    , ul [ css [ Css.listStyleType Css.none ] ] (List.map varView vars)
+                    , ul [ css [ Css.listStyleType Css.none ] ] (List.map (varView config) vars)
                     ]
 
 
@@ -340,11 +346,14 @@ programVisualizer state =
             ]
         ]
         [ backendStateView state
+        , configView state.config
         , varsView
+            state.config
             "Global Variables:"
             (Just state.packageVars)
             [ css [ Css.marginBottom (Css.px 10) ] ]
         , goroutinesView
+            state.config
             (state.lastStep
                 |> Maybe.map .goroutinesData
                 |> Maybe.withDefault []
@@ -376,8 +385,19 @@ programOutputView output duration =
         ]
 
 
-goroutinesView : List GoroutinesData -> Html Msg
-goroutinesView goroutinesData =
+configView : Config -> Html Msg
+configView config =
+    div [ css [ Tw.mt_5, Tw.flex, Tw.flex_row, Tw.gap_10 ] ]
+        [ p [ css [ Tw.text_lg ] ] [ text "Config:" ]
+        , label [ css [ Tw.flex, Tw.items_center, Tw.gap_2 ] ]
+            [ input [ type_ "checkbox", onCheck ShowOnlyExportedFields, checked config.showOnlyExportedFields ] []
+            , text " Show only exported fields"
+            ]
+        ]
+
+
+goroutinesView : Config -> List GoroutinesData -> Html Msg
+goroutinesView config goroutinesData =
     let
         note =
             if List.length goroutinesData >= 100 then
@@ -405,12 +425,12 @@ goroutinesView goroutinesData =
                 , Css.property "justify-content" "space-evenly"
                 ]
             ]
-            (List.map goroutineView goroutines)
+            (List.map (goroutineView config) goroutines)
         ]
 
 
-goroutineView : GoroutinesData -> Html Msg
-goroutineView goroutineData =
+goroutineView : Config -> GoroutinesData -> Html Msg
+goroutineView config goroutineData =
     div
         [ css
             [ borderStyle
@@ -423,7 +443,7 @@ goroutineView goroutineData =
         [
             img [ src "static/megaphone-gopher.svg", alt "goroutine", css [ Tw.absolute, Tw.w_10, Tw.h_10, Tw.neg_inset_5 ] ] []
             , goroutineInfoView goroutineData
-        , stackView (goroutineData.stacktrace |> filterUserFrames)
+        , stackView config (goroutineData.stacktrace |> filterUserFrames)
         ]
 
 
@@ -442,8 +462,8 @@ goroutineInfoView goroutineData =
         [ p [ css [ Css.fontSize (Css.rem 1.3) ] ] [ text gInfo ] ]
 
 
-stackView : List StackFrame -> Html Msg
-stackView stack =
+stackView : Config -> List StackFrame -> Html Msg
+stackView config stack =
     if List.isEmpty stack then
         div [] []
 
@@ -456,7 +476,7 @@ stackView stack =
                         []
 
                     first :: rest ->
-                        li [] [ frameView first ]
+                        li [] [ frameView config first ]
                             :: List.map
                                 (\frame ->
                                     li []
@@ -471,7 +491,7 @@ stackView stack =
                                                 ]
                                                 []
                                             ]
-                                        , frameView frame
+                                        , frameView config frame
                                         ]
                                 )
                                 rest
@@ -479,8 +499,8 @@ stackView stack =
             ]
 
 
-frameView : StackFrame -> Html Msg
-frameView frame =
+frameView : Config -> StackFrame -> Html Msg
+frameView config frame =
     let
         fileName =
             String.split "/" frame.file
@@ -498,8 +518,8 @@ frameView frame =
         ]
         [ div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.alignItems Css.center ] ] [ b [] [ text <| removeMainPrefix frame.function.name ] ]
         , div [ css [ Css.margin3 (Css.px 0) (Css.px 0) (Css.px 3) ] ] [ b [] [ text "Loc: " ], text <| fileName ++ ":" ++ String.fromInt frame.line ]
-        , varsView "arguments:" frame.arguments [ css [ Css.marginBottom (Css.px 10) ] ]
-        , varsView "locals:" frame.locals []
+        , varsView config "arguments:" frame.arguments [ css [ Css.marginBottom (Css.px 10) ] ]
+        , varsView config "locals:" frame.locals []
         ]
 
 
