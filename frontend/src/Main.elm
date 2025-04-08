@@ -10,7 +10,8 @@ import Steps.Steps as Steps
 import Steps.View as StepsView
 import Styles
 import Url
-
+import Tailwind.Theme as Tw
+import Tailwind.Utilities as Tw
 
 
 -- MAIN
@@ -114,6 +115,7 @@ view model =
                 [ Styles.globalStyles
                 , navigation
                 , Html.map StepsMsg (StepsView.view model.state)
+                , palastineSupport
                 , pageFooter
                 ]
     in
@@ -146,6 +148,13 @@ navigation =
             )
         ]
 
+palastineSupport : Html msg
+palastineSupport =
+    div [ css [ Tw.flex, Tw.justify_center, Tw.mt_5 ] ]
+        [ a [ href "https://techforpalestine.org/learn-more", target "_blank" ]
+            [ img [ src "https://raw.githubusercontent.com/Safouene1/support-palestine-banner/master/banner-support.svg", alt "palastine logo" ] []
+            ]
+        ]
 
 pageFooter : Html msg
 pageFooter =
