@@ -115,6 +115,7 @@ view model =
                 [ Styles.globalStyles
                 , navigation
                 , Html.map StepsMsg (StepsView.view model.state)
+                , feedback
                 , palastineSupport
                 , pageFooter
                 ]
@@ -147,6 +148,17 @@ navigation =
                 ]
             )
         ]
+
+
+feedback : Html msg
+feedback =
+    div [ css [ Tw.flex, Tw.justify_center, Tw.mt_5 ] ]
+        [
+            p [] [ text "Your feedback matters, please share your thoughts and suggestions" ]
+            , a [css [ Tw.ml_1] , href "https://github.com/ahmedakef/gotutor/issues", target "_blank" ]
+                [ p [] [ text "on GitHub" ]]
+        ]
+
 
 palastineSupport : Html msg
 palastineSupport =
