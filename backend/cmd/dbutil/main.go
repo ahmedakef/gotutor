@@ -100,7 +100,7 @@ func printResults(result Result) {
 	fmt.Println("=====================================")
 
 	for i, source := range result.sources {
-		fmt.Println("Line:", i)
+		fmt.Println("Number:", i)
 		fmt.Println("Hash:", fmt.Sprintf("%x", source.Hash))
 		// Take only the first 19 characters of the timestamp (YYYY-MM-DD HH:MM:SS)
 		if len(source.UpdatedAt) >= 19 {
