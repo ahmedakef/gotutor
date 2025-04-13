@@ -11,20 +11,28 @@ import Steps.Decoder exposing (..)
 -- Init
 
 
-init : ( State, Cmd Msg )
-init =
+init : Route -> ( State, Cmd Msg )
+init route =
     let
         initialModel =
             Loading
 
         combinedCmd =
-            Cmd.batch [ getInitSteps, getInitSourceCode ]
+            case route of
+                Home (Just id) ->
+                    getSharedCode id
+                _ ->
+                    Cmd.batch [ getInitSteps, getInitSourceCode ]
     in
     ( initialModel, combinedCmd )
 
 
 
 -- Model
+
+
+type Route
+    = Home (Maybe String)  -- String is the id parameter
 
 
 type alias StepsState =
@@ -35,6 +43,7 @@ type alias StepsState =
     , highlightedLine : Maybe Int
     , scroll : Scroll
     , errorMessage : Maybe String
+    , shareUrl : Maybe String
     , config : Config
     }
 
@@ -73,6 +82,8 @@ type Msg
     | GotSourceCode (Result Http.Error String)
     | GotExampleSourceCode (Result Http.Error String)
     | GotFmt (Result String FmtResponse)
+    | GotShareID (Result Http.Error String)
+    | GotSharedCode (Result Http.Error String)
     | EditCode
     | OnScroll Scroll
     | CodeUpdated String
@@ -84,6 +95,7 @@ type Msg
     | Unhighlight Int
     | ExampleSelected String
     | Fmt
+    | Share
     | ShowOnlyExportedFields Bool
     | ShowMemoryAddresses Bool
 
@@ -151,6 +163,35 @@ getFmt sourceCode env =
         }
 
 
+callShare : String -> Cmd Msg
+callShare sourceCode =
+    Http.request
+        { method = "POST"
+        , headers = [ Http.header "User-Agent" "gotutor.dev" ]
+        , url = "https://play.golang.org/share"
+        , body = Http.stringBody "text/plain" sourceCode
+        , expect = Http.expectString GotShareID
+        , timeout = Just (60 * 1000) -- ms
+        , tracker = Nothing
+        }
+
+getSharedCode : String -> Cmd Msg
+getSharedCode id =
+    Http.request
+        { method = "GET"
+        , headers = [ Http.header "User-Agent" "gotutor.dev" ]
+        , url = "https://play.golang.org/p/" ++ id ++ ".go"
+        , body = Http.emptyBody
+        , expect = Http.expectString GotSharedCode
+        , timeout = Just (60 * 1000) -- ms
+        , tracker = Nothing
+        }
+
+shareUrl : String -> String
+shareUrl id =
+    "https://gotutor.dev/?id=" ++ id
+
+
 -- Update
 
 
@@ -202,6 +243,14 @@ update msg state env =
                         Err err ->
                             ( Success { successState | mode = Edit, errorMessage = Just ("Error while formatting source code: " ++  err) }, Cmd.none )
 
+                GotShareID shareResult ->
+                    case shareResult of
+                        Ok id ->
+                            ( Success { successState | shareUrl = Just (shareUrl id) }, Cmd.none )
+
+                        Err err ->
+                            ( Success { successState | mode = Edit, errorMessage = Just ("Error while sharing source code: " ++ HttpHelper.errorToString err) }, Cmd.none )
+
                 CodeUpdated code ->
                     ( Success { successState | sourceCode = code }, Cmd.none )
 
@@ -243,11 +292,17 @@ update msg state env =
                 Fmt ->
                     ( Success { successState | mode = WaitingSourceCode }, getFmt successState.sourceCode env )
 
+                Share ->
+                    ( state, callShare successState.sourceCode )
+
                 ShowOnlyExportedFields showOnlyExportedFields ->
                     ( Success { successState | config = { currentConfig | showOnlyExportedFields = showOnlyExportedFields } }, Cmd.none )
 
                 ShowMemoryAddresses showMemoryAddresses ->
                     ( Success { successState | config = { currentConfig | showMemoryAddresses = showMemoryAddresses } }, Cmd.none )
+
+                _ ->
+                    ( state, Cmd.none )
 
         Failure _ ->
             ( state, Cmd.none )
@@ -257,7 +312,7 @@ update msg state env =
                 GotExecutionResponse gotExecutionStepsResponseResult ->
                     case gotExecutionStepsResponseResult of
                         Ok executionResponse ->
-                            ( Success (StepsState View executionResponse 1 "" Nothing (Scroll 0 0) Nothing { showOnlyExportedFields = True, showMemoryAddresses = False }), Cmd.none )
+                            ( Success (StepsState View executionResponse 1 "" Nothing (Scroll 0 0) Nothing Nothing { showOnlyExportedFields = True, showMemoryAddresses = False }), Cmd.none )
 
                         Err err ->
                             ( Failure ("Error while getting program execution steps: " ++ err), Cmd.none )
@@ -265,10 +320,18 @@ update msg state env =
                 GotSourceCode sourceCodeResult ->
                     case sourceCodeResult of
                         Ok sourceCode ->
-                            ( Success (StepsState View { steps = [], duration = "", output = "" } 0 sourceCode Nothing (Scroll 0 0) Nothing { showOnlyExportedFields = True, showMemoryAddresses = False }), Cmd.none )
+                            ( Success (StepsState View { steps = [], duration = "", output = "" } 0 sourceCode Nothing (Scroll 0 0) Nothing Nothing { showOnlyExportedFields = True, showMemoryAddresses = False }), Cmd.none )
 
                         Err err ->
                             ( Failure ("Error while reading program source code: " ++ HttpHelper.errorToString err), Cmd.none )
+
+                GotSharedCode sharedCodeResult ->
+                    case sharedCodeResult of
+                        Ok sharedCode ->
+                            ( Success (StepsState Edit { steps = [], duration = "", output = "" } 0 sharedCode Nothing (Scroll 0 0) Nothing Nothing { showOnlyExportedFields = True, showMemoryAddresses = False }), Cmd.none )
+
+                        Err err ->
+                            ( Failure ("Error while loading shared source code: " ++ HttpHelper.errorToString err), Cmd.none )
 
                 _ ->
                     ( state, Cmd.none )

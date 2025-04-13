@@ -10,6 +10,8 @@ import Steps.Steps as Steps
 import Steps.View as StepsView
 import Styles
 import Url
+import Url.Parser as Parser exposing ((<?>), (</>), Parser )
+import Url.Parser.Query as Query
 import Tailwind.Theme as Tw
 import Tailwind.Utilities as Tw
 
@@ -33,11 +35,20 @@ main =
 -- MODEL
 
 
+routeParser : Parser (Steps.Route -> a) a
+routeParser =
+    Parser.oneOf
+        [ Parser.map Steps.Home (Parser.top <?> Query.string "id")
+        , Parser.map Steps.Home (Parser.s "src" </> Parser.s "index.html" <?> Query.string "id") -- for local development
+        ]
+
+
 type alias Model =
     { env : Common.Env
     , key : Nav.Key
     , url : Url.Url
     , state : Steps.State
+    , route : Steps.Route
     }
 
 
@@ -48,11 +59,15 @@ type alias Model =
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init _ url key =
     let
+        route =
+            Parser.parse routeParser url
+                |> Maybe.withDefault (Steps.Home Nothing)
+
         ( stepsState, stepsCmd ) =
-            Steps.init
+            Steps.init route
 
         initialModel =
-            Model Common.Prod key url stepsState
+            Model Common.Prod key url stepsState route
     in
     ( initialModel, Cmd.map StepsMsg stepsCmd )
 
@@ -79,7 +94,12 @@ update msg model =
                     ( model, Nav.load href )
 
         UrlChanged url ->
-            ( { model | url = url }
+            let
+                newRoute =
+                    Parser.parse routeParser url
+                        |> Maybe.withDefault (Steps.Home Nothing)
+            in
+            ( { model | url = url, route = newRoute }
             , Cmd.none
             )
 

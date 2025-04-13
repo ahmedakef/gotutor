@@ -36,11 +36,17 @@ view state =
                 , div [ css [ Tw.flex, Tw.flex_wrap, Tw.flex_1 ] ]
                     [ div [ css [ Tw.flex, Tw.flex_col, Tw.items_center, Tw.flex_1, Tw.pb_4 ] ]
                         [ div [ css [ Tw.flex, Tw.flex_col, Tw.items_center, Tw.w_3over4 ] ]
-                            [ div [ css [ Tw.flex, Tw.flex_row, Tw.self_stretch, Tw.self_end ] ]
-                                [ button [ onClick Fmt, css [ buttonStyle ] ] [ text "Format" ]
+                            [ div [ css [ Tw.flex, Tw.flex_row, Tw.self_stretch, Tw.self_end, Tw.gap_2 ] ]
+                                [ case stepsState.shareUrl of
+                                    Just url ->
+                                        input [ type_ "text", value url, css [ Tw.w_56 ] ] []
+                                    Nothing ->
+                                        input [ type_ "text", hidden True ] []
+                                , button [ onClick Share, css [ buttonStyle ] ] [ text "Share" ]
+                                , button [ onClick Fmt, css [ buttonStyle ] ] [ text "Format" ]
                                 , exampleSelector
                                 ],
-                                p [ css [ Tw.mt_0 ] ] [ text "Press Edit Code or select an example to visualize" ]
+                                p [ css [ Tw.mt_1 ] ] [ text "Press Edit Code or select an example to visualize" ]
                             ]
                             , codeView visualizeState
                             , editOrViewButton visualizeState.mode
@@ -572,7 +578,7 @@ backendStateView state =
                         _ ->
                             case state.lastStep of
                                 Nothing ->
-                                    "step is empty, try moving the slider"
+                                    "step is empty, try moving the slider, or pressing `Visualize Steps` button"
 
                                 Just _ ->
                                     ""
@@ -610,7 +616,6 @@ exampleSelector =
             [ Css.fontSize (Css.rem 0.9)
             , Css.backgroundColor (Css.hex "fff")
             , Css.border3 (Css.px 1) Css.solid (Css.hex "ddd")
-            , Css.marginLeft (Css.px 15)
             , Css.padding (Css.px 1)
             ]
         , onInput ExampleSelected
