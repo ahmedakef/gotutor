@@ -8,15 +8,8 @@ import (
 	"os"
 	"sort"
 
-	"github.com/ahmedakef/gotutor/backend/src/db"
+	dbpkg "github.com/ahmedakef/gotutor/backend/src/db"
 	bolt "go.etcd.io/bbolt"
-)
-
-const (
-	_callsBucket      = "GetExecutionStepsCalls"
-	_sourceCodeBucket = "SourceCode"
-	_codeKey          = "code"
-	_updatedAtKey     = "updated_at"
 )
 
 type Source struct {
@@ -27,7 +20,11 @@ type Source struct {
 
 type Result struct {
 	sources []Source
-	calls   uint64
+	calls   Calls
+}
+type Calls struct {
+	getExecutionSteps uint64
+	format            uint64
 }
 
 func main() {
@@ -51,25 +48,26 @@ func getDBData() (Result, error) {
 		log.Fatalf("Database file not found: %s", *dbPath)
 	}
 
-	db, err := db.New(*dbPath)
+	db, err := dbpkg.New(*dbPath)
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
 	}
 	defer db.Close()
 
 	var sources []Source
-	var calls uint64
+	var getExecutionSteps uint64
+	var format uint64
 
 	err = db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(_sourceCodeBucket))
+		b := tx.Bucket([]byte(dbpkg.SourceCodeBucket))
 		if b == nil {
 			return fmt.Errorf("SourceCode bucket not found")
 		}
 
 		err := b.ForEachBucket(func(k []byte) error {
 			codeBucket := b.Bucket(k)
-			code := codeBucket.Get([]byte(_codeKey))
-			updatedAt := codeBucket.Get([]byte(_updatedAtKey))
+			code := codeBucket.Get([]byte(dbpkg.CodeKey))
+			updatedAt := codeBucket.Get([]byte(dbpkg.UpdatedAtKey))
 			sources = append(sources, Source{
 				Hash:      fmt.Sprintf("%x", k),
 				Code:      string(code),
@@ -80,8 +78,9 @@ func getDBData() (Result, error) {
 		if err != nil {
 			return fmt.Errorf("failed to list source code files: %w", err)
 		}
-		callsBuckets := tx.Bucket([]byte(_callsBucket))
-		calls = bytesToUint64(callsBuckets.Get([]byte(_callsBucket)))
+		callsBuckets := tx.Bucket([]byte(dbpkg.CallsBucket))
+		getExecutionSteps = bytesToUint64(callsBuckets.Get([]byte(dbpkg.GetExecutionSteps)))
+		format = bytesToUint64(callsBuckets.Get([]byte(dbpkg.Format)))
 		return nil
 	})
 
@@ -91,7 +90,7 @@ func getDBData() (Result, error) {
 
 	return Result{
 		sources: sources,
-		calls:   calls,
+		calls:   Calls{getExecutionSteps: getExecutionSteps, format: format},
 	}, nil
 }
 
@@ -113,7 +112,9 @@ func printResults(result Result) {
 		fmt.Println(source.Code)
 		fmt.Println("----------------------------------------")
 	}
-	fmt.Println("Total calls:", result.calls)
+	fmt.Println("Calls:")
+	fmt.Println("GetExecutionSteps:", result.calls.getExecutionSteps)
+	fmt.Println("Format:", result.calls.format)
 
 }
 

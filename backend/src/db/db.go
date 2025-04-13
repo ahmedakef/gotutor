@@ -15,9 +15,9 @@ const (
 	CallsBucket       = "Calls"
 	GetExecutionSteps = "GetExecutionSteps"
 	Format            = "Format"
-	_sourceCodeBucket = "SourceCode"
-	_codeKey          = "code"
-	_updatedAtKey     = "updated_at"
+	SourceCodeBucket  = "SourceCode"
+	CodeKey           = "code"
+	UpdatedAtKey      = "updated_at"
 )
 
 type DB struct {
@@ -39,7 +39,7 @@ func New(dbPath string) (*DB, error) {
 	}
 
 	db := &DB{bdb}
-	if err := db.ensureBuckets([]string{_sourceCodeBucket, CallsBucket}); err != nil {
+	if err := db.ensureBuckets([]string{SourceCodeBucket, CallsBucket}); err != nil {
 		return nil, err
 	}
 
@@ -90,9 +90,9 @@ func uint64ToBytes(counter uint64) []byte {
 // SaveSourceCode stores the source code with its hash as the key
 func (db *DB) SaveSourceCode(sourceCode string) error {
 	return db.Update(func(tx *bolt.Tx) error {
-		sourceCodeBucket := tx.Bucket([]byte(_sourceCodeBucket))
+		sourceCodeBucket := tx.Bucket([]byte(SourceCodeBucket))
 		if sourceCodeBucket == nil {
-			return fmt.Errorf("bucket %s not found", _sourceCodeBucket)
+			return fmt.Errorf("bucket %s not found", SourceCodeBucket)
 		}
 
 		hash := sha256.Sum256([]byte(sourceCode))
@@ -102,15 +102,15 @@ func (db *DB) SaveSourceCode(sourceCode string) error {
 			return fmt.Errorf("failed to create bucket: %w", err)
 		}
 		// Check if source code already exists
-		if v := codeBucket.Get([]byte(_codeKey)); v != nil {
+		if v := codeBucket.Get([]byte(CodeKey)); v != nil {
 			return nil
 		}
 
-		err = codeBucket.Put([]byte(_codeKey), []byte(sourceCode))
+		err = codeBucket.Put([]byte(CodeKey), []byte(sourceCode))
 		if err != nil {
 			return fmt.Errorf("failed to save source code: %w", err)
 		}
 
-		return codeBucket.Put([]byte(_updatedAtKey), []byte(time.Now().String()))
+		return codeBucket.Put([]byte(UpdatedAtKey), []byte(time.Now().String()))
 	})
 }
