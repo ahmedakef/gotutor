@@ -41,7 +41,7 @@ type GetExecutionStepsRequest struct {
 }
 
 func (h *Handler) GetExecutionSteps(ctx context.Context, req GetExecutionStepsRequest) (serialize.ExecutionResponse, error) {
-	_, err := h.db.IncrementCallCounter()
+	_, err := h.db.IncrementCallCounter(db.GetExecutionSteps)
 	if err != nil {
 		h.logger.Err(err).Msg("failed to increment call counter")
 	}

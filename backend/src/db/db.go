@@ -12,7 +12,9 @@ import (
 )
 
 const (
-	_callsBucket      = "GetExecutionStepsCalls"
+	CallsBucket       = "Calls"
+	GetExecutionSteps = "GetExecutionSteps"
+	Format            = "Format"
 	_sourceCodeBucket = "SourceCode"
 	_codeKey          = "code"
 	_updatedAtKey     = "updated_at"
@@ -37,14 +39,14 @@ func New(dbPath string) (*DB, error) {
 	}
 
 	db := &DB{bdb}
-	if err := db.createBuckets([]string{_sourceCodeBucket, _callsBucket}); err != nil {
+	if err := db.ensureBuckets([]string{_sourceCodeBucket, CallsBucket}); err != nil {
 		return nil, err
 	}
 
 	return db, nil
 }
 
-func (db *DB) createBuckets(buckets []string) error {
+func (db *DB) ensureBuckets(buckets []string) error {
 	return db.Update(func(tx *bolt.Tx) error {
 		for _, bucket := range buckets {
 			_, err := tx.CreateBucketIfNotExists([]byte(bucket))
@@ -57,19 +59,24 @@ func (db *DB) createBuckets(buckets []string) error {
 }
 
 // IncrementCallCounter increments the counter for API calls
-func (db *DB) IncrementCallCounter() (uint64, error) {
+func (db *DB) IncrementCallCounter(endpoint string) (uint64, error) {
 	var counter uint64
 	err := db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(_callsBucket))
+		b := tx.Bucket([]byte(CallsBucket))
 		if b == nil {
-			return fmt.Errorf("bucket %s not found", _callsBucket)
+			return fmt.Errorf("bucket %s not found", CallsBucket)
 		}
-		var err error
-		counter, err = b.NextSequence()
-		if err != nil {
-			return err
+		// Get or create sequence for this endpoint
+		calls := b.Get([]byte(endpoint))
+		if calls == nil {
+			// Initialize sequence to 0 if it doesn't exist
+			calls = uint64ToBytes(0)
 		}
-		return b.Put([]byte(_callsBucket), uint64ToBytes(counter))
+		counter = binary.BigEndian.Uint64(calls) + 1
+		if err := b.Put([]byte(endpoint), uint64ToBytes(counter)); err != nil {
+			return fmt.Errorf("failed to update sequence: %w", err)
+		}
+		return nil
 	})
 	return counter, err
 }

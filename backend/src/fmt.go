@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"path"
 
+	"github.com/ahmedakef/gotutor/backend/src/db"
 	"golang.org/x/mod/modfile"
 	"golang.org/x/tools/imports"
 )
@@ -19,6 +20,10 @@ type fmtResponse struct {
 
 func (h *Handler) handleFmt(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	_, err := h.db.IncrementCallCounter(db.Format)
+	if err != nil {
+		h.logger.Err(err).Msg("failed to increment call counter")
+	}
 
 	fs, err := splitFiles([]byte(r.FormValue("body")))
 	if err != nil {
