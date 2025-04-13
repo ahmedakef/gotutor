@@ -2,7 +2,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"go/format"
 	"net/http"
@@ -14,8 +13,7 @@ import (
 )
 
 type fmtResponse struct {
-	Body  string `json:"body"`
-	Error string `json:"error"`
+	Body string `json:"body"`
 }
 
 func (h *Handler) handleFmt(w http.ResponseWriter, r *http.Request) {
@@ -27,7 +25,7 @@ func (h *Handler) handleFmt(w http.ResponseWriter, r *http.Request) {
 
 	fs, err := splitFiles([]byte(r.FormValue("body")))
 	if err != nil {
-		json.NewEncoder(w).Encode(fmtResponse{Error: err.Error()})
+		respondWithError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -52,14 +50,14 @@ func (h *Handler) handleFmt(w http.ResponseWriter, r *http.Request) {
 					// the error with the file path. So, do it ourselves here.
 					errMsg = fmt.Sprintf("%v:%v", f, errMsg)
 				}
-				json.NewEncoder(w).Encode(fmtResponse{Error: errMsg})
+				respondWithError(w, errMsg, http.StatusInternalServerError)
 				return
 			}
 			fs.AddFile(f, out)
 		case path.Base(f) == "go.mod":
 			out, err := formatGoMod(f, fs.Data(f))
 			if err != nil {
-				json.NewEncoder(w).Encode(fmtResponse{Error: err.Error()})
+				respondWithError(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			fs.AddFile(f, out)
