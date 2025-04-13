@@ -9,14 +9,14 @@ import Json.Decode
 
 
 type alias ErrorResponse =
-    { message : String
+    { error : String
     }
 
 
 errorDecoder : Json.Decode.Decoder ErrorResponse
 errorDecoder =
     Json.Decode.map ErrorResponse
-        (Json.Decode.field "message" Json.Decode.string)
+        (Json.Decode.field "error" Json.Decode.string)
 
 
 errorToString : Http.Error -> String
@@ -60,7 +60,7 @@ expectJson toMsg successDecoder =
                 Http.BadStatus_ _ body ->
                     case Json.Decode.decodeString errorDecoder body of
                         Ok value ->
-                            Err value.message
+                            Err value.error
 
                         Err err ->
                             Err (Json.Decode.errorToString err)

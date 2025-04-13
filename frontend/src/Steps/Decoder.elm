@@ -12,12 +12,23 @@ type alias ExecutionResponse =
     }
 
 
+
 executionResponseDecoder : Decoder ExecutionResponse
 executionResponseDecoder =
     map3 ExecutionResponse
         (field "steps" stepsDecoder)
         (field "duration" string)
         (field "output" string)
+
+
+type alias FmtResponse =
+    { body : String
+    }
+
+fmtResponseDecoder : Decoder FmtResponse
+fmtResponseDecoder =
+    map FmtResponse
+        (field "body" string)
 
 
 type alias Function =

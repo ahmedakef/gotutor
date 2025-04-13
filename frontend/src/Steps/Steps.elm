@@ -72,6 +72,7 @@ type Msg
     = GotExecutionResponse (Result String ExecutionResponse)
     | GotSourceCode (Result Http.Error String)
     | GotExampleSourceCode (Result Http.Error String)
+    | GotFmt (Result String FmtResponse)
     | EditCode
     | OnScroll Scroll
     | CodeUpdated String
@@ -82,27 +83,27 @@ type Msg
     | Highlight Int
     | Unhighlight Int
     | ExampleSelected String
+    | Fmt
     | ShowOnlyExportedFields Bool
     | ShowMemoryAddresses Bool
 
 -- load data
 
+backendUrl : Common.Env -> String
+backendUrl env =
+    case env of
+        Common.Dev ->
+            "http://localhost:8080"
+
+        Common.Prod ->
+            "https://backend.gotutor.dev"
 
 getSteps : String -> Common.Env -> Cmd Msg
 getSteps sourceCode env =
-    let
-        backendUrl =
-            case env of
-                Common.Dev ->
-                    "http://localhost:8080"
-
-                Common.Prod ->
-                    "https://backend.gotutor.dev"
-    in
     Http.request
         { method = "POST"
         , headers = []
-        , url = backendUrl ++ "/GetExecutionSteps"
+        , url = backendUrl env ++ "/GetExecutionSteps"
         , body = Http.jsonBody (Json.Encode.object [ ( "source_code", Json.Encode.string sourceCode ) ])
         , expect = HttpHelper.expectJson GotExecutionResponse executionResponseDecoder
         , timeout = Just (60 * 1000) -- ms
@@ -133,6 +134,21 @@ getExampleSourceCode example =
         , expect = Http.expectString GotExampleSourceCode
         }
 
+
+getFmt : String -> Common.Env -> Cmd Msg
+getFmt sourceCode env =
+    Http.request
+        { method = "POST"
+        , headers = []
+        , url = backendUrl env ++ "/fmt"
+        , body = Http.multipartBody
+            [ Http.stringPart "body" sourceCode
+            , Http.stringPart "imports" "true"
+            ]
+        , expect = HttpHelper.expectJson GotFmt fmtResponseDecoder
+        , timeout = Just (60 * 1000) -- ms
+        , tracker = Nothing
+        }
 
 
 -- Update
@@ -178,6 +194,14 @@ update msg state env =
                         Err err ->
                             ( Success { successState | mode = Edit, errorMessage = Just ("Error while reading example source code: " ++ HttpHelper.errorToString err) }, Cmd.none )
 
+                GotFmt fmtResponseResult ->
+                    case fmtResponseResult of
+                        Ok fmtResponse ->
+                            ( Success { successState | sourceCode = fmtResponse.body, mode = Edit, errorMessage = Nothing }, Cmd.none )
+
+                        Err err ->
+                            ( Success { successState | mode = Edit, errorMessage = Just ("Error while formatting source code: " ++  err) }, Cmd.none )
+
                 CodeUpdated code ->
                     ( Success { successState | sourceCode = code }, Cmd.none )
 
@@ -215,6 +239,9 @@ update msg state env =
 
                 ExampleSelected example ->
                     ( Success { successState | mode = WaitingSourceCode }, getExampleSourceCode example )
+
+                Fmt ->
+                    ( Success { successState | mode = WaitingSourceCode }, getFmt successState.sourceCode env )
 
                 ShowOnlyExportedFields showOnlyExportedFields ->
                     ( Success { successState | config = { currentConfig | showOnlyExportedFields = showOnlyExportedFields } }, Cmd.none )

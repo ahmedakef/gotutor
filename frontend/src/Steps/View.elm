@@ -33,30 +33,36 @@ view state =
                         ]
                     , p [] [ text "It shows the state of all the running Goroutines, the state of each stack frame and can go back in time." ]
                     ]
-                , div [ css [ Css.displayFlex, Css.flexWrap Css.wrap, Css.flex (Css.num 1) ] ]
-                    [ div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.alignItems Css.center, Css.flex (Css.num 1) ] ]
-                        [ div [ css [ Css.paddingBottom (Css.px 10) ] ] [ p [ css [ Css.display Css.inline ] ] [ text "Press Edit Code or select an example to visualize:" ], exampleSelector ]
-                        , codeView visualizeState
-                        , editOrViewButton visualizeState.mode
-                        , div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.alignItems Css.center, Css.marginTop (Css.px 10) ] ]
-                            [ div []
-                                [ div [ css [ Tw.pb_4 ] ]
-                                    [ input
-                                        [ type_ "range"
-                                        , Html.Styled.Attributes.min "1"
-                                        , Html.Styled.Attributes.max (String.fromInt (List.length stepsState.executionResponse.steps))
-                                        , Html.Styled.Attributes.value (String.fromInt stepsState.position)
-                                        , onInput (String.toInt >> Maybe.withDefault 1 >> SliderChange)
-                                        ]
-                                        []
-                                    ]
-                                , button [ onClick Prev, css [ buttonStyle, Tw.mr_4 ] ] [ text "< Prev" ]
-                                , button [ onClick Next, css [ buttonStyle, Tw.ml_4 ] ] [ text "Next >" ]
-                                ]
-                            , div [ css [ Css.margin2 (Css.px 10) (Css.px 0) ] ]
-                                [ text ("Step " ++ String.fromInt stepsState.position ++ " of " ++ (List.length stepsState.executionResponse.steps |> String.fromInt))
-                                ]
+                , div [ css [ Tw.flex, Tw.flex_wrap, Tw.flex_1 ] ]
+                    [ div [ css [ Tw.flex, Tw.flex_col, Tw.items_center, Tw.flex_1, Tw.pb_4 ] ]
+                        [ div [ css [ Tw.flex, Tw.flex_col, Tw.items_center, Tw.w_3over4 ] ]
+                            [ div [ css [ Tw.flex, Tw.flex_row, Tw.self_stretch, Tw.self_end ] ]
+                                [ button [ onClick Fmt, css [ buttonStyle ] ] [ text "Format" ]
+                                , exampleSelector
+                                ],
+                                p [ css [ Tw.mt_0 ] ] [ text "Press Edit Code or select an example to visualize" ]
                             ]
+                            , codeView visualizeState
+                            , editOrViewButton visualizeState.mode
+                            , div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.alignItems Css.center, Css.marginTop (Css.px 10) ] ]
+                                [ div []
+                                    [ div [ css [ Tw.pb_4 ] ]
+                                        [ input
+                                            [ type_ "range"
+                                            , Html.Styled.Attributes.min "1"
+                                            , Html.Styled.Attributes.max (String.fromInt (List.length stepsState.executionResponse.steps))
+                                            , Html.Styled.Attributes.value (String.fromInt stepsState.position)
+                                            , onInput (String.toInt >> Maybe.withDefault 1 >> SliderChange)
+                                            ]
+                                            []
+                                        ]
+                                    , button [ onClick Prev, css [ buttonStyle, Tw.mr_4 ] ] [ text "< Prev" ]
+                                    , button [ onClick Next, css [ buttonStyle, Tw.ml_4 ] ] [ text "Next >" ]
+                                    ]
+                                , div [ css [ Css.margin2 (Css.px 10) (Css.px 0) ] ]
+                                    [ text ("Step " ++ String.fromInt stepsState.position ++ " of " ++ (List.length stepsState.executionResponse.steps |> String.fromInt))
+                                    ]
+                                ]
                         ]
                     , programVisualizer visualizeState
                     ]

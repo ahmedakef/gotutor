@@ -22,17 +22,12 @@ const (
 )
 
 type ErrorResponse struct {
-	Message string `json:"message"`
+	Error string `json:"error"`
 }
 
 func respondWithError(w http.ResponseWriter, message string, statusCode int) {
 	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(ErrorResponse{Message: message})
-}
-
-func respondWithJSON(w http.ResponseWriter, data interface{}, statusCode int) error {
-	w.WriteHeader(statusCode)
-	return json.NewEncoder(w).Encode(data)
+	json.NewEncoder(w).Encode(ErrorResponse{Error: message})
 }
 
 func main() {
@@ -72,11 +67,10 @@ func main() {
 			return
 		}
 
-		err = respondWithJSON(w, resp, http.StatusOK)
-		if err != nil {
-			logger.Error().Err(err).Msg("failed to respond with JSON")
-		}
+		handler.writeJSONResponse(w, resp, http.StatusOK)
 	})
+
+	mux.HandleFunc("/fmt", handler.handleFmt)
 
 	logger.Info().Msg(fmt.Sprintf("starting server on http://localhost:%d", _port))
 	if err := http.ListenAndServe(fmt.Sprintf(":%d", _port), corsMiddleware(mux)); err != nil {

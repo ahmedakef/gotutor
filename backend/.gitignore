@@ -5,3 +5,4 @@ sources/
 data/
 gotutor.db
 cmd/dbutil/dbutil
+test.db

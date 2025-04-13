@@ -103,7 +103,7 @@ func (h *Handler) GetExecutionSteps(ctx context.Context, req GetExecutionStepsRe
 
 	output, err := readFileToString(fmt.Sprintf("%s/steps.json", dataDir))
 	if err != nil {
-		return serialize.ExecutionResponse{}, fmt.Errorf("failed to read output file: %w", err)
+		return serialize.ExecutionResponse{}, fmt.Errorf("failed to read output file: %w, output: %s", err, outStr)
 	}
 	// decode the output
 	var response serialize.ExecutionResponse

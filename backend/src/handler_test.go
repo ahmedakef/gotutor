@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ahmedakef/gotutor/backend/src/cache"
+	"github.com/ahmedakef/gotutor/backend/src/db"
 	"github.com/ahmedakef/gotutor/serialize"
 	"github.com/rs/zerolog"
 )
@@ -51,7 +52,17 @@ func TestGetExecutionSteps(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			logger := zerolog.New(os.Stdout)
 			cache := cache.NewLRUCache(_maxCacheSize, _maxCacheItems, _cacheTTL)
-			handler := newHandler(logger, cache)
+			tmpDir, err := os.MkdirTemp("", "gotutor-test-db-*")
+			if err != nil {
+				t.Fatalf("failed to create temp dir: %v", err)
+			}
+			defer os.RemoveAll(tmpDir)
+			db, err := db.New(tmpDir + "/gotutor.db")
+			if err != nil {
+				t.Fatalf("failed to create database: %v", err)
+			}
+			defer db.Close()
+			handler := newHandler(logger, cache, db)
 			tt.setupCache(cache)
 
 			ctx := context.Background()
