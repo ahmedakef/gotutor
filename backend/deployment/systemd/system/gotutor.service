@@ -3,6 +3,7 @@ Description=Go Application
 
 [Service]
 Environment=ENV=production
+Environment=PATH=/usr/local/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 ExecStart=/home/ec2-user/gotutor/backend/backend
 
