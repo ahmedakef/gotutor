@@ -42,6 +42,14 @@
 </head>
 
 <body>
+    <script>
+        (function(){
+          var fullres = document.createElement('script');
+          fullres.async = true;
+          fullres.src = 'https://t.fullres.net/gotutor.js?'+(new Date()-new Date()%43200000);
+          document.head.appendChild(fullres);
+        })();
+      </script>
     <div id="myapp"></div>
     <script>
         var app = Elm.Main.init({
