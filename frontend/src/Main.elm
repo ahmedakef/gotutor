@@ -209,7 +209,7 @@ pageFooter =
                 , Css.paddingBottom (Css.px 10)
                 ]
             ]
-            [ text "GoTutor is an online graphical debugging tool for Go that shows the program's execution steps."
+            [ text "GoTutor is an online Go debugger & visualizer that shows the shows the program's execution steps."
             , br [] []
             , text "It's very welcome to help by contributing to the project or suggesting ideas."
             , br [] []
