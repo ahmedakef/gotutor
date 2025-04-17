@@ -7,7 +7,8 @@ import (
 type ExecutionResponse struct {
 	Steps    []Step `json:"steps"`
 	Duration string `json:"duration"`
-	Output   string `json:"output"`
+	StdOut   string `json:"stdout"`
+	StdErr   string `json:"stderr"`
 }
 
 type GoRoutineData struct {

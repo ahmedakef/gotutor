@@ -89,29 +89,25 @@ func (h *Handler) GetExecutionSteps(ctx context.Context, req GetExecutionStepsRe
 	deadlineCtx, cancel := context.WithTimeout(ctx, 300*time.Second)
 	defer cancel()
 	dockerCommand := exec.CommandContext(deadlineCtx, "docker", "run", "--rm", "--network", "none", "-v", sourceCodeMapping, "-v", outputMapping, "ahmedakef/gotutor", "debug", "/data/main.go")
-	out, err := dockerCommand.CombinedOutput()
-	outStr := string(out)
-	if outputSanitized, ok := outputContainsError(outStr); ok {
+	dockerOut, err := dockerCommand.CombinedOutput()
+	if err != nil {
+		return serialize.ExecutionResponse{}, fmt.Errorf("failed to run docker command: %w : %s", err, string(dockerOut))
+	}
+	if outputSanitized, ok := outputContainsError(string(dockerOut)); ok {
 		return serialize.ExecutionResponse{}, errors.New(outputSanitized)
 	}
-	if err != nil {
-		if deadlineCtx.Err() == context.DeadlineExceeded {
-			return serialize.ExecutionResponse{}, fmt.Errorf("execution timed out, remove infinte loops or long waiting times")
-		}
-		return serialize.ExecutionResponse{}, fmt.Errorf("failed to run docker command: %w : %s", err, outStr)
-	}
 
-	output, err := readFileToString(fmt.Sprintf("%s/steps.json", dataDir))
+	stepsStr, err := readFileToString(fmt.Sprintf("%s/steps.json", dataDir))
 	if err != nil {
-		return serialize.ExecutionResponse{}, fmt.Errorf("failed to read output file: %w, output: %s", err, outStr)
+		return serialize.ExecutionResponse{}, fmt.Errorf("failed to read output file: %w, dockerOut: %s", err, string(dockerOut))
 	}
 	// decode the output
 	var response serialize.ExecutionResponse
-	err = json.NewDecoder(strings.NewReader(output)).Decode(&response)
+	err = json.NewDecoder(strings.NewReader(stepsStr)).Decode(&response)
 	if err != nil {
 		return serialize.ExecutionResponse{}, fmt.Errorf("failed to decode output: %w", err)
 	}
-	response.Output = outStr
+
 	h.cache.Set(req.SourceCode, response)
 	return response, nil
 }

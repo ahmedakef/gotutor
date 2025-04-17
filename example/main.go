@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"sync"
 	"time"
 )
@@ -10,6 +11,7 @@ var packageVar = "packageVar"
 
 func main() {
 	var wg sync.WaitGroup
+	fmt.Fprintf(os.Stderr, "Error message\n")
 	hello([]string{"ahmed"})
 	fmt.Println(packageVar)
 

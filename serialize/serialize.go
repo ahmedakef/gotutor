@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -62,11 +63,20 @@ func (v *Serializer) ExecutionSteps(ctx context.Context, limit int) (ExecutionRe
 		if exited {
 			break
 		}
-
+	}
+	stdout, err := readFileToString("output/stdout.log")
+	if err != nil {
+		return ExecutionResponse{}, fmt.Errorf("readFileToString: %w", err)
+	}
+	stderr, err := readFileToString("output/stderr.log")
+	if err != nil {
+		return ExecutionResponse{}, fmt.Errorf("readFileToString: %w", err)
 	}
 	return ExecutionResponse{
 		Steps:    allSteps,
 		Duration: time.Since(start).String(),
+		StdOut:   stdout,
+		StdErr:   stderr,
 	}, nil
 }
 
@@ -362,4 +372,18 @@ func goroutineInRuntime(goroutineFile string) bool {
 	emptyFile := goroutineFile == "" // calling step out while the goroutine has CurrentLoc.File as empty string cause runtime error in delve server
 
 	return emptyFile
+}
+
+func readFileToString(filePath string) (string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", fmt.Errorf("open %s file: %w", filePath, err)
+	}
+	defer file.Close()
+
+	contents, err := io.ReadAll(file)
+	if err != nil {
+		return "", fmt.Errorf("read %s file: %w", filePath, err)
+	}
+	return string(contents), nil
 }

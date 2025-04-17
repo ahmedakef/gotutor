@@ -87,7 +87,8 @@ view state =
 
 type alias VisualizeState =
     { lastStep : Maybe Step
-    , output : String
+    , stdout : String
+    , stderr : String
     , duration : String
     , packageVars : List Variable
     , sourceCode : String
@@ -126,7 +127,8 @@ stateToVisualize stepsState =
                         |> Maybe.map .line
             in
             { lastStep = Just step
-            , output = stepsState.executionResponse.output
+            , stdout = stepsState.executionResponse.stdout
+            , stderr = stepsState.executionResponse.stderr
             , duration = stepsState.executionResponse.duration
             , packageVars = packageVars
             , sourceCode = stepsState.sourceCode
@@ -139,7 +141,7 @@ stateToVisualize stepsState =
             }
 
         Nothing ->
-            VisualizeState lastStep "" "" [] stepsState.sourceCode stepsState.scroll Nothing Nothing stepsState.mode stepsState.errorMessage stepsState.config
+            VisualizeState lastStep "" "" "" [] stepsState.sourceCode stepsState.scroll Nothing Nothing stepsState.mode stepsState.errorMessage stepsState.config
 
 
 filterUserFrames : List StackFrame -> List StackFrame
@@ -377,15 +379,19 @@ programVisualizer state =
                 |> Maybe.withDefault []
                 |> List.filter (\g -> not (List.isEmpty (filterUserFrames g.stacktrace)))
             )
-        , programOutputView state.output state.duration
+        , programOutputView state.stdout state.stderr state.duration
         ]
 
 
-programOutputView : String -> String -> Html Msg
-programOutputView output duration =
+programOutputView : String -> String -> String -> Html Msg
+programOutputView stdout stderr duration =
     let
-        outputWithBR =
-            String.split "\n" output
+        stdoutWithBR =
+            String.split "\n" stdout
+                |> List.map text
+                |> List.intersperse (br [] [])
+        stderrWithBR =
+            String.split "\n" stderr
                 |> List.map text
                 |> List.intersperse (br [] [])
     in
@@ -394,9 +400,12 @@ programOutputView output duration =
             [ p [ css [ Css.display Css.inline, Css.fontSize (Css.rem 1.3) ] ] [ text "Program Output:" ] ]
         , div []
             [ p [ css [ Css.padding4 (Css.px 20) (Css.px 20) (Css.px 5) (Css.px 20), Css.backgroundColor (Css.hex "d9d5cf33") ] ]
-                (outputWithBR
-                    ++ [ p [ css [ Css.color (Css.hex "6e7072"), Css.marginBottom (Css.px 5) ] ] [ text <| "Execution time: " ++ duration ]
-                       , p [ css [ Css.color (Css.hex "6e7072"), Css.marginTop (Css.px 5) ] ] [ text "Output doesn't respect the slider yet." ]
+                (p [ css [ Tw.text_color (Tw.lime_500), Tw.mb_1 ] ] [ text "Standard Output:" ]
+                :: stdoutWithBR
+                ++  p [ css [ Tw.text_color (Tw.red_500), Tw.mb_1 ] ] [ text "Standard Error:" ]
+                :: stderrWithBR
+                ++ [ p [ css [ Tw.text_color (Tw.gray_500), Tw.mb_1 ] ] [ text <| "Execution time: " ++ duration ]
+                       , p [ css [ Tw.text_color (Tw.gray_500), Tw.mt_1 ] ] [ text "Output doesn't respect the slider yet." ]
                        ]
                 )
             ]
@@ -653,10 +662,12 @@ frameBorderStyle =
 buttonStyle : Css.Style
 buttonStyle =
     Css.batch
-        [ Css.backgroundColor (Css.hex "f2f0ec")
-        , Css.border3 (Css.px 1) Css.solid (Css.hex "ccc")
-        , Css.padding (Css.px 5)
-        , Css.hover [ Css.backgroundColor (Css.hex "e0e0e0") ]
+        [ Tw.h_7
+        , Tw.min_w_16
+        , Tw.bg_color Tw.gray_200
+        , Css.border2 (Css.px 2) Css.solid
+        , Tw.border_color Tw.cyan_700
+        , Css.hover [ Tw.cursor_pointer ]
         ]
 
 

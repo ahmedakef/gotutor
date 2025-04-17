@@ -8,17 +8,19 @@ import Json.Decode.Field as Field
 type alias ExecutionResponse =
     { steps : List Step
     , duration : String
-    , output : String
+    , stdout : String
+    , stderr : String
     }
 
 
 
 executionResponseDecoder : Decoder ExecutionResponse
 executionResponseDecoder =
-    map3 ExecutionResponse
+    map4 ExecutionResponse
         (field "steps" stepsDecoder)
         (field "duration" string)
-        (field "output" string)
+        (field "stdout" string)
+        (field "stderr" string)
 
 
 type alias FmtResponse =
@@ -103,7 +105,10 @@ locationDecoder =
         (field "pc" int)
         (field "file" string)
         (field "line" int)
-        (field "function" functionDecoder)
+        (field "function" functionDecoder
+            |> Json.Decode.maybe
+            |> Json.Decode.map (Maybe.withDefault { name = "", value = 0, type_ = 0, goType = 0, optimized = False })
+        )
 
 
 goroutineDecoder : Decoder Goroutine
@@ -190,7 +195,11 @@ stacktraceDecoder =
                     \file ->
                         Field.require "line" int <|
                             \line ->
-                                Field.require "function" functionDecoder <|
+                                Field.require "function"
+                                    (functionDecoder
+                                        |> Json.Decode.maybe -- didn't work, don't know why
+                                        |> Json.Decode.map (Maybe.withDefault { name = "", value = 0, type_ = 0, goType = 0, optimized = False })
+                                    ) <|
                                     \function ->
                                         Field.require "Locals" (maybe (list variableDecoder)) <|
                                             \locals ->

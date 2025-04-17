@@ -3,6 +3,7 @@ package dlv
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/ahmedakef/gotutor/gateway"
 	"github.com/go-delve/delve/pkg/proc"
@@ -19,6 +20,13 @@ func RunServerAndGetClient(debugName string, target string, buildFlags string, k
 	disconnectChan := make(chan struct{})
 	// Create and start a debugger server
 	processArgs := []string{debugName, target}
+	// Clear stdout file before starting debug session
+	if err := truncateFile("output/stdout.log"); err != nil {
+		return nil, fmt.Errorf("failed to clear stdout file: %w", err)
+	}
+	if err := truncateFile("output/stderr.log"); err != nil {
+		return nil, fmt.Errorf("failed to clear stderr file: %w", err)
+	}
 	server := rpccommon.NewServer(&service.Config{
 		Listener:           listener,
 		ProcessArgs:        processArgs,
@@ -39,8 +47,8 @@ func RunServerAndGetClient(debugName string, target string, buildFlags string, k
 			CheckGoVersion:        true,
 			TTY:                   "",
 			Stdin:                 "",
-			Stdout:                proc.OutputRedirect{Path: ""},
-			Stderr:                proc.OutputRedirect{Path: ""},
+			Stdout:                proc.OutputRedirect{Path: "output/stdout.log"},
+			Stderr:                proc.OutputRedirect{Path: "output/stderr.log"},
 			DisableASLR:           false,
 			RrOnProcessPid:        0,
 			AttachWaitFor:         "",
@@ -65,4 +73,14 @@ func RunServerAndGetClient(debugName string, target string, buildFlags string, k
 
 	return newClientFromConn(listener.Addr().String(), clientConn)
 
+}
+
+func truncateFile(path string) error {
+	// Create creates or truncates the named file. If the file already exists
+	file, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("failed to create file: %w", err)
+	}
+	defer file.Close()
+	return nil
 }

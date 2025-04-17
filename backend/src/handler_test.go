@@ -19,7 +19,8 @@ func TestGetExecutionSteps(t *testing.T) {
 		name           string
 		req            GetExecutionStepsRequest
 		setupCache     func(cache cache.LRUCache)
-		expectedOutput string
+		expectedStdOut string
+		expectedStdErr string
 		expectError    bool
 	}{
 		{
@@ -29,11 +30,11 @@ func TestGetExecutionSteps(t *testing.T) {
 			},
 			setupCache: func(cache cache.LRUCache) {
 				expectedResponse := serialize.ExecutionResponse{
-					Output: "cached output",
+					StdOut: "cached output",
 				}
 				cache.Set(_sourceCode, expectedResponse)
 			},
-			expectedOutput: "cached output",
+			expectedStdOut: "cached output",
 			expectError:    false,
 		},
 		{
@@ -43,7 +44,8 @@ func TestGetExecutionSteps(t *testing.T) {
 			},
 			setupCache: func(cache cache.LRUCache) {
 			},
-			expectedOutput: "Hello\n",
+			expectedStdOut: "Hello\n",
+			expectedStdErr: "",
 			expectError:    false,
 		},
 	}
@@ -75,8 +77,11 @@ func TestGetExecutionSteps(t *testing.T) {
 				if err != nil {
 					t.Fatalf("expected no error, got %v", err)
 				}
-				if resp.Output != tt.expectedOutput {
-					t.Fatalf("expected %v, got %v", tt.expectedOutput, resp.Output)
+				if resp.StdOut != tt.expectedStdOut {
+					t.Fatalf("expected %v, got %v", tt.expectedStdOut, resp.StdOut)
+				}
+				if resp.StdErr != tt.expectedStdErr {
+					t.Fatalf("expected %v, got %v", tt.expectedStdErr, resp.StdErr)
 				}
 			}
 		})

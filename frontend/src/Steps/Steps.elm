@@ -214,7 +214,7 @@ update msg state env =
                             case successState.mode of
                                 WaitingSteps ->
                                     -- waiting after clicking visualize
-                                    ( Success { successState | mode = Edit, executionResponse = { steps = [], duration = "", output = "" }, position = 0, errorMessage = Just err }, Cmd.none )
+                                    ( Success { successState | mode = Edit, executionResponse = { steps = [], duration = "", stdout = "", stderr = "" }, position = 0, errorMessage = Just err }, Cmd.none )
 
                                 _ ->
                                     ( Success { successState | mode = Edit, errorMessage = Just ("Error while getting execution steps: " ++ err) }, Cmd.none )
@@ -261,7 +261,7 @@ update msg state env =
                     ( Success { successState | scroll = scroll }, Cmd.none )
 
                 Visualize ->
-                    ( Success { successState | mode = WaitingSteps, executionResponse = { steps = [], duration = "", output = "" }, position = 0 }, getSteps successState.sourceCode env )
+                    ( Success { successState | mode = WaitingSteps, executionResponse = { steps = [], duration = "", stdout = "", stderr = "" }, position = 0 }, getSteps successState.sourceCode env )
 
                 Next ->
                     if successState.position + 1 > List.length successState.executionResponse.steps then
@@ -320,7 +320,7 @@ update msg state env =
                 GotSourceCode sourceCodeResult ->
                     case sourceCodeResult of
                         Ok sourceCode ->
-                            ( Success (StepsState View { steps = [], duration = "", output = "" } 0 sourceCode Nothing (Scroll 0 0) Nothing Nothing { showOnlyExportedFields = True, showMemoryAddresses = False }), Cmd.none )
+                            ( Success (StepsState View { steps = [], duration = "", stdout = "", stderr = "" } 0 sourceCode Nothing (Scroll 0 0) Nothing Nothing { showOnlyExportedFields = True, showMemoryAddresses = False }), Cmd.none )
 
                         Err err ->
                             ( Failure ("Error while reading program source code: " ++ HttpHelper.errorToString err), Cmd.none )
@@ -328,7 +328,7 @@ update msg state env =
                 GotSharedCode sharedCodeResult ->
                     case sharedCodeResult of
                         Ok sharedCode ->
-                            ( Success (StepsState Edit { steps = [], duration = "", output = "" } 0 sharedCode Nothing (Scroll 0 0) Nothing Nothing { showOnlyExportedFields = True, showMemoryAddresses = False }), Cmd.none )
+                            ( Success (StepsState Edit { steps = [], duration = "", stdout = "", stderr = "" } 0 sharedCode Nothing (Scroll 0 0) Nothing Nothing { showOnlyExportedFields = True, showMemoryAddresses = False }), Cmd.none )
 
                         Err err ->
                             ( Failure ("Error while loading shared source code: " ++ HttpHelper.errorToString err), Cmd.none )

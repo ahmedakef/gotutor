@@ -82,7 +82,8 @@ func getValueSize[T serialize.ExecutionResponse](valueI T) int64 {
 	switch value := any(valueI).(type) {
 	case serialize.ExecutionResponse:
 
-		size += int64(len(value.Output))
+		size += int64(len(value.StdOut))
+		size += int64(len(value.StdErr))
 		size += int64(len(value.Duration))
 		size += int64(len(value.Steps)) * int64(unsafe.Sizeof(serialize.Step{}))
 		for _, step := range value.Steps {
