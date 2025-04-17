@@ -1,4 +1,4 @@
-package main
+package controller
 
 import (
 	"context"
@@ -17,17 +17,15 @@ func TestGetExecutionSteps(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		req            GetExecutionStepsRequest
+		sourceCode     string
 		setupCache     func(cache cache.LRUCache)
 		expectedStdOut string
 		expectedStdErr string
 		expectError    bool
 	}{
 		{
-			name: "CacheHit",
-			req: GetExecutionStepsRequest{
-				SourceCode: _sourceCode,
-			},
+			name:       "CacheHit",
+			sourceCode: _sourceCode,
 			setupCache: func(cache cache.LRUCache) {
 				expectedResponse := serialize.ExecutionResponse{
 					StdOut: "cached output",
@@ -38,10 +36,8 @@ func TestGetExecutionSteps(t *testing.T) {
 			expectError:    false,
 		},
 		{
-			name: "CacheMiss",
-			req: GetExecutionStepsRequest{
-				SourceCode: _sourceCode,
-			},
+			name:       "CacheMiss",
+			sourceCode: _sourceCode,
 			setupCache: func(cache cache.LRUCache) {
 			},
 			expectedStdOut: "Hello\n",
@@ -53,7 +49,7 @@ func TestGetExecutionSteps(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			logger := zerolog.New(os.Stdout)
-			cache := cache.NewLRUCache(_maxCacheSize, _maxCacheItems, _cacheTTL)
+			cache := cache.NewLRUCache(1024*100*100, 100, 0)
 			tmpDir, err := os.MkdirTemp("", "gotutor-test-db-*")
 			if err != nil {
 				t.Fatalf("failed to create temp dir: %v", err)
@@ -64,11 +60,11 @@ func TestGetExecutionSteps(t *testing.T) {
 				t.Fatalf("failed to create database: %v", err)
 			}
 			defer db.Close()
-			handler := newHandler(logger, cache, db)
+			controller := NewController(logger, cache, db)
 			tt.setupCache(cache)
 
 			ctx := context.Background()
-			resp, err := handler.GetExecutionSteps(ctx, tt.req)
+			resp, err := controller.GetExecutionSteps(ctx, tt.sourceCode)
 			if tt.expectError {
 				if err == nil {
 					t.Fatalf("expected error, got nil")

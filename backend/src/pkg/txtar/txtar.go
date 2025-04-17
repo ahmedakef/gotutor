@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package main
+package txtar
 
 import (
 	"bytes"
@@ -14,47 +14,55 @@ import (
 	"golang.org/x/tools/txtar"
 )
 
-// fileSet is a set of files.
-// The zero value for fileSet is an empty set ready to use.
-type fileSet struct {
-	files    []string          // filenames in user-provided order
+const (
+
+	// progName is the implicit program name written to the temp
+	// dir and used in compiler and vet errors.
+	progName     = "prog.go"
+	progTestName = "prog_test.go"
+)
+
+// FileSet is a set of files.
+// The zero value for FileSet is an empty set ready to use.
+type FileSet struct {
+	Files    []string          // filenames in user-provided order
 	m        map[string][]byte // filename -> source
 	noHeader bool              // whether the prog.go entry was implicit
 }
 
 // Data returns the content of the named file.
 // The fileSet retains ownership of the returned slice.
-func (fs *fileSet) Data(filename string) []byte { return fs.m[filename] }
+func (fs *FileSet) Data(filename string) []byte { return fs.m[filename] }
 
 // Num returns the number of files in the set.
-func (fs *fileSet) Num() int { return len(fs.m) }
+func (fs *FileSet) Num() int { return len(fs.m) }
 
 // Contains reports whether fs contains the given filename.
-func (fs *fileSet) Contains(filename string) bool {
+func (fs *FileSet) Contains(filename string) bool {
 	_, ok := fs.m[filename]
 	return ok
 }
 
 // AddFile adds a file to fs. If fs already contains filename, its
 // contents are replaced.
-func (fs *fileSet) AddFile(filename string, src []byte) {
+func (fs *FileSet) AddFile(filename string, src []byte) {
 	had := fs.Contains(filename)
 	if fs.m == nil {
 		fs.m = make(map[string][]byte)
 	}
 	fs.m[filename] = src
 	if !had {
-		fs.files = append(fs.files, filename)
+		fs.Files = append(fs.Files, filename)
 	}
 }
 
-func (fs *fileSet) Update(filename string, src []byte) {
+func (fs *FileSet) Update(filename string, src []byte) {
 	if fs.Contains(filename) {
 		fs.m[filename] = src
 	}
 }
 
-func (fs *fileSet) MvFile(source, target string) {
+func (fs *FileSet) MvFile(source, target string) {
 	if fs.m == nil {
 		return
 	}
@@ -64,21 +72,21 @@ func (fs *fileSet) MvFile(source, target string) {
 	}
 	fs.m[target] = data
 	delete(fs.m, source)
-	for i := range fs.files {
-		if fs.files[i] == source {
-			fs.files[i] = target
+	for i := range fs.Files {
+		if fs.Files[i] == source {
+			fs.Files[i] = target
 			break
 		}
 	}
 }
 
 // Format returns fs formatted as a txtar archive.
-func (fs *fileSet) Format() []byte {
+func (fs *FileSet) Format() []byte {
 	a := new(txtar.Archive)
 	if fs.noHeader {
 		a.Comment = fs.m[progName]
 	}
-	for i, f := range fs.files {
+	for i, f := range fs.Files {
 		if i == 0 && f == progName && fs.noHeader {
 			continue
 		}
@@ -87,7 +95,7 @@ func (fs *fileSet) Format() []byte {
 	return txtar.Format(a)
 }
 
-// splitFiles splits the user's input program src into 1 or more
+// SplitFiles splits the user's input program src into 1 or more
 // files, splitting it based on boundaries as specified by the "txtar"
 // format. It returns an error if any filenames are bogus or
 // duplicates. The implicit filename for the txtar comment (the lines
@@ -100,9 +108,9 @@ func (fs *fileSet) Format() []byte {
 // low ASCII binary characters, and to be in path.Clean canonical
 // form.
 //
-// splitFiles takes ownership of src.
-func splitFiles(src []byte) (*fileSet, error) {
-	fs := new(fileSet)
+// SplitFiles takes ownership of src.
+func SplitFiles(src []byte) (*FileSet, error) {
+	fs := new(FileSet)
 	a := txtar.Parse(src)
 	if v := bytes.TrimSpace(a.Comment); len(v) > 0 {
 		fs.noHeader = true

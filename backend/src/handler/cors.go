@@ -1,4 +1,4 @@
-package main
+package handler
 
 import "net/http"
 
@@ -9,8 +9,8 @@ var allowedOrigins = map[string]bool{
 	"https://gotutor.dev":         true,
 }
 
-// CORS Middleware
-func corsMiddleware(next http.Handler) http.Handler {
+// CorsMiddleware is a middleware that adds CORS headers to the response
+func CorsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
 		if allowedOrigins[origin] {

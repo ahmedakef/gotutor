@@ -1,4 +1,4 @@
-package main
+package controller
 
 import (
 	"context"
@@ -21,34 +21,32 @@ import (
 const _allowedConcurrency = 10
 
 // Handler is a struct which represents the backend handler
-type Handler struct {
+type Controller struct {
 	logger zerolog.Logger
 	cache  cache.LRUCache
 	db     *db.DB
 }
 
-func newHandler(logger zerolog.Logger, cache cache.LRUCache, db *db.DB) *Handler {
-	return &Handler{
+// NewController creates a new controller
+func NewController(logger zerolog.Logger, cache cache.LRUCache, db *db.DB) *Controller {
+	return &Controller{
 		logger: logger,
 		cache:  cache,
 		db:     db,
 	}
 }
 
-type GetExecutionStepsRequest struct {
-	SourceCode string `json:"source_code"`
-}
-
-func (h *Handler) GetExecutionSteps(ctx context.Context, req GetExecutionStepsRequest) (serialize.ExecutionResponse, error) {
-	_, err := h.db.IncrementCallCounter(db.GetExecutionSteps)
+// GetExecutionSteps gets the execution steps for the given source code
+func (c *Controller) GetExecutionSteps(ctx context.Context, sourceCode string) (serialize.ExecutionResponse, error) {
+	_, err := c.db.IncrementCallCounter(db.GetExecutionSteps)
 	if err != nil {
-		h.logger.Err(err).Msg("failed to increment call counter")
+		c.logger.Err(err).Msg("failed to increment call counter")
 	}
 
 	// check if the request is already in the cache
-	cachedResponse, ok := h.cache.Get(req.SourceCode)
+	cachedResponse, ok := c.cache.Get(sourceCode)
 	if ok {
-		h.logger.Info().Msg("cache hit")
+		c.logger.Info().Msg("cache hit")
 		return cachedResponse, nil
 	}
 
@@ -58,8 +56,8 @@ func (h *Handler) GetExecutionSteps(ctx context.Context, req GetExecutionStepsRe
 	}
 	defer sem.Release(1)
 
-	if err := h.db.SaveSourceCode(req.SourceCode); err != nil {
-		h.logger.Err(err).Msg("failed to save source code")
+	if err := c.db.SaveSourceCode(sourceCode); err != nil {
+		c.logger.Err(err).Msg("failed to save source code")
 	}
 
 	port := generateRandomPort()
@@ -70,11 +68,11 @@ func (h *Handler) GetExecutionSteps(ctx context.Context, req GetExecutionStepsRe
 	defer func() {
 		err := os.RemoveAll(dataDir)
 		if err != nil {
-			h.logger.Error().Err(err).Msg("failed to remove sources directory")
+			c.logger.Error().Err(err).Msg("failed to remove sources directory")
 		}
 	}()
 	sourcePath := fmt.Sprintf("%s/main.go", dataDir)
-	err = writeSourceCodeToFile(sourcePath, req.SourceCode)
+	err = writeSourceCodeToFile(sourcePath, sourceCode)
 	if err != nil {
 		return serialize.ExecutionResponse{}, fmt.Errorf("failed to write source code to file: %w", err)
 	}
@@ -96,7 +94,7 @@ func (h *Handler) GetExecutionSteps(ctx context.Context, req GetExecutionStepsRe
 		return serialize.ExecutionResponse{}, errors.New(outputSanitized)
 	}
 
-	stepsStr, err := readFileToString(fmt.Sprintf("%s/steps.json", dataDir))
+	stepsStr, err := readFileToString(fmt.Sprintf("%s/%s/steps.json", currentDir, dataDir))
 	if err != nil {
 		return serialize.ExecutionResponse{}, fmt.Errorf("failed to read output file: %w, dockerOut: %s", err, string(dockerOut))
 	}
@@ -107,7 +105,7 @@ func (h *Handler) GetExecutionSteps(ctx context.Context, req GetExecutionStepsRe
 		return serialize.ExecutionResponse{}, fmt.Errorf("failed to decode output: %w", err)
 	}
 
-	h.cache.Set(req.SourceCode, response)
+	c.cache.Set(sourceCode, response)
 	return response, nil
 }
 

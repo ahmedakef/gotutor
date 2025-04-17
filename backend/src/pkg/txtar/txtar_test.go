@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package main
+package txtar
 
 import (
 	"fmt"
@@ -11,8 +11,8 @@ import (
 	"testing"
 )
 
-func newFileSet(kv ...string) *fileSet {
-	fs := new(fileSet)
+func newFileSet(kv ...string) *FileSet {
+	fs := new(FileSet)
 	if kv[0] == "prog.go!implicit" {
 		fs.noHeader = true
 		kv[0] = "prog.go"
@@ -28,7 +28,7 @@ func TestSplitFiles(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
 		in      string
-		want    *fileSet
+		want    *FileSet
 		wantErr string
 	}{
 		{
@@ -118,7 +118,7 @@ func TestSplitFiles(t *testing.T) {
 			wantErr: `too many files in txtar archive (50 exceeds limit of 20)`,
 		},
 	} {
-		got, err := splitFiles([]byte(tt.in))
+		got, err := SplitFiles([]byte(tt.in))
 		var gotErr string
 		if err != nil {
 			gotErr = err.Error()
@@ -140,9 +140,9 @@ func TestSplitFiles(t *testing.T) {
 	}
 }
 
-func filesAsString(fs *fileSet) string {
+func filesAsString(fs *FileSet) string {
 	var sb strings.Builder
-	for i, f := range fs.files {
+	for i, f := range fs.Files {
 		var implicit string
 		if i == 0 && f == progName && fs.noHeader {
 			implicit = " (implicit)"
