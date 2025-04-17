@@ -18,13 +18,13 @@ import (
 // debugCmd represents the debug command
 var debugCmd = &cobra.Command{
 	Use:   "debug",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Compile and begin debugging main package in current directory, or the package specified.",
+	Long: `Compiles your program with optimizations disabled, starts and attaches to it.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+By default, with no arguments, Delve will compile the 'main' package in the
+current directory, and begin to debug it. Alternatively you can specify a
+package name and Delve will compile that package instead, and begin a new debug
+session.`,
 	RunE: debug,
 	Args: cobra.RangeArgs(0, 1),
 }

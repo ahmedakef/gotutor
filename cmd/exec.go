@@ -16,13 +16,14 @@ import (
 // execCmd represents the exec command
 var execCmd = &cobra.Command{
 	Use:   "exec",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Execute a precompiled binary, and begin a debug session",
+	Long: `Execute a precompiled binary and begin a debug session.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+This command will cause Delve to exec the binary and immediately attach to it to
+begin a new debug session. Please note that if the binary was not compiled with
+optimizations disabled, it may be difficult to properly debug it. Please
+consider compiling debugging binaries with -gcflags="all=-N -l" on Go 1.10
+or later, -gcflags="-N -l" on earlier versions of Go.`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: execute,
 }
@@ -33,11 +34,7 @@ func execute(cmd *cobra.Command, args []string) error {
 	defer cancel()
 	logger := ctx.Value(loggerKey).(zerolog.Logger)
 
-	binaryPath := "."
-	if len(args) == 1 {
-		binaryPath = args[0]
-	}
-
+	binaryPath := args[0]
 	client, err := dlv.RunServerAndGetClient(binaryPath, "", dlv.GetBuildFlags(), debugger.ExecutingExistingFile)
 	if err != nil {
 		logger.Error().Err(err).Msg("runServerAndGetClient")
