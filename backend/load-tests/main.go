@@ -71,15 +71,9 @@ func main() {
 }
 
 func readFileToString(filePath string) (string, error) {
-	file, err := os.Open(filePath)
+	contents, err := os.ReadFile(filePath)
 	if err != nil {
-		return "", fmt.Errorf("open %s file: %w", filePath, err)
-	}
-	defer file.Close()
-
-	contents, err := io.ReadAll(file)
-	if err != nil {
-		return "", fmt.Errorf("read %s file: %w", filePath, err)
+		return "", fmt.Errorf("error while reading %s file: %w", filePath, err)
 	}
 	return string(contents), nil
 }
