@@ -76,7 +76,7 @@ view state =
 
         Failure error ->
             main_ [ css [ Css.flex (Css.num 1), Css.displayFlex, Css.justifyContent Css.spaceBetween, Css.alignItems Css.center ] ]
-                [ pre [ css [ Css.color (Css.hex "#d65287"), Css.fontSize (Css.px 20) ] ] [ text error ]
+                [ pre [ css [ Tw.bg_color Tw.red_500, Css.fontSize (Css.px 20) ] ] [ text error ]
                 ]
 
         Loading ->
@@ -171,10 +171,10 @@ codeView state =
             [ borderStyle
             , case state.mode of
                 Edit ->
-                    Css.backgroundColor (Css.hex "ffffddf7")
+                    Tw.bg_color Tw.slate_50
 
                 _ ->
-                    Css.backgroundColor (Css.hex "ffffff")
+                    Tw.bg_color Tw.white
             ]
         , class "code-container"
         ]
@@ -291,17 +291,16 @@ varView config v =
 
                     else
                         if config.showOnlyExportedFields then
-
-                        var.children
-                            |> List.filter
-                                -- only show exported fields
-                                (\child ->
-                                    case child of
-                                        VariableI vI ->
-                                            String.uncons vI.name
-                                                |> Maybe.map (\( firstChar, _ ) -> Char.isUpper firstChar)
-                                                |> Maybe.withDefault False
-                                )
+                            var.children
+                                |> List.filter
+                                    -- only show exported fields
+                                    (\child ->
+                                        case child of
+                                            VariableI vI ->
+                                                String.uncons vI.name
+                                                    |> Maybe.map (\( firstChar, _ ) -> Char.isUpper firstChar)
+                                                    |> Maybe.withDefault False
+                                    )
                         else
                             var.children
             in
@@ -314,8 +313,8 @@ varView config v =
                           else
                             css []
                         ]
-                        ([ text <| removeMainPrefix var.name ++ " = "
-                         , span [ css [ Css.color (Css.hex "979494") ] ]
+                        ([span [ css [ Css.hover [ Tw.cursor_pointer ] ] ] [ text <| removeMainPrefix var.name ++ " = "]
+                         , span [ css [ Tw.text_color Tw.gray_400 ] ]
                                 [ text <| "{" ++ var.type_
                                 , if config.showMemoryAddresses then
                                     text <| " | " ++ (var.addr |> Helpers.Hex.intToHex)
@@ -351,7 +350,7 @@ varsView config title maybeVars attributes =
             else
                 details (attribute "open" "" :: attributes)
                     [ summary []
-                        [ p [ css [ Css.display Css.inline, Css.fontSize (Css.rem 1.3) ] ] [ text title ] ]
+                        [ p [ css [ Css.display Css.inline, Tw.text_lg, Css.hover [ Tw.cursor_pointer ] ] ] [ text title ] ]
                     , ul [ css [ Css.listStyleType Css.none ] ] (List.map (varView config) vars)
                     ]
 
@@ -371,7 +370,7 @@ programVisualizer state =
             state.config
             "Global Variables:"
             (Just state.packageVars)
-            [ css [ Css.marginBottom (Css.px 10) ] ]
+            [ css [ Css.marginBottom (Css.px 10), Css.hover [ Tw.cursor_pointer ] ] ]
         , goroutinesView
             state.config
             (state.lastStep
@@ -397,7 +396,7 @@ programOutputView stdout stderr duration =
     in
     details [ css [ Css.marginTop (Css.px 10) ] ]
         [ summary []
-            [ p [ css [ Css.display Css.inline, Css.fontSize (Css.rem 1.3) ] ] [ text "Program Output:" ] ]
+            [ p [ css [ Css.display Css.inline, Css.fontSize (Css.rem 1.3), Css.hover [ Tw.cursor_pointer ] ] ] [ text "Program Output:" ] ]
         , div []
             [ p [ css [ Css.padding4 (Css.px 20) (Css.px 20) (Css.px 5) (Css.px 20), Css.backgroundColor (Css.hex "d9d5cf33") ] ]
                 (p [ css [ Tw.text_color (Tw.lime_500), Tw.mb_1 ] ] [ text "Standard Output:" ]
@@ -417,11 +416,11 @@ configView config =
     div [ css [  Tw.flex, Tw.flex_row, Tw.gap_10 ] ]
         [ p [ css [ Tw.text_lg ] ] [ text "Config:" ]
         , label [ css [ Tw.flex, Tw.items_center, Tw.gap_2 ] ]
-            [ input [ type_ "checkbox", onCheck ShowOnlyExportedFields, checked config.showOnlyExportedFields ] []
+            [ input [ type_ "checkbox", onCheck ShowOnlyExportedFields, checked config.showOnlyExportedFields, css [ Tw.cursor_pointer ] ] []
             , text " Show only exported fields"
             ]
         , label [ css [ Tw.flex, Tw.items_center, Tw.gap_2 ] ]
-            [ input [ type_ "checkbox", onCheck ShowMemoryAddresses, checked config.showMemoryAddresses ] []
+            [ input [ type_ "checkbox", onCheck ShowMemoryAddresses, checked config.showMemoryAddresses, css [ Tw.cursor_pointer ] ] []
             , text " Show memory addresses"
             ]
 
@@ -433,7 +432,7 @@ goroutinesView config goroutinesData =
     let
         note =
             if List.length goroutinesData >= 100 then
-                p [ css [ Css.color (Css.hex "6e7072"), Css.marginBottom (Css.px 5) ] ] [ text "Showing first 100 goroutines only." ]
+                p [ css [ Tw.text_color Tw.zinc_500, Css.marginBottom (Css.px 5) ] ] [ text "Showing first 100 goroutines only." ]
 
             else
                 div [] []
@@ -447,7 +446,7 @@ goroutinesView config goroutinesData =
     in
     details [ attribute "open" "", css [ Css.marginTop (Css.px 10) ] ]
         [ summary [css [Tw.mb_5]]
-            [ p [ css [ Css.display Css.inline, Css.fontSize (Css.rem 1.3) ] ] [ text "Running Goroutines:" ] ]
+            [ p [ css [ Css.display Css.inline, Css.fontSize (Css.rem 1.3), Css.hover [ Tw.cursor_pointer ] ] ] [ text "Running Goroutines:" ] ]
         , note
         , div
             [ css
@@ -501,7 +500,7 @@ stackView config stack =
 
     else
         details [ attribute "open" "" ]
-            [ summary [] [ b [] [ text "Stack Frames:" ] ]
+            [ summary [] [ b [css [ Css.hover [ Tw.cursor_pointer ] ] ] [ text "Stack Frames:" ] ]
             , ul [ css [ Css.listStyleType Css.none ] ]
                 (case stack of
                     [] ->
@@ -543,7 +542,7 @@ frameView config frame =
     div
         [ css
             [ frameBorderStyle
-            , Css.backgroundColor (Css.hex "f2f0ec")
+            , Tw.bg_color Tw.stone_200
             ]
         , onMouseEnter (Highlight frame.line)
         , onMouseLeave (Unhighlight frame.line)
