@@ -39,7 +39,7 @@ view state =
                             [ div [ css [ Tw.flex, Tw.flex_row, Tw.self_stretch, Tw.self_end, Tw.gap_2 ] ]
                                 [ case stepsState.shareUrl of
                                     Just url ->
-                                        input [ type_ "text", value url, css [ Tw.w_56 ] ] []
+                                        input [ type_ "text", value url, css [ Tw.w_56, Tw.bg_color Tw.slate_50, Tw.border_color Tw.slate_300 ] ] []
                                     Nothing ->
                                         input [ type_ "text", hidden True ] []
                                 , button [ onClick Share, css [ buttonStyle ] ] [ text "Share" ]
@@ -607,7 +607,7 @@ backendStateView state =
                      ]
                         ++ (case state.flashMessage of
                                 Just _ ->
-                                    [ Css.backgroundColor (Css.hex "f5c6cb") ]
+                                    [ Tw.bg_color Tw.red_500 ]
 
                                 Nothing ->
                                     []
@@ -622,7 +622,7 @@ exampleSelector =
     select
         [ css
             [ Css.fontSize (Css.rem 0.9)
-            , Css.backgroundColor (Css.hex "fff")
+            , Tw.bg_color Tw.slate_50
             , Css.border3 (Css.px 1) Css.solid (Css.hex "ddd")
             , Css.padding (Css.px 1)
             ]
