@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/rand"
 	"os"
 	"os/exec"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/ahmedakef/gotutor/backend/src/cache"
@@ -18,13 +18,16 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-const _allowedConcurrency = 10
+const (
+	_allowedConcurrency = 10
+)
 
 // Handler is a struct which represents the backend handler
 type Controller struct {
 	logger zerolog.Logger
 	cache  cache.LRUCache
 	db     *db.DB
+	sem    *semaphore.Weighted
 }
 
 // NewController creates a new controller
@@ -33,6 +36,7 @@ func NewController(logger zerolog.Logger, cache cache.LRUCache, db *db.DB) *Cont
 		logger: logger,
 		cache:  cache,
 		db:     db,
+		sem:    semaphore.NewWeighted(_allowedConcurrency),
 	}
 }
 
@@ -50,39 +54,34 @@ func (c *Controller) GetExecutionSteps(ctx context.Context, sourceCode string) (
 		return cachedResponse, nil
 	}
 
-	sem := semaphore.NewWeighted(_allowedConcurrency)
-	if err := sem.Acquire(ctx, 1); err != nil {
+	if err := c.sem.Acquire(ctx, 1); err != nil {
 		return serialize.ExecutionResponse{}, fmt.Errorf("failed to acquire semaphore: %w", err)
 	}
-	defer sem.Release(1)
+	defer c.sem.Release(1)
 
 	if err := c.db.SaveSourceCode(sourceCode); err != nil {
 		c.logger.Err(err).Msg("failed to save source code")
 	}
 
-	port := generateRandomPort()
-	dataDir, err := prepareTempDir(port)
+	tmpDir, err := os.MkdirTemp("", "sandbox")
 	if err != nil {
-		return serialize.ExecutionResponse{}, fmt.Errorf("failed to prepare sources directory: %w", err)
+		return serialize.ExecutionResponse{}, fmt.Errorf("error creating temp directory: %v", err)
 	}
+
 	defer func() {
-		err := os.RemoveAll(dataDir)
+		err := os.RemoveAll(tmpDir)
 		if err != nil {
 			c.logger.Error().Err(err).Msg("failed to remove sources directory")
 		}
 	}()
-	sourcePath := fmt.Sprintf("%s/main.go", dataDir)
+	sourcePath := fmt.Sprintf("%s/main.go", tmpDir)
 	err = writeSourceCodeToFile(sourcePath, sourceCode)
 	if err != nil {
 		return serialize.ExecutionResponse{}, fmt.Errorf("failed to write source code to file: %w", err)
 	}
 
-	currentDir, err := os.Getwd()
-	if err != nil {
-		return serialize.ExecutionResponse{}, fmt.Errorf("failed to get current directory: %w", err)
-	}
-	sourceCodeMapping := fmt.Sprintf("%s/%s:/data/main.go", currentDir, sourcePath)
-	outputMapping := fmt.Sprintf("%s/%s:/root/output", currentDir, dataDir)
+	sourceCodeMapping := fmt.Sprintf("%s:/data/main.go", sourcePath)
+	outputMapping := fmt.Sprintf("%s:/root/output", tmpDir)
 	deadlineCtx, cancel := context.WithTimeout(ctx, 300*time.Second)
 	defer cancel()
 	dockerCommand := exec.CommandContext(deadlineCtx, "docker", "run", "--rm", "--network", "none", "-v", sourceCodeMapping, "-v", outputMapping, "ahmedakef/gotutor", "debug", "/data/main.go")
@@ -94,7 +93,7 @@ func (c *Controller) GetExecutionSteps(ctx context.Context, sourceCode string) (
 		return serialize.ExecutionResponse{}, errors.New(outputSanitized)
 	}
 
-	stepsStr, err := readFileToString(fmt.Sprintf("%s/%s/steps.json", currentDir, dataDir))
+	stepsStr, err := readFileToString(fmt.Sprintf("%s/steps.json", tmpDir))
 	if err != nil {
 		return serialize.ExecutionResponse{}, fmt.Errorf("failed to read output file: %w, dockerOut: %s", err, string(dockerOut))
 	}
@@ -109,52 +108,54 @@ func (c *Controller) GetExecutionSteps(ctx context.Context, sourceCode string) (
 	return response, nil
 }
 
-func generateRandomPort() int {
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	return r.Intn(10000)
-}
+var playgroundTemplate = template.Must(template.ParseFiles("playground.txt"))
 
-func prepareTempDir(randomPort int) (string, error) {
-	dir := fmt.Sprintf("data/%d", randomPort)
-	err := os.MkdirAll(dir, os.ModePerm)
+// Compile compiles the given source code
+func (c *Controller) Compile(ctx context.Context, sourceCode string) (*serialize.ExecutionResponse, error) {
+	_, err := c.db.IncrementCallCounter(db.Compile)
 	if err != nil {
-		return "", fmt.Errorf("create sources directory: %w", err)
+		c.logger.Err(err).Msg("failed to increment call counter")
 	}
-	return dir, nil
-}
 
-func writeSourceCodeToFile(sourcePath, sourceCode string) error {
-	file, err := os.OpenFile(sourcePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if err := c.sem.Acquire(ctx, 1); err != nil {
+		return nil, fmt.Errorf("failed to acquire semaphore: %w", err)
+	}
+	defer c.sem.Release(1)
+
+	tmpDir, err := os.MkdirTemp("", "sandbox")
 	if err != nil {
-		return fmt.Errorf("create %s file: %w", sourcePath, err)
+		return nil, fmt.Errorf("error creating temp directory: %v", err)
+	}
+	defer func() {
+		err := os.RemoveAll(tmpDir)
+		if err != nil {
+			c.logger.Error().Err(err).Msg("failed to remove sources directory")
+		}
+	}()
+
+	br, err := c.sandboxBuild(ctx, tmpDir, []byte(sourceCode), false)
+	if err != nil {
+		return nil, err
+	}
+	if br.errorMessage != "" {
+		return nil, errors.New(removeBanner(br.errorMessage))
+	}
+
+	binary, err := readFileToString(br.exePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read binary: %w", err)
+	}
+
+	file, err := os.Create("playground_output.txt")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create playground output file: %w", err)
 	}
 	defer file.Close()
 
-	_, err = file.WriteString(sourceCode)
-	if err != nil {
-		return fmt.Errorf("write to %s file: %w", sourcePath, err)
-	}
-	return nil
-}
+	playgroundTemplate.Execute(file, map[string]interface{}{
+		"binary": binary,
+	})
 
-func readFileToString(filePath string) (string, error) {
-	contents, err := os.ReadFile(filePath)
-	if err != nil {
-		return "", fmt.Errorf("error while reading %s file: %w", filePath, err)
-	}
-	return string(contents), nil
-}
+	return &serialize.ExecutionResponse{}, nil
 
-func outputContainsError(output string) (string, bool) {
-	if strings.Contains(output, "failed to build binary") {
-		startLoc := strings.Index(output, "data/main.go")
-		endLoc := strings.Index(output, "exit status")
-		if startLoc == -1 || endLoc == -1 {
-			return "failed to build the binary", true
-		}
-		return output[startLoc : endLoc-2], true
-	} else if strings.Contains(output, "limit reached") {
-		return "failed to get execution steps: limit reached", true
-	}
-	return output, false
 }

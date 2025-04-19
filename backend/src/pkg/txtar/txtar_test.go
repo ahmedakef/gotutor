@@ -144,7 +144,7 @@ func filesAsString(fs *FileSet) string {
 	var sb strings.Builder
 	for i, f := range fs.Files {
 		var implicit string
-		if i == 0 && f == progName && fs.noHeader {
+		if i == 0 && f == ProgName && fs.noHeader {
 			implicit = " (implicit)"
 		}
 		fmt.Fprintf(&sb, "[file %q%s]: %q\n", f, implicit, fs.Data(f))

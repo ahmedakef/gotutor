@@ -53,6 +53,10 @@ func (h *Handler) respondWithError(w http.ResponseWriter, message string, status
 	json.NewEncoder(w).Encode(ErrorResponse{Error: message})
 }
 
+func (h *Handler) logRequest(r *http.Request) {
+	h.logger.Info().Strs("X-Real-Ip", r.Header["X-Real-Ip"]).Msg("request received")
+}
+
 // GetExecutionStepsRequest is the request for the GetExecutionSteps method
 type GetExecutionStepsRequest struct {
 	SourceCode string `json:"source_code"`
@@ -60,7 +64,7 @@ type GetExecutionStepsRequest struct {
 
 // HandleGetExecutionSteps handles the GetExecutionSteps request
 func (h *Handler) HandleGetExecutionSteps(w http.ResponseWriter, r *http.Request) {
-	h.logger.Info().Strs("X-Real-Ip", r.Header["X-Real-Ip"]).Msg("request received")
+	h.logRequest(r)
 
 	var req GetExecutionStepsRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
@@ -70,6 +74,31 @@ func (h *Handler) HandleGetExecutionSteps(w http.ResponseWriter, r *http.Request
 	}
 
 	resp, err := h.controller.GetExecutionSteps(r.Context(), req.SourceCode)
+	if err != nil {
+		h.respondWithError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	h.writeJSONResponse(w, resp, http.StatusOK)
+}
+
+// CompileRequest is the request for the Compile method
+type CompileRequest struct {
+	SourceCode string `json:"source_code"`
+}
+
+// HandleCompile handles the Compile request
+func (h *Handler) HandleCompile(w http.ResponseWriter, r *http.Request) {
+	h.logRequest(r)
+
+	var req CompileRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		h.respondWithError(w, "failed to decode request", http.StatusBadRequest)
+		return
+	}
+
+	resp, err := h.controller.Compile(r.Context(), req.SourceCode)
 	if err != nil {
 		h.respondWithError(w, err.Error(), http.StatusInternalServerError)
 		return

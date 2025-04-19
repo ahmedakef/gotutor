@@ -16,10 +16,10 @@ import (
 
 const (
 
-	// progName is the implicit program name written to the temp
+	// ProgName is the implicit program name written to the temp
 	// dir and used in compiler and vet errors.
-	progName     = "prog.go"
-	progTestName = "prog_test.go"
+	ProgName     = "prog.go"
+	ProgTestName = "prog_test.go"
 )
 
 // FileSet is a set of files.
@@ -29,6 +29,9 @@ type FileSet struct {
 	m        map[string][]byte // filename -> source
 	noHeader bool              // whether the prog.go entry was implicit
 }
+
+// Map returns the map of files in the set.
+func (fs *FileSet) Map() map[string][]byte { return fs.m }
 
 // Data returns the content of the named file.
 // The fileSet retains ownership of the returned slice.
@@ -84,10 +87,10 @@ func (fs *FileSet) MvFile(source, target string) {
 func (fs *FileSet) Format() []byte {
 	a := new(txtar.Archive)
 	if fs.noHeader {
-		a.Comment = fs.m[progName]
+		a.Comment = fs.m[ProgName]
 	}
 	for i, f := range fs.Files {
-		if i == 0 && f == progName && fs.noHeader {
+		if i == 0 && f == ProgName && fs.noHeader {
 			continue
 		}
 		a.Files = append(a.Files, txtar.File{Name: f, Data: fs.m[f]})
@@ -114,7 +117,7 @@ func SplitFiles(src []byte) (*FileSet, error) {
 	a := txtar.Parse(src)
 	if v := bytes.TrimSpace(a.Comment); len(v) > 0 {
 		fs.noHeader = true
-		fs.AddFile(progName, a.Comment)
+		fs.AddFile(ProgName, a.Comment)
 	}
 	const limitNumFiles = 20 // arbitrary
 	numFiles := len(a.Files) + fs.Num()

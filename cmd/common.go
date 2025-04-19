@@ -34,7 +34,7 @@ func getAndWriteSteps(ctx context.Context, client *gateway.Debug, logger zerolog
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 	// put the result in output/steps.json file
-	file, err := os.OpenFile("output/steps.json", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	file, err := os.Create("output/steps.json")
 	if err != nil {
 		return fmt.Errorf("failed to open steps.json file: %w", err)
 	}

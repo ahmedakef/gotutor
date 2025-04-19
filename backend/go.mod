@@ -10,6 +10,7 @@ require (
 	github.com/ahmedakef/gotutor v0.0.0-20250111015430-2764702fae93
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/rs/zerolog v1.33.0
+	github.com/stretchr/testify v1.10.0
 	go.etcd.io/bbolt v1.4.0
 	go.uber.org/atomic v1.11.0
 	golang.org/x/mod v0.22.0
@@ -19,10 +20,12 @@ require (
 
 require (
 	github.com/cilium/ebpf v0.17.1 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-delve/delve v1.24.0 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	golang.org/x/arch v0.13.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect

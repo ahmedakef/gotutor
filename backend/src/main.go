@@ -45,6 +45,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/GetExecutionSteps", h.HandleGetExecutionSteps)
+	mux.HandleFunc("/compile", h.HandleCompile)
 	mux.HandleFunc("/fmt", h.HandleFmt)
 
 	logger.Info().Msg(fmt.Sprintf("starting server on http://localhost:%d", _port))
