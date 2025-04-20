@@ -23,6 +23,7 @@ input[type=range]::-webkit-slider-thumb {
     border: none;
     height: 20px;
     width: 20px;
+    background-color: transparent;
     background-image: url('static/skateboarding.svg');
     background-size: 100% auto;
     background-position: center center;
