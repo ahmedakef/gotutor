@@ -133,7 +133,7 @@ view model =
         body =
             div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.minHeight (Css.vh 100) ] ]
                 [ Styles.globalStyles
-                , navigation
+                , header [] [ navigation ]
                 , Html.map StepsMsg (StepsView.view model.state)
                 , feedback
                 , palastineSupport
@@ -147,26 +147,24 @@ view model =
 
 navigation : Html msg
 navigation =
-    header
+    nav
         [ css
-            [ Css.displayFlex
-            , Css.justifyContent Css.center
-            , Css.alignItems Css.center
-            , Css.width (Css.pct 100)
-            , Css.borderBottom3 (Css.px 1) Css.solid (Css.hex "ddd")
+            [ Tw.flex , Tw.justify_center , Tw.items_center , Tw.w_full
+            , Css.borderBottom2 (Css.px 1) Css.solid
+            , Tw.border_b_color Tw.gray_300
+            , Tw.text_xl
             ]
         ]
-        [ div [ css [ Css.flex (Css.num 1), Css.paddingLeft (Css.px 10), Css.paddingTop (Css.px 10) ] ]
+        [ div [ css [ Tw.flex_1, Tw.pl_4 ] ]
             [ img [ height 27, src "static/logo.svg", alt "github logo" ] []
             ]
-        , ul [ css [ Styles.horizontalUlStyle, Css.flex (Css.num 2) ] ]
-            (horizontalULItems
-                [ viewLink "About" "#about" "_self"
-                , viewLink "Github" "https://github.com/ahmedakef/gotutor" "_blank"
-                , githubSponsorsButton
-                , koFiButton
-                ]
-            )
+        , ul [ css [ Tw.my_0, Tw.list_none, Tw.flex, Tw.items_center, Css.flex (Css.num 2), Tw.gap_5 ] ]
+            [
+                li [ css [ navBarItemsStyle ] ] [ viewLink "About" "#about" "_self" ]
+                , li [ css [ navBarItemsStyle ] ] [ viewLink "Github" "https://github.com/ahmedakef/gotutor" "_blank" ]
+                , li [ ] [ githubSponsorsButton ]
+                , li [ ] [ koFiButton ]
+            ]
         ]
 
 
@@ -259,9 +257,13 @@ koFiButton =
         ]
 
 
-horizontalULItems : List (Html msg) -> List (Html msg)
-horizontalULItems items =
-    List.map (\item -> li [ css [ Styles.horizontalLiStyle ] ] [ item ]) items
+navBarItemsStyle : Css.Style
+navBarItemsStyle =
+    Css.batch
+        [
+            Tw.p_2
+            , Css.hover [ Tw.bg_color Tw.gray_100 ]
+        ]
 
 
 viewLink : String -> String -> String -> Html msg

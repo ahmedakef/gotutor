@@ -332,7 +332,7 @@ varView config v =
                                     []
                                )
                         )
-                    , ul [ css [ Css.listStyleType Css.none ] ] (List.map (varView config) children)
+                    , ul [ css [ Tw.list_none ] ] (List.map (varView config) children)
                     ]
                 ]
 
@@ -351,7 +351,7 @@ varsView config title maybeVars attributes =
                 details (attribute "open" "" :: attributes)
                     [ summary []
                         [ p [ css [ Css.display Css.inline, Tw.text_lg, Css.hover [ Tw.cursor_pointer ] ] ] [ text title ] ]
-                    , ul [ css [ Css.listStyleType Css.none ] ] (List.map (varView config) vars)
+                    , ul [ css [ Tw.list_none ] ] (List.map (varView config) vars)
                     ]
 
 
@@ -501,7 +501,7 @@ stackView config stack =
     else
         details [ attribute "open" "" ]
             [ summary [] [ b [css [ Css.hover [ Tw.cursor_pointer ] ] ] [ text "Stack Frames:" ] ]
-            , ul [ css [ Css.listStyleType Css.none ] ]
+            , ul [ css [ Tw.list_none ] ]
                 (case stack of
                     [] ->
                         []
