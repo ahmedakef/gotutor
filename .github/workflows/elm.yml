@@ -43,6 +43,9 @@ jobs:
       - name: Setup uglifyjs
         run: npm install uglify-js --global
 
+      - name: Setup cleancss
+        run: npm install clean-css-cli --global
+
       - name: Compile to JS
         run: make -C frontend/
 

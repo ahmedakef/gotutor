@@ -1,2 +1,3 @@
 node_modules/*
 src/main.js
+src/style.min.css
