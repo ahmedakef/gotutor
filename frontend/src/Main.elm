@@ -133,7 +133,8 @@ view model =
         body =
             div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.minHeight (Css.vh 100) ] ]
                 [ Styles.globalStyles
-                , header [] [ navigation ]
+                , navigation
+                , heading
                 , Html.map StepsMsg (StepsView.view model.state)
                 , feedback
                 , palastineSupport
@@ -165,6 +166,16 @@ navigation =
                 , li [ ] [ githubSponsorsButton ]
                 , li [ ] [ koFiButton ]
             ]
+        ]
+
+heading : Html msg
+heading =
+    header [ css [ Tw.flex, Css.flexDirection Css.column, Tw.items_center, Css.flex (Css.num 1), Tw.pt_4, Tw.pb_4 ] ]
+        [ div [ css [ Tw.flex, Tw.items_center ] ]
+            [ img [ height 70, src "static/gopher.png", alt "github logo" ] []
+            , h1 [ css [ Tw.text_2xl, Tw.font_bold ] ] [ text "Online Go Debugger & visualizer" ]
+            ]
+        , p [] [ text "It shows the state of all the running Goroutines, the state of each stack frame and can go back in time." ]
         ]
 
 

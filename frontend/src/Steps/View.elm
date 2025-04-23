@@ -25,16 +25,8 @@ view state =
                 visualizeState =
                     stateToVisualize stepsState
             in
-            main_ [ css [ Tw.flex, Css.flexDirection Css.column, Css.flex (Css.num 1), Css.paddingTop (Css.vh 2) ] ]
-                [ div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.alignItems Css.center, Css.paddingBottom (Css.px 20) ] ]
-                    [ div [ css [ Tw.flex, Tw.items_center ] ]
-                        [ img [ height 70, src "static/gopher.png", alt "github logo" ] []
-                        , h1 [ css [ Tw.text_2xl, Tw.font_bold ] ] [ text "Online Go Debugger & visualizer" ]
-                        ]
-                    , p [] [ text "It shows the state of all the running Goroutines, the state of each stack frame and can go back in time." ]
-                    ]
-                , div [ css [ Tw.flex, Tw.flex_wrap, Tw.flex_1 ] ]
-                    [ div [ css [ Tw.flex, Tw.flex_col, Tw.items_center, Tw.flex_1, Tw.pb_4 ] ]
+            main_ [ css [ Tw.flex, Tw.flex_wrap, Tw.flex_1 ] ]
+                [ div [ css [ Tw.flex, Tw.flex_col, Tw.items_center, Tw.flex_1, Tw.pb_4 ] ]
                         [ div [ css [ Tw.flex, Tw.flex_col, Tw.items_center, Tw.w_3over4 ] ]
                             [ div [ css [ Tw.flex, Tw.flex_row, Tw.self_stretch, Tw.self_end, Tw.gap_2 ] ]
                                 [ case stepsState.shareUrl of
@@ -72,7 +64,7 @@ view state =
                         ]
                     , programVisualizer visualizeState
                     ]
-                ]
+
 
         Failure error ->
             main_ [ css [ Css.flex (Css.num 1), Css.displayFlex, Css.justifyContent Css.spaceBetween, Css.alignItems Css.center ] ]
