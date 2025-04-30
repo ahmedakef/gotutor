@@ -204,10 +204,9 @@ pageFooter =
         , css
             [ Css.displayFlex
             , Css.width (Css.pct 100)
-            , Css.borderTop3
-                (Css.px 1)
-                Css.solid
-                (Css.hex "ddd")
+            , Tw.border_t
+            , Tw.border_t_color Tw.gray_300
+            , Css.borderTopStyle Css.solid
             ]
         ]
         [ div

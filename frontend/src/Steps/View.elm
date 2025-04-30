@@ -28,10 +28,10 @@ view state =
             main_ [ css [ Tw.flex, Tw.flex_wrap, Tw.flex_1 ] ]
                 [ div [ css [ Tw.flex, Tw.flex_col, Tw.items_center, Tw.flex_1, Tw.pb_4 ] ]
                         [ div [ css [ Tw.flex, Tw.flex_col, Tw.items_center, Tw.w_3over4 ] ]
-                            [ div [ css [ Tw.flex, Tw.flex_row, Tw.self_stretch, Tw.self_end, Tw.gap_2 ] ]
+                            [ div [ css [ Tw.flex, Tw.flex_row, Tw.items_center ,Tw.self_stretch, Tw.self_end, Tw.gap_2 ] ]
                                 [ case stepsState.shareUrl of
                                     Just url ->
-                                        input [ type_ "text", value url, css [ Tw.w_56, Tw.bg_color Tw.slate_50, Tw.border_color Tw.slate_300 ] ] []
+                                        input [ type_ "text", value url, css [ Tw.w_56,Tw.p_2 , Tw.bg_color Tw.slate_50, borderStyle ] ] []
                                     Nothing ->
                                         input [ type_ "text", hidden True ] []
                                 , button [ onClick Share, css [ buttonStyle ] ] [ text "Share" ]
@@ -535,6 +535,9 @@ frameView config frame =
         [ css
             [ frameBorderStyle
             , Tw.bg_color Tw.stone_200
+            , Css.marginBottom (Css.px 10)
+            , Css.padding (Css.px 10)
+            , Tw.max_w_xl
             ]
         , onMouseEnter (Highlight frame.line)
         , onMouseLeave (Unhighlight frame.line)
@@ -599,7 +602,7 @@ backendStateView state =
                      ]
                         ++ (case state.flashMessage of
                                 Just _ ->
-                                    [ Tw.bg_color Tw.red_500 ]
+                                    [ Tw.bg_color Tw.red_300 ]
 
                                 Nothing ->
                                     []
@@ -615,7 +618,7 @@ exampleSelector =
         [ css
             [ Css.fontSize (Css.rem 0.9)
             , Tw.bg_color Tw.slate_50
-            , Css.border3 (Css.px 1) Css.solid (Css.hex "ddd")
+            , borderStyle
             , Css.padding (Css.px 1)
             ]
         , onInput ExampleSelected
@@ -635,18 +638,20 @@ exampleSelector =
 borderStyle : Css.Style
 borderStyle =
     Css.batch
-        [ Css.border3 (Css.px 1) Css.solid (Css.hex "ddd")
-        , Css.borderRadius (Css.px 3)
+        [ Tw.rounded_md
+        , Tw.border_color Tw.gray_300
+        , Tw.border
+        , Tw.border_solid
         ]
 
 
 frameBorderStyle : Css.Style
 frameBorderStyle =
     Css.batch
-        [ Css.border3 (Css.px 1) Css.solid (Css.hex "ccc")
-        , Css.padding (Css.px 10)
-        , Css.marginBottom (Css.px 10)
-        , Css.borderRadius (Css.px 7)
+        [ Tw.border_color Tw.gray_300
+        , Tw.border
+        , Tw.border_solid
+        , Tw.rounded_md
         ]
 
 
