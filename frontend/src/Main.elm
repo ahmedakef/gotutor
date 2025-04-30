@@ -128,7 +128,7 @@ view : Model -> Browser.Document Msg
 view model =
     let
         title =
-            "Go tutor"
+            "GoTutor | Online Go Debugger & Visualizer"
 
         body =
             div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.minHeight (Css.vh 100) ] ]
