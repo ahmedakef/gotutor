@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"text/template"
 	"time"
 
 	"github.com/ahmedakef/gotutor/backend/src/cache"
@@ -108,8 +107,6 @@ func (c *Controller) GetExecutionSteps(ctx context.Context, sourceCode string) (
 	return response, nil
 }
 
-var playgroundTemplate = template.Must(template.ParseFiles("playground.txt"))
-
 // Compile compiles the given source code
 func (c *Controller) Compile(ctx context.Context, sourceCode string) (*serialize.ExecutionResponse, error) {
 	_, err := c.db.IncrementCallCounter(db.Compile)
@@ -140,21 +137,6 @@ func (c *Controller) Compile(ctx context.Context, sourceCode string) (*serialize
 	if br.errorMessage != "" {
 		return nil, errors.New(removeBanner(br.errorMessage))
 	}
-
-	binary, err := readFileToString(br.exePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read binary: %w", err)
-	}
-
-	file, err := os.Create("playground_output.txt")
-	if err != nil {
-		return nil, fmt.Errorf("failed to create playground output file: %w", err)
-	}
-	defer file.Close()
-
-	playgroundTemplate.Execute(file, map[string]interface{}{
-		"binary": binary,
-	})
 
 	return &serialize.ExecutionResponse{}, nil
 
