@@ -15,6 +15,8 @@ import Steps.Steps exposing (..)
 import SyntaxHighlight as SH
 import Tailwind.Theme as Tw
 import Tailwind.Utilities as Tw
+import Svg
+import Svg.Attributes as SvgAttr
 
 
 view : State -> Html Msg
@@ -27,21 +29,33 @@ view state =
             in
             main_ [ css [ Tw.flex, Tw.flex_wrap, Tw.flex_1 ] ]
                 [ div [ css [ Tw.flex, Tw.flex_col, Tw.items_center, Tw.flex_1, Tw.pb_4 ] ]
-                        [ div [ css [ Tw.flex, Tw.flex_col, Tw.items_center, Tw.w_3over4 ] ]
-                            [ div [ css [ Tw.flex, Tw.flex_row, Tw.items_center ,Tw.self_stretch, Tw.self_end, Tw.gap_2 ] ]
-                                [ case stepsState.shareUrl of
-                                    Just url ->
-                                        input [ type_ "text", value url, css [ Tw.w_56,Tw.p_2 , Tw.bg_color Tw.slate_50, borderStyle ] ] []
-                                    Nothing ->
-                                        input [ type_ "text", hidden True ] []
-                                , button [ onClick Share, css [ buttonStyle ] ] [ text "Share" ]
-                                , button [ onClick Fmt, css [ buttonStyle ] ] [ text "Format" ]
-                                , exampleSelector
-                                ],
-                                p [ css [ Tw.mt_1 ] ] [ text "Press Edit Code or select an example to visualize" ]
+                        [ div [ css [Tw.box_border, Tw.px_2 ,Tw.py_2, Tw.flex, Tw.flex_wrap, Tw.flex_row, Tw.items_center,
+                                Tw.justify_between, Tw.gap_2, Tw.w_3over4, Css.backgroundColor mutedColor, Tw.rounded_t_lg ] ] [
+                            div [css [ Tw.flex, Tw.flex_row, Tw.items_center, Tw.gap_2 ]] ( exampleSelector :: (case visualizeState.mode of
+                                Edit ->
+                                    [ div [ onClick Fmt, css [ secondaryButtonStyle ] ] [
+                                        formatSvg
+                                        , text "Format"
+                                        ]
+                                    ]
+
+                                View ->
+                                    [ case stepsState.shareUrl of
+                                        Just url ->
+                                            input [ type_ "text", value url, css [ Tw.w_56, Tw.p_2, Tw.bg_color Tw.slate_50, borderStyle ] ] []
+                                        Nothing ->
+                                            input [ type_ "text", hidden True ] []
+                                    , div [ onClick Share, css [ secondaryButtonStyle ] ] [
+                                        shareSvg
+                                        , text "Share"
+                                    ]
+                                    ]
+                                _ ->
+                                    []
+                            ) )
+                            , div [] [editOrViewButton visualizeState.mode]
                             ]
                             , codeView visualizeState
-                            , editOrViewButton visualizeState.mode
                             , div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.alignItems Css.center, Css.marginTop (Css.px 10) ] ]
                                 [ div []
                                     [ div [ css [ Tw.pb_4 ] ]
@@ -76,6 +90,64 @@ view state =
                 [ pre [ css [ Css.fontSize (Css.px 20) ] ] [ text "Loading..." ]
                 ]
 
+shareSvg : Html msg
+shareSvg =
+    (Svg.svg
+        [ SvgAttr.width "16"
+        , SvgAttr.height "16"
+        , SvgAttr.viewBox "0 0 24 24"
+        , SvgAttr.fill "none"
+        , SvgAttr.stroke "currentColor"
+        , SvgAttr.strokeWidth "2"
+        , SvgAttr.strokeLinecap "round"
+        , SvgAttr.strokeLinejoin "round"
+        , SvgAttr.class "lucide lucide-share"
+        ]
+        [ Svg.path
+            [ SvgAttr.d "M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"
+            ]
+            []
+        , Svg.polyline
+            [ SvgAttr.points "16 6 12 2 8 6"
+            ]
+            []
+        , Svg.line
+            [ SvgAttr.x1 "12"
+            , SvgAttr.x2 "12"
+            , SvgAttr.y1 "2"
+            , SvgAttr.y2 "15"
+            ]
+            []
+        ]
+    ) |> Html.Styled.fromUnstyled
+
+formatSvg : Html msg
+formatSvg =
+    (Svg.svg
+        [ SvgAttr.width "16"
+        , SvgAttr.height "16"
+        , SvgAttr.viewBox "0 0 24 24"
+        , SvgAttr.fill "none"
+        , SvgAttr.stroke "currentColor"
+        , SvgAttr.strokeWidth "2"
+        , SvgAttr.strokeLinecap "round"
+        , SvgAttr.strokeLinejoin "round"
+        , SvgAttr.class "lucide lucide-align-left"
+        ]
+        [ Svg.path
+            [ SvgAttr.d "M15 12H3"
+            ]
+            []
+        , Svg.path
+            [ SvgAttr.d "M17 18H3"
+            ]
+            []
+        , Svg.path
+            [ SvgAttr.d "M21 6H3"
+            ]
+            []
+        ]
+    ) |> Html.Styled.fromUnstyled
 
 type alias VisualizeState =
     { lastStep : Maybe Step
@@ -232,6 +304,29 @@ wrapCode : String -> String
 wrapCode code =
     "```go\n" ++ code ++ "\n```"
 
+secondaryBackgroundColor : Css.Color
+secondaryBackgroundColor =
+    Css.hsla 210 0.40 0.98 1
+
+secondaryBackgroundColorHover : Css.Color
+secondaryBackgroundColorHover =
+    Css.hsla 210 0.40 0.961 1
+
+mutedColor : Css.Color
+mutedColor =
+    Css.hsla 210 0.40 0.96 1
+
+primaryForegroundColor : Css.Color
+primaryForegroundColor =
+    Css.hsla 210 0.40 0.98 1
+
+primaryBackgroundColor : Css.Color
+primaryBackgroundColor =
+    Css.rgba 0 173 216 1
+
+primaryHoverBackgroundColor : Css.Color
+primaryHoverBackgroundColor =
+    Css.rgba 13 75 115 1
 
 editOrViewButton : Mode -> Html Msg
 editOrViewButton mode =
@@ -239,17 +334,54 @@ editOrViewButton mode =
         bStyle =
             Css.batch
                 [ buttonStyle
-                , Css.marginTop (Css.px 10)
-                , Css.width (Css.rem 20)
-                , Css.height (Css.rem 3)
+                , Css.color primaryForegroundColor
+                , Css.backgroundColor primaryBackgroundColor
+                , Css.hover [ Css.backgroundColor primaryHoverBackgroundColor ]
                 ]
     in
     case mode of
         Edit ->
-            button [ onClick Visualize, css [ bStyle ] ] [ text "Visualize Steps" ]
+            div [ onClick Visualize, css [ bStyle ] ] [
+                (Svg.svg
+                    [ SvgAttr.width "16"
+                    , SvgAttr.height "16"
+                    , SvgAttr.viewBox "0 0 24 24"
+                    , SvgAttr.fill "none"
+                    , SvgAttr.stroke "currentColor"
+                    , SvgAttr.strokeWidth "2"
+                    , SvgAttr.strokeLinecap "round"
+                    , SvgAttr.strokeLinejoin "round"
+                    ]
+                    [ Svg.polygon [ SvgAttr.points "6 3 20 12 6 21 6 3" ] []
+                    ]
+                ) |> Html.Styled.fromUnstyled
+                , text "Visualize Code Execution"
+            ]
 
         View ->
-            button [ onClick EditCode, css [ bStyle ] ] [ text "Edit Code" ]
+            div [ onClick EditCode, css [ bStyle ] ] [
+                (Svg.svg
+                    [ SvgAttr.width "16"
+                    , SvgAttr.height "16"
+                    , SvgAttr.viewBox "0 0 24 24"
+                    , SvgAttr.fill "none"
+                    , SvgAttr.stroke "currentColor"
+                    , SvgAttr.strokeWidth "2"
+                    , SvgAttr.strokeLinecap "round"
+                    , SvgAttr.strokeLinejoin "round"
+                    ]
+                    [ Svg.path
+                        [ SvgAttr.d "M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                        ]
+                        []
+                    , Svg.path
+                        [ SvgAttr.d "M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"
+                        ]
+                        []
+                    ]
+                 ) |> Html.Styled.fromUnstyled
+                , text "Edit Code"
+            ]
 
         WaitingSteps ->
             p [ css [ Css.marginTop (Css.px 10), Css.marginBottom (Css.px 0) ] ] [ text "Waiting for execution steps... ⏳" ]
@@ -619,7 +751,7 @@ exampleSelector =
             [ Css.fontSize (Css.rem 0.9)
             , Tw.bg_color Tw.slate_50
             , borderStyle
-            , Css.padding (Css.px 1)
+            , Tw.py_1
             ]
         , onInput ExampleSelected
         ]
@@ -654,15 +786,28 @@ frameBorderStyle =
         , Tw.rounded_md
         ]
 
+secondaryButtonStyle : Css.Style
+secondaryButtonStyle =
+    Css.batch
+        [ buttonStyle
+        , Css.backgroundColor secondaryBackgroundColor
+        , Css.hover [ Css.backgroundColor secondaryBackgroundColorHover ]
+        ]
 
 buttonStyle : Css.Style
 buttonStyle =
     Css.batch
-        [ Tw.h_7
-        , Tw.min_w_16
-        , Tw.bg_color Tw.gray_200
-        , Css.border2 (Css.px 2) Css.solid
-        , Tw.border_color Tw.cyan_600
+        [ Tw.inline_flex
+        , Tw.items_center
+        , Tw.justify_center
+        , Tw.gap_2
+        , Tw.whitespace_nowrap
+        , Tw.text_sm
+        , Tw.font_medium
+        , Tw.transition_colors
+        , Tw.h_9
+        , Tw.rounded_md
+        , Tw.px_3
         , Css.hover [ Tw.cursor_pointer ]
         ]
 

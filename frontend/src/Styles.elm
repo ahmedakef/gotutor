@@ -12,7 +12,7 @@ import Html.Styled.Attributes exposing (..)
 
 primaryBackgroundColor : Color
 primaryBackgroundColor =
-    hex "FAFAFA"
+    hsla 210 0.40 0.98 1
 
 
 globalStyles : Html msg
