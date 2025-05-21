@@ -1,13 +1,13 @@
 :root {
     --main-bg-color: #007d9c;
-    --slider-track-color: #7fb2eb;
+    --slider-track-color: hsl(195, 58%, 63%);
 }
 
 
 input[type=range] {
     appearance: none;
     background-color: transparent;
-    transform: scale(2.3);
+    transform: scale(2.7);
 }
 
 input[type=range]::-webkit-slider-runnable-track {
@@ -82,6 +82,8 @@ pre.elmsh {
     overflow: hidden;
     width: 75%;
     height: 55vh;
+    border-bottom-left-radius: 0.5rem;
+    border-bottom-right-radius: 0.5rem;
 }
 
 

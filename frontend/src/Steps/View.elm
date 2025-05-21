@@ -29,11 +29,11 @@ view state =
             in
             main_ [ css [ Tw.flex, Tw.flex_wrap, Tw.flex_1 ] ]
                 [ div [ css [ Tw.flex, Tw.flex_col, Tw.items_center, Tw.flex_1, Tw.pb_4 ] ]
-                        [ div [ css [Tw.box_border, Tw.px_2 ,Tw.py_2, Tw.flex, Tw.flex_wrap, Tw.flex_row, Tw.items_center,
+                        [ div [ css [Tw.box_border, borderStyle, Tw.px_2 ,Tw.py_2, Tw.flex, Tw.flex_wrap, Tw.flex_row, Tw.items_center,
                                 Tw.justify_between, Tw.gap_2, Tw.w_3over4, Css.backgroundColor mutedColor, Tw.rounded_t_lg ] ] [
                             div [css [ Tw.flex, Tw.flex_row, Tw.items_center, Tw.gap_2 ]] ( exampleSelector :: (case visualizeState.mode of
                                 Edit ->
-                                    [ div [ onClick Fmt, css [ secondaryButtonStyle ] ] [
+                                    [ div [ onClick Fmt, css [ secondaryButtonStyle, borderStyle ] ] [
                                         formatSvg
                                         , text "Format"
                                         ]
@@ -45,7 +45,7 @@ view state =
                                             input [ type_ "text", value url, css [ Tw.w_56, Tw.p_2, Tw.bg_color Tw.slate_50, borderStyle ] ] []
                                         Nothing ->
                                             input [ type_ "text", hidden True ] []
-                                    , div [ onClick Share, css [ secondaryButtonStyle ] ] [
+                                    , div [ onClick Share, css [ secondaryButtonStyle, borderStyle ] ] [
                                         shareSvg
                                         , text "Share"
                                     ]
@@ -56,9 +56,18 @@ view state =
                             , div [] [editOrViewButton visualizeState.mode]
                             ]
                             , codeView visualizeState
-                            , div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.alignItems Css.center, Css.marginTop (Css.px 10) ] ]
-                                [ div []
-                                    [ div [ css [ Tw.pb_4 ] ]
+                            , div [ css [ Css.displayFlex, Css.flexDirection Css.column, Tw.box_border
+                                    ,Tw.bg_color Tw.white, Tw.p_4, borderStyle, Tw.rounded_lg, Tw.mt_4, Tw.w_3over4 ] ]
+                                [ div [ css [ Tw.flex, Tw.flex_row, Tw.items_center, Tw.gap_2, Tw.justify_between ] ]
+                                    [ div [ css [ Tw.text_color Tw.gray_500 ] ]
+                                        [ text ("Step " ++ String.fromInt stepsState.position ++ " of " ++ (List.length stepsState.executionResponse.steps |> String.fromInt))
+                                        ]
+                                    , div [] [
+                                        div [ onClick Prev, css [ secondaryButtonStyle, borderStyle, Tw.mr_4 ] ] [ previousSvg ]
+                                        , div [ onClick Next, css [ secondaryButtonStyle, borderStyle, Tw.ml_4 ] ] [ nextSvg ]
+                                    ]
+                                    ]
+                                    , div [ css [ Tw.flex, Tw.justify_center, Tw.mt_4 ] ]
                                         [ input
                                             [ type_ "range"
                                             , Html.Styled.Attributes.min "1"
@@ -68,12 +77,6 @@ view state =
                                             ]
                                             []
                                         ]
-                                    , button [ onClick Prev, css [ buttonStyle, Tw.mr_4 ] ] [ text "< Prev" ]
-                                    , button [ onClick Next, css [ buttonStyle, Tw.ml_4 ] ] [ text "Next >" ]
-                                    ]
-                                , div [ css [ Css.margin2 (Css.px 10) (Css.px 0) ] ]
-                                    [ text ("Step " ++ String.fromInt stepsState.position ++ " of " ++ (List.length stepsState.executionResponse.steps |> String.fromInt))
-                                    ]
                                 ]
                         ]
                     , programVisualizer visualizeState
@@ -90,6 +93,45 @@ view state =
                 [ pre [ css [ Css.fontSize (Css.px 20) ] ] [ text "Loading..." ]
                 ]
 
+nextSvg : Html msg
+nextSvg =
+    (Svg.svg
+        [ SvgAttr.width "24"
+        , SvgAttr.height "24"
+        , SvgAttr.viewBox "0 0 24 24"
+        , SvgAttr.fill "none"
+        , SvgAttr.stroke "currentColor"
+        , SvgAttr.strokeWidth "2"
+        , SvgAttr.strokeLinecap "round"
+        , SvgAttr.strokeLinejoin "round"
+        , SvgAttr.class "lucide lucide-chevron-right h-4 w-4"
+        ]
+        [ Svg.path
+            [ SvgAttr.d "m9 18 6-6-6-6"
+            ]
+            []
+        ]
+    ) |> Html.Styled.fromUnstyled
+
+previousSvg : Html msg
+previousSvg =
+    (Svg.svg
+        [ SvgAttr.width "24"
+        , SvgAttr.height "24"
+        , SvgAttr.viewBox "0 0 24 24"
+        , SvgAttr.fill "none"
+        , SvgAttr.stroke "currentColor"
+        , SvgAttr.strokeWidth "2"
+        , SvgAttr.strokeLinecap "round"
+        , SvgAttr.strokeLinejoin "round"
+        , SvgAttr.class "lucide lucide-chevron-left h-4 w-4"
+        ]
+        [ Svg.path
+            [ SvgAttr.d "m15 18-6-6 6-6"
+            ]
+            []
+        ]
+    ) |> Html.Styled.fromUnstyled
 shareSvg : Html msg
 shareSvg =
     (Svg.svg
@@ -334,6 +376,7 @@ editOrViewButton mode =
         bStyle =
             Css.batch
                 [ buttonStyle
+                , borderStyle
                 , Css.color primaryForegroundColor
                 , Css.backgroundColor primaryBackgroundColor
                 , Css.hover [ Css.backgroundColor primaryHoverBackgroundColor ]
@@ -752,6 +795,7 @@ exampleSelector =
             , Tw.bg_color Tw.slate_50
             , borderStyle
             , Tw.py_1
+            , Tw.rounded_md
             ]
         , onInput ExampleSelected
         ]
@@ -770,8 +814,7 @@ exampleSelector =
 borderStyle : Css.Style
 borderStyle =
     Css.batch
-        [ Tw.rounded_md
-        , Tw.border_color Tw.gray_300
+        [ Tw.border_color Tw.gray_300
         , Tw.border
         , Tw.border_solid
         ]
