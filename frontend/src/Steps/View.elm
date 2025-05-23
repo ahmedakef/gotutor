@@ -652,10 +652,10 @@ goroutineInfoView goroutineData =
     let
         gInfo =
             if goroutineData.goroutine.id == 1 then
-                "Main Goroutine: 1"
+                "Main Goroutine #1"
 
             else
-                "Goroutine: " ++ String.fromInt goroutineData.goroutine.id
+                "Goroutine #" ++ String.fromInt goroutineData.goroutine.id
     in
     div
         [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.alignItems Css.center, Css.marginBottom (Css.px 10) ] ]
@@ -711,7 +711,7 @@ frameView config frame =
     div
         [ css
             [ frameBorderStyle
-            , Tw.bg_color Tw.stone_200
+            , Tw.bg_color Tw.gray_100
             , Css.marginBottom (Css.px 10)
             , Css.padding (Css.px 10)
             , Tw.max_w_xl
