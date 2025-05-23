@@ -30,7 +30,7 @@ view state =
             main_ [ css [ Tw.flex, Tw.flex_wrap, Tw.flex_1 ] ]
                 [ div [ css [ Tw.flex, Tw.flex_col, Tw.items_center, Tw.flex_1, Tw.pb_4 ] ]
                         [ div [ css [Tw.box_border, borderStyle, Tw.px_2 ,Tw.py_2, Tw.flex, Tw.flex_wrap, Tw.flex_row, Tw.items_center,
-                                Tw.justify_between, Tw.gap_2, Tw.w_3over4, Css.backgroundColor mutedColor, Tw.rounded_t_lg ] ] [
+                                Tw.justify_between, Tw.gap_2, Css.width (Css.pct 85), Css.backgroundColor mutedColor, Tw.rounded_t_lg ] ] [
                             div [css [ Tw.flex, Tw.flex_row, Tw.items_center, Tw.gap_2 ]] ( exampleSelector :: (case visualizeState.mode of
                                 Edit ->
                                     [ div [ onClick Fmt, css [ secondaryButtonStyle, borderStyle ] ] [
@@ -57,7 +57,7 @@ view state =
                             ]
                             , codeView visualizeState
                             , div [ css [ Css.displayFlex, Css.flexDirection Css.column, Tw.box_border
-                                    ,Tw.bg_color Tw.white, Tw.p_4, borderStyle, Tw.rounded_lg, Tw.mt_4, Tw.w_3over4 ] ]
+                                    ,Tw.bg_color Tw.white, Tw.p_4, borderStyle, Tw.rounded_lg, Tw.mt_4, Css.width (Css.pct 85) ] ]
                                 [ div [ css [ Tw.flex, Tw.flex_row, Tw.items_center, Tw.gap_2, Tw.justify_between ] ]
                                     [ div [ css [ Tw.text_color Tw.gray_500 ] ]
                                         [ text ("Step " ++ String.fromInt stepsState.position ++ " of " ++ (List.length stepsState.executionResponse.steps |> String.fromInt))
