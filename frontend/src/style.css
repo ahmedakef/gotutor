@@ -62,8 +62,9 @@ pre.elmsh {
     margin: 0;
     text-align: left;
 }
-
-
+.elmsh-line:hover {
+    background-color: rgb(241, 245, 249);
+}
 .elmsh-line:before {
     content: attr(data-elmsh-lc);
     display: inline-block;
@@ -73,7 +74,15 @@ pre.elmsh {
     opacity: 0.3;
 }
 
+.elmsh-add:before {
+    content: "▶";
+    opacity: 0.5;
+}
 
+.elmsh-hl:before {
+    content: "🔥";
+    opacity: 0.5;
+}
 
 /* text area style */
 
@@ -88,10 +97,10 @@ pre.elmsh {
 
 
 .code-style {
-    font-size: 0.8rem;
-    line-height: 1.2;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
     tab-size: 5;
-    font-family: monospace;
+    font-family: JetBrains Mono,monospace;
     letter-spacing: normal;
     word-spacing: normal;
     padding: 0;
