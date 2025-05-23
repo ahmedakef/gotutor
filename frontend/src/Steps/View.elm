@@ -613,7 +613,9 @@ goroutinesView config goroutinesData =
     in
     details [ attribute "open" "", css [ Css.marginTop (Css.px 10) ] ]
         [ summary [css [Tw.mb_5]]
-            [ p [ css [ Css.display Css.inline, Css.fontSize (Css.rem 1.3), Css.hover [ Tw.cursor_pointer ] ] ] [ text "Running Goroutines:" ] ]
+            [ p [ css [ Css.display Css.inline, Css.fontSize (Css.rem 1.3), Css.hover [ Tw.cursor_pointer ] ] ] [
+                text <| "Running Goroutines (" ++ String.fromInt (List.length goroutines) ++ ")"
+            ] ]
         , note
         , div
             [ css
@@ -668,7 +670,7 @@ stackView config stack =
     else
         details [ attribute "open" "" ]
             [ summary [] [ b [css [ Css.hover [ Tw.cursor_pointer ] ] ] [ text "Stack Frames:" ] ]
-            , ul [ css [ Tw.list_none ] ]
+            , ul [ css [ Tw.list_none, Tw.ps_0 ] ]
                 (case stack of
                     [] ->
                         []
@@ -713,6 +715,7 @@ frameView config frame =
             , Css.marginBottom (Css.px 10)
             , Css.padding (Css.px 10)
             , Tw.max_w_xl
+            , Tw.min_w_64
             ]
         , onMouseEnter (Highlight frame.line)
         , onMouseLeave (Unhighlight frame.line)
