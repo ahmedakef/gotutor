@@ -1,0 +1,5 @@
+{
+    "live-restore": true,
+    "storage-driver": "overlay2",
+    "runtimes": { "runsc": { "path": "/var/lib/docker/runsc", "runtimeArgs": [] } }
+}

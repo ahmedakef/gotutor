@@ -15,7 +15,13 @@ faketime:
 	mkdir -p ~/gocache
 	GOCACHE=~/gocache /usr/local/go-faketime/bin/go install --tags=faketime std
 
-deploy: faketime build
+gVisor:
+	sudo mv deployment/docker_daemon.json /etc/docker/daemon.json
+	sudo curl -L -o /var/lib/docker/runsc https://storage.googleapis.com/gvisor/releases/release/latest/x86_64/runsc
+	sudo chmod +x /var/lib/docker/runsc
+	sudo systemctl reload docker.service
+
+deploy: faketime gVisor build
 	sudo cp deployment/nginx/nginx.conf /etc/nginx/nginx.conf
 	sudo cp deployment/nginx/sites-enabled/gotutor.conf /etc/nginx/sites-enabled/gotutor.conf
 	sudo cp deployment/systemd/system/gotutor.service /etc/systemd/system/gotutor.service
