@@ -22,3 +22,4 @@ deploy: faketime build
 	sudo systemctl daemon-reload
 	sudo systemctl enable nginx
 	sudo systemctl restart gotutor
+	# check the logs with sudo journalctl -u gotutor.service -n 10 -f
