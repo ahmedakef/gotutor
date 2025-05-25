@@ -1,7 +1,7 @@
 # Docker environment for the sandbox server itself (containing docker CLI, etc), running
 # in a privileged container.
 build:
-	docker build -f Dockerfile --tag=ahmedakef/gotutor-sandbox ../..
+	docker build -f Dockerfile --tag=ahmedakef/gotutor-sandbox .
 	docker tag ahmedakef/gotutor-sandbox ahmedakef/gotutor-sandbox:latest
 
 # dockergvisor builds the golang/playground-sandbox-gvisor docker

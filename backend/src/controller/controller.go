@@ -132,12 +132,23 @@ func (c *Controller) Compile(ctx context.Context, sourceCode string) (*serialize
 
 	br, err := c.sandboxBuild(ctx, tmpDir, []byte(sourceCode), false)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to build: %w", err)
 	}
 	if br.errorMessage != "" {
 		return nil, errors.New(removeBanner(br.errorMessage))
 	}
 
-	return &serialize.ExecutionResponse{}, nil
+	execRes, err := c.sandboxRun(ctx, br.exePath, br.testParam)
+	if err != nil {
+		return nil, err
+	}
+	if execRes.Error != "" {
+		return nil, errors.New(execRes.Error)
+	}
 
+	return &serialize.ExecutionResponse{
+		Steps:  nil,
+		StdOut: string(execRes.Stdout),
+		StdErr: string(execRes.Stderr),
+	}, nil
 }

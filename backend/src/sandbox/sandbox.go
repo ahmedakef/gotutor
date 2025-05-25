@@ -29,6 +29,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/ahmedakef/gotutor/backend/src/sandbox/sandboxtypes"
 )
 
 var (
@@ -339,7 +341,6 @@ func runInGvisor() {
 		}
 	}
 	os.Exit(errExitCode(err))
-	return
 }
 
 func makeWorkers() {
@@ -584,7 +585,7 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 		logf("finished running; about to close container")
 		cancel()
 	}
-	res := &Response{}
+	res := &sandboxtypes.Response{}
 	if err != nil {
 		if c.stderr.n < 0 || c.stdout.n < 0 {
 			// Do not send truncated output, just send the error.
@@ -677,10 +678,10 @@ func errExitCode(err error) int {
 }
 
 func sendError(w http.ResponseWriter, errMsg string) {
-	sendResponse(w, &Response{Error: errMsg})
+	sendResponse(w, &sandboxtypes.Response{Error: errMsg})
 }
 
-func sendResponse(w http.ResponseWriter, r *Response) {
+func sendResponse(w http.ResponseWriter, r *sandboxtypes.Response) {
 	jres, err := json.MarshalIndent(r, "", "  ")
 	if err != nil {
 		http.Error(w, "error encoding JSON", http.StatusInternalServerError)
@@ -700,16 +701,6 @@ func cleanStderr(x []byte) []byte {
 		return x
 	}
 	return x[i+len(containedStderrHeader):]
-}
-
-type Response struct {
-	// Error, if non-empty, means we failed to run the binary.
-	// It's meant to be user-visible.
-	Error string `json:"error,omitempty"`
-
-	ExitCode int    `json:"exitCode"`
-	Stdout   []byte `json:"stdout"`
-	Stderr   []byte `json:"stderr"`
 }
 
 // WaitOrStop waits for the already-started command cmd by calling its Wait method.

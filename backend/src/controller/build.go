@@ -56,6 +56,11 @@ func (c *Controller) sandboxBuild(ctx context.Context, tmpDir string, in []byte,
 	if err != nil {
 		return &buildResult{errorMessage: err.Error()}, nil
 	}
+	c.logger.Info().Msgf("in len: %v", len(in))
+	c.logger.Info().Msgf("files count: %d", len(files.Map()))
+	for f := range files.Map() {
+		c.logger.Info().Msgf("file: %s", f)
+	}
 
 	br = new(buildResult)
 	defer br.cleanup()
@@ -93,6 +98,7 @@ func (c *Controller) sandboxBuild(ctx context.Context, tmpDir string, in []byte,
 				return nil, err
 			}
 		}
+		c.logger.Info().Msgf("writing file %q", in)
 		if err := os.WriteFile(in, src, 0644); err != nil {
 			return nil, fmt.Errorf("error creating temp file %q: %v", in, err)
 		}

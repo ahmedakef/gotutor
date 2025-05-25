@@ -12,7 +12,7 @@ WORKDIR /go/src/playground
 RUN go mod download
 
 COPY . /go/src/playground
-WORKDIR /go/src/playground/src/sandbox
+WORKDIR /go/src/playground
 RUN go install
 
 FROM debian:bookworm
