@@ -406,7 +406,7 @@ func getContainer(ctx context.Context) (*Container, error) {
 	}
 }
 
-func startContainer(ctx context.Context) (c *Container, err error) {
+func startContainer(ctx context.Context) (*Container, error) {
 
 	name := "play_run_" + randHex(8)
 	setContainerWanted(name, true)
@@ -436,7 +436,7 @@ func startContainer(ctx context.Context) (c *Container, err error) {
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
-	c = &Container{
+	c := &Container{
 		name:      name,
 		stdin:     stdin,
 		stdout:    stdout,
@@ -479,6 +479,10 @@ func startContainer(ctx context.Context) (c *Container, err error) {
 	case err := <-startErr:
 		if err != nil {
 			return nil, err
+		}
+	case err := <-c.waitErr:
+		if err != nil {
+			return nil, fmt.Errorf("%w: %v", err, c.stderr.dst.String())
 		}
 	}
 
