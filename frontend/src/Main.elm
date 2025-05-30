@@ -192,7 +192,7 @@ feedback =
 palastineSupport : Html msg
 palastineSupport =
     div [ css [ Tw.flex, Tw.justify_center, Tw.mt_5 ] ]
-        [ a [ href "https://gaza-city.ensany.com/campaign/6737?lang=en", target "_blank" ]
+        [ a [ href "https://humanappeal.org.uk/appeals/gaza-emergency-appeal", target "_blank" ]
             [ img [ src "https://raw.githubusercontent.com/Safouene1/support-palestine-banner/master/banner-support.svg", alt "palastine logo" ] []
             ]
         ]
