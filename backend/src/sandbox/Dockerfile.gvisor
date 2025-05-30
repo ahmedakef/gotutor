@@ -14,5 +14,6 @@ FROM ahmedakef/gotutor-sandbox AS server
 FROM busybox:glibc
 
 COPY --from=server /usr/local/bin/play-sandbox /usr/local/bin/play-sandbox
+COPY --from=server /usr/local/bin/gotutor /usr/local/bin/gotutor
 
 ENTRYPOINT ["/usr/local/bin/play-sandbox"]

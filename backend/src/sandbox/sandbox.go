@@ -299,6 +299,7 @@ type processMeta struct {
 // it.
 func runInGvisor() {
 	const binPath = "/tmpfs/play"
+	const gotutorPath = "/usr/local/bin/gotutor"
 	if _, err := io.WriteString(os.Stdout, containedStartMessage); err != nil {
 		log.Fatalf("writing to stdout: %v", err)
 	}
@@ -326,7 +327,11 @@ func runInGvisor() {
 		log.Fatalf("writing header to stderr: %v", err)
 	}
 
-	cmd := exec.Command(binPath)
+	err = os.Mkdir("output", 0755)
+	if err != nil {
+		log.Fatalf("error creating output directory: %v", err)
+	}
+	cmd := exec.Command(gotutorPath, "exec", binPath)
 	cmd.Args = append(cmd.Args, meta.Args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

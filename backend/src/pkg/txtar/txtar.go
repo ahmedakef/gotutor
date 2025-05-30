@@ -18,7 +18,7 @@ const (
 
 	// ProgName is the implicit program name written to the temp
 	// dir and used in compiler and vet errors.
-	ProgName     = "prog.go"
+	ProgName     = "main.go"
 	ProgTestName = "prog_test.go"
 )
 
@@ -27,7 +27,7 @@ const (
 type FileSet struct {
 	Files    []string          // filenames in user-provided order
 	m        map[string][]byte // filename -> source
-	noHeader bool              // whether the prog.go entry was implicit
+	noHeader bool              // whether the main.go entry was implicit
 }
 
 // Map returns the map of files in the set.
@@ -102,9 +102,9 @@ func (fs *FileSet) Format() []byte {
 // files, splitting it based on boundaries as specified by the "txtar"
 // format. It returns an error if any filenames are bogus or
 // duplicates. The implicit filename for the txtar comment (the lines
-// before any txtar separator line) are named "prog.go". It is an
-// error to have an explicit file named "prog.go" in addition to
-// having the implicit "prog.go" file (non-empty comment section).
+// before any txtar separator line) are named "main.go". It is an
+// error to have an explicit file named "main.go" in addition to
+// having the implicit "main.go" file (non-empty comment section).
 //
 // The filenames are validated to only be relative paths, not too
 // long, not too deep, not have ".." elements, not have backslashes or

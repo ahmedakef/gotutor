@@ -6,6 +6,9 @@
 
 FROM golang:1.24 AS build
 
+# Install gotutor-sandbox
+RUN go install github.com/ahmedakef/gotutor@latest
+
 COPY go.mod /go/src/playground/go.mod
 COPY go.sum /go/src/playground/go.sum
 WORKDIR /go/src/playground
@@ -39,5 +42,6 @@ RUN apt-get update
 RUN apt-get install --yes docker-ce-cli
 
 COPY --from=build /go/bin/sandbox /usr/local/bin/play-sandbox
+COPY --from=build /go/bin/gotutor /usr/local/bin/gotutor
 
 ENTRYPOINT ["/usr/local/bin/play-sandbox"]
