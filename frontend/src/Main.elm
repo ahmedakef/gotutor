@@ -135,8 +135,8 @@ view model =
                 [ Styles.globalStyles
                 , navigation
                 , heading
-                , Html.map StepsMsg (StepsView.view model.state)
                 , feedback
+                , Html.map StepsMsg (StepsView.view model.state)
                 , palastineSupport
                 , pageFooter
                 ]
@@ -170,7 +170,7 @@ navigation =
 
 heading : Html msg
 heading =
-    header [ css [ Tw.flex, Css.flexDirection Css.column, Tw.items_center, Css.flex (Css.num 1), Tw.pt_4, Tw.pb_4 ] ]
+    header [ css [ Tw.flex, Css.flexDirection Css.column, Tw.items_center, Css.flex (Css.num 1), Tw.mt_2, Tw.mb_2 ] ]
         [ div [ css [ Tw.flex, Tw.items_center ] ]
             [ img [ height 70, src "static/gopher.png", alt "github logo" ] []
             , h1 [ css [ Tw.text_2xl, Tw.font_bold ] ] [ text "Online Go Debugger & Visualizer" ]
@@ -181,7 +181,7 @@ heading =
 
 feedback : Html msg
 feedback =
-    div [ css [ Tw.flex, Tw.justify_center, Tw.mt_5 ] ]
+    div [ css [ Tw.flex, Tw.ml_10 ] ]
         [
             p [] [ text "Your feedback matters, please share your thoughts and suggestions" ]
             , a [css [ Tw.ml_1] , href "https://github.com/ahmedakef/gotutor/issues", target "_blank" ]
