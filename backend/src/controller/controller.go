@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -146,9 +147,30 @@ func (c *Controller) Compile(ctx context.Context, sourceCode string) (*serialize
 		return nil, errors.New(execRes.Error)
 	}
 
+	rec := new(Recorder)
+	rec.Stdout().Write(execRes.Stdout)
+	rec.Stderr().Write(execRes.Stderr)
+	events, err := rec.Events()
+	if err != nil {
+		log.Printf("error decoding events: %v", err)
+		return nil, fmt.Errorf("error decoding events: %v", err)
+	}
+
+	stdout, stderr := convertEventsToStdoutStderr(events)
 	return &serialize.ExecutionResponse{
 		Steps:  nil,
-		StdOut: string(execRes.Stdout),
-		StdErr: string(execRes.Stderr),
+		StdOut: stdout,
+		StdErr: stderr,
 	}, nil
+}
+
+func convertEventsToStdoutStderr(events []Event) (stdout, stderr string) {
+	for _, event := range events {
+		if event.Kind == "stdout" {
+			stdout += event.Message
+		} else if event.Kind == "stderr" {
+			stderr += event.Message
+		}
+	}
+	return stdout, stderr
 }
