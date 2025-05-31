@@ -9,13 +9,13 @@ FROM golang:1.24 AS build
 # Install gotutor-sandbox
 RUN go install github.com/ahmedakef/gotutor@latest
 
-COPY go.mod /go/src/playground/go.mod
-COPY go.sum /go/src/playground/go.sum
-WORKDIR /go/src/playground
+COPY go.mod /go/src/sandbox/go.mod
+COPY go.sum /go/src/sandbox/go.sum
+WORKDIR /go/src/sandbox
 RUN go mod download
 
-COPY . /go/src/playground
-WORKDIR /go/src/playground
+COPY . /go/src/sandbox
+WORKDIR /go/src/sandbox
 RUN go install
 
 FROM debian:bookworm
@@ -23,7 +23,7 @@ FROM debian:bookworm
 RUN apt-get update
 
 # Extra stuff for occasional debugging:
-RUN apt-get install --yes strace lsof emacs-nox net-tools tcpdump procps
+# RUN apt-get install --yes strace lsof emacs-nox net-tools tcpdump procps
 
 # Install Docker CLI:
 # Add Docker's official GPG key:

@@ -25,6 +25,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"runtime"
 	"sync"
 	"syscall"
@@ -43,10 +44,11 @@ var (
 
 const (
 	maxBinarySize    = 100 << 20
-	startTimeout     = 30 * time.Second
-	runTimeout       = 5 * time.Second
+	startTimeout     = 40 * time.Second
+	runTimeout       = 25 * time.Second
 	maxOutputSize    = 100 << 20
 	memoryLimitBytes = 100 << 20
+	binarySeparator  = "binarySeparator"
 )
 
 var (
@@ -87,7 +89,7 @@ func (c *Container) Close() {
 
 	c.cancelCmd()
 	if err := c.Wait(); err != nil {
-		log.Printf("error in c.Wait() for %q: %v", c.name, err)
+		log.Printf("error in c.Wait() for %q: %v, stderr: %s, stdout: %s", c.name, err, c.stderr.dst.String(), c.stdout.dst.String())
 	}
 }
 
@@ -311,12 +313,28 @@ func runInGvisor() {
 	if nl == -1 {
 		log.Fatalf("no newline found in input")
 	}
-	metaJSON, bin := slurp[:nl], slurp[nl+1:]
+	metaJSON, buildLocAndMainDotGoAndBin := slurp[:nl], slurp[nl+1:]
+
+	nl = bytes.IndexByte(buildLocAndMainDotGoAndBin, '\n')
+	buildLoc := buildLocAndMainDotGoAndBin[:nl]
+	mainDotGoAndBin := buildLocAndMainDotGoAndBin[nl+1:]
+
+	nl = bytes.Index(mainDotGoAndBin, []byte(binarySeparator))
+	mainDotGo := mainDotGoAndBin[:nl]
+	bin := mainDotGoAndBin[nl+len(binarySeparator):]
 
 	if err := os.WriteFile(binPath, bin, 0755); err != nil {
 		log.Fatalf("writing contained binary: %v", err)
 	}
+
+	mainDotGoPath := filepath.Join(string(buildLoc), "main.go")
+	os.MkdirAll(string(buildLoc), 0755)
+	if err := os.WriteFile(mainDotGoPath, mainDotGo, 0644); err != nil {
+		log.Fatalf("writing contained main.go: %v", err)
+	}
+
 	defer os.Remove(binPath) // not that it matters much, this container will be nuked
+	defer os.Remove(mainDotGoPath)
 
 	var meta processMeta
 	if err := json.NewDecoder(bytes.NewReader(metaJSON)).Decode(&meta); err != nil {
@@ -340,11 +358,17 @@ func runInGvisor() {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), runTimeout-500*time.Millisecond)
 	defer cancel()
-	if err = WaitOrStop(ctx, cmd, os.Interrupt, 250*time.Millisecond); err != nil {
+	if err = WaitOrStop(ctx, cmd, os.Interrupt, 3*time.Second); err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			fmt.Fprintln(os.Stderr, "timeout running program")
 		}
 	}
+	stepsFile, err := os.Open("output/steps.json")
+	if err != nil {
+		log.Fatalf("error opening steps.json: %v", err)
+	}
+	defer stepsFile.Close()
+	io.Copy(cmd.Stdout, stepsFile)
 	os.Exit(errExitCode(err))
 }
 
@@ -528,13 +552,15 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer func() { <-runSem }()
 
-	bin, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxBinarySize))
-	if err != nil {
-		log.Printf("failed to read request body: %v", err)
+	body := http.MaxBytesReader(w, r.Body, maxBinarySize)
+	request := &sandboxtypes.Request{}
+	if err := json.NewDecoder(body).Decode(request); err != nil {
+		log.Printf("failed to decode request: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	logf("read %d bytes", len(bin))
+
+	logf("read %d bytes", len(request.Binary))
 
 	c, err := getContainer(r.Context())
 	if err != nil {
@@ -572,11 +598,24 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unknown error during docker run", http.StatusInternalServerError)
 		return
 	}
-	if _, err := c.stdin.Write(bin); err != nil {
+	buildLoc := append([]byte(request.BuildLoc), '\n')
+	if _, err := c.stdin.Write(buildLoc); err != nil {
+		log.Printf("failed to write build loc to child: %v", err)
+		http.Error(w, "unknown error during docker run", http.StatusInternalServerError)
+		return
+	}
+	mainDotGo := append(request.MainDotGo, binarySeparator...)
+	if _, err := c.stdin.Write(mainDotGo); err != nil {
+		log.Printf("failed to write main.go to child: %v", err)
+		http.Error(w, "unknown error during docker run", http.StatusInternalServerError)
+		return
+	}
+	if _, err := c.stdin.Write(request.Binary); err != nil {
 		log.Printf("failed to write binary to child: %v", err)
 		http.Error(w, "unknown error during docker run", http.StatusInternalServerError)
 		return
 	}
+
 	c.stdin.Close()
 	logf("wrote+closed")
 	err = c.Wait()
@@ -604,8 +643,7 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		res.ExitCode = ee.ExitCode()
 	}
-	res.Stdout = c.stdout.dst.Bytes()
-	res.Stderr = cleanStderr(c.stderr.dst.Bytes())
+	res.ExecutionSteps = c.stdout.dst.Bytes()
 	sendResponse(w, res)
 }
 

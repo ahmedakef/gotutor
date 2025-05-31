@@ -5,10 +5,12 @@ import (
 )
 
 type ExecutionResponse struct {
-	Steps    []Step `json:"steps"`
-	Duration string `json:"duration"`
-	StdOut   string `json:"stdout"`
-	StdErr   string `json:"stderr"`
+	Steps       []Step `json:"steps"`
+	Duration    string `json:"duration"`
+	StdOut      string `json:"stdout"`
+	StdErr      string `json:"stderr"`
+	StdOutBytes []byte `json:"stdoutBytes"`
+	StdErrBytes []byte `json:"stderrBytes"`
 }
 
 type GoRoutineData struct {

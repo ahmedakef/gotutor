@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"strings"
 	"time"
 
 	"github.com/ahmedakef/gotutor/backend/src/cache"
@@ -93,13 +92,14 @@ func (c *Controller) GetExecutionSteps(ctx context.Context, sourceCode string) (
 		return serialize.ExecutionResponse{}, errors.New(outputSanitized)
 	}
 
-	stepsStr, err := readFileToString(fmt.Sprintf("%s/steps.json", tmpDir))
+	stepsFile, err := os.Open(fmt.Sprintf("%s/steps.json", tmpDir))
 	if err != nil {
 		return serialize.ExecutionResponse{}, fmt.Errorf("failed to read output file: %w, dockerOut: %s", err, string(dockerOut))
 	}
+	defer stepsFile.Close()
 	// decode the output
 	var response serialize.ExecutionResponse
-	err = json.NewDecoder(strings.NewReader(stepsStr)).Decode(&response)
+	err = json.NewDecoder(stepsFile).Decode(&response)
 	if err != nil {
 		return serialize.ExecutionResponse{}, fmt.Errorf("failed to decode output: %w", err)
 	}
@@ -139,17 +139,24 @@ func (c *Controller) Compile(ctx context.Context, sourceCode string) (*serialize
 		return nil, errors.New(removeBanner(br.errorMessage))
 	}
 
-	execRes, err := c.sandboxRun(ctx, br.exePath, br.testParam)
+	br.goPath = tmpDir // temporary workaround to get the source code path
+	runRes, err := c.sandboxRun(ctx, br, br.testParam)
 	if err != nil {
 		return nil, err
 	}
-	if execRes.Error != "" {
-		return nil, errors.New(execRes.Error)
+	if runRes.Error != "" {
+		return nil, errors.New(runRes.Error)
+	}
+	var execRes serialize.ExecutionResponse
+	err = json.Unmarshal(runRes.ExecutionSteps, &execRes)
+	if err != nil {
+		c.logger.Error().Err(err).Msg(string(runRes.ExecutionSteps))
+		return nil, fmt.Errorf("failed to unmarshal execution steps: %w", err)
 	}
 
 	rec := new(Recorder)
-	rec.Stdout().Write(execRes.Stdout)
-	rec.Stderr().Write(execRes.Stderr)
+	rec.Stdout().Write(execRes.StdOutBytes)
+	rec.Stderr().Write(execRes.StdErrBytes)
 	events, err := rec.Events()
 	if err != nil {
 		log.Printf("error decoding events: %v", err)
@@ -158,9 +165,10 @@ func (c *Controller) Compile(ctx context.Context, sourceCode string) (*serialize
 
 	stdout, stderr := convertEventsToStdoutStderr(events)
 	return &serialize.ExecutionResponse{
-		Steps:  nil,
-		StdOut: stdout,
-		StdErr: stderr,
+		Steps:    execRes.Steps,
+		Duration: execRes.Duration,
+		StdOut:   stdout,
+		StdErr:   stderr,
 	}, nil
 }
 

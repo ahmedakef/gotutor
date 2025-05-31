@@ -63,19 +63,21 @@ func (v *Serializer) ExecutionSteps(ctx context.Context, limit int) (ExecutionRe
 			break
 		}
 	}
-	stdout, err := readFileToString("output/stdout.log")
+	stdout, err := os.ReadFile("output/stdout.log")
 	if err != nil {
-		return ExecutionResponse{}, fmt.Errorf("readFileToString: %w", err)
+		return ExecutionResponse{}, fmt.Errorf("read stdout: %w", err)
 	}
-	stderr, err := readFileToString("output/stderr.log")
+	stderr, err := os.ReadFile("output/stderr.log")
 	if err != nil {
-		return ExecutionResponse{}, fmt.Errorf("readFileToString: %w", err)
+		return ExecutionResponse{}, fmt.Errorf("read stderr: %w", err)
 	}
 	return ExecutionResponse{
-		Steps:    allSteps,
-		Duration: time.Since(start).String(),
-		StdOut:   stdout,
-		StdErr:   stderr,
+		Steps:       allSteps,
+		Duration:    time.Since(start).String(),
+		StdOut:      string(stdout),
+		StdErr:      string(stderr),
+		StdOutBytes: stdout,
+		StdErrBytes: stderr,
 	}, nil
 }
 
@@ -371,12 +373,4 @@ func goroutineInRuntime(goroutineFile string) bool {
 	emptyFile := goroutineFile == "" // calling step out while the goroutine has CurrentLoc.File as empty string cause runtime error in delve server
 
 	return emptyFile
-}
-
-func readFileToString(filePath string) (string, error) {
-	contents, err := os.ReadFile(filePath)
-	if err != nil {
-		return "", fmt.Errorf("error while reading %s file: %w", filePath, err)
-	}
-	return string(contents), nil
 }

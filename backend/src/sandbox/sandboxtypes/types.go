@@ -1,10 +1,13 @@
-// Copyright 2019 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
-
 // The sandboxtypes package contains the shared types
 // to communicate between the different sandbox components.
 package sandboxtypes
+
+// Request is the request from the frontend to the sandbox backend.
+type Request struct {
+	Binary    []byte `json:"binary"`
+	MainDotGo []byte `json:"mainDotGo"`
+	BuildLoc  string `json:"buildLoc"`
+}
 
 // Response is the response from the sandbox backend to
 // the frontend.
@@ -16,7 +19,6 @@ type Response struct {
 	// It's meant to be user-visible.
 	Error string `json:"error,omitempty"`
 
-	ExitCode int    `json:"exitCode"`
-	Stdout   []byte `json:"stdout"`
-	Stderr   []byte `json:"stderr"`
+	ExitCode       int    `json:"exitCode"`
+	ExecutionSteps []byte `json:"executionSteps"`
 }

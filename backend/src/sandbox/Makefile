@@ -9,7 +9,7 @@ build:
 # (a busybox:glibc world with this directory's sandbox binary which
 # runs in --mode=contained)
 dockergvisor:
-	docker build -f Dockerfile.gvisor --tag=ahmedakef/gotutor-sandbox-gvisor ..
+	docker build -f Dockerfile.gvisor --tag=ahmedakef/gotutor-sandbox-gvisor .
 	docker tag ahmedakef/gotutor-sandbox-gvisor ahmedakef/gotutor-sandbox-gvisor:latest
 
 push: build dockergvisor
@@ -22,3 +22,4 @@ runlocal: build dockergvisor
 	docker network create sandnet || true
 	docker kill sandbox_dev || true
 	docker run --name=sandbox_dev --rm --network=sandnet -ti -p 127.0.0.1:9090:80/tcp -v /var/run/docker.sock:/var/run/docker.sock ahmedakef/gotutor-sandbox:latest --dev
+	docker run --name backend --rm --network=sandnet -ti -p 127.0.0.1:8081:8080 ahmedakef/gotutor-backend

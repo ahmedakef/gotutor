@@ -7,6 +7,7 @@
 # binary out of it. The same binary is used as both as the server and the
 # gvisor-contained helper.
 FROM ahmedakef/gotutor-sandbox AS server
+# FROM ahmedakef/gotutor-backend AS backend
 
 ############################################################################
 # This is the actual environment things run in: a minimal busybox with glibc
@@ -15,5 +16,6 @@ FROM busybox:glibc
 
 COPY --from=server /usr/local/bin/play-sandbox /usr/local/bin/play-sandbox
 COPY --from=server /usr/local/bin/gotutor /usr/local/bin/gotutor
+COPY go-faketime/ /usr/local/go-faketime/
 
 ENTRYPOINT ["/usr/local/bin/play-sandbox"]

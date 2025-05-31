@@ -9,11 +9,22 @@ build:
 run: build
 	./backend
 
+docker-build:
+	docker build -f Dockerfile --tag=ahmedakef/gotutor-backend .
+	docker tag ahmedakef/gotutor-backend ahmedakef/gotutor-backend:latest
+
+docker-run:
+	docker run --rm --name backend -p 8081:8080 ahmedakef/gotutor-backend
+
+push: docker-build
+	docker push ahmedakef/gotutor-backend:latest
+
 faketime:
 	sudo mkdir -p /usr/local/go-faketime
 	sudo cp -r $(GO_PATH) /usr/local/go-faketime
 	mkdir -p ~/gocache
 	GOCACHE=~/gocache /usr/local/go-faketime/bin/go install --tags=faketime std
+	cp -r /usr/local/go-faketime ./src/sandbox/
 
 gVisor:
 	sudo cp deployment/docker_daemon.json /etc/docker/daemon.json

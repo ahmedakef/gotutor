@@ -10,27 +10,42 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/ahmedakef/gotutor/backend/src/sandbox/sandboxtypes"
 )
 
 const (
-	maxRunTime        = 5 * time.Second
-	sandboxBackendURL = "http://localhost:9090/run"
-	runTimeoutError   = "timeout running program"
+	maxRunTime               = 25 * time.Second
+	defaultSandboxBackendURL = "http://localhost:9090/run"
+	runTimeoutError          = "timeout running program"
 )
 
 // sandboxRun runs a Go binary in a sandbox environment.
-func (c *Controller) sandboxRun(ctx context.Context, exePath, testParam string) (execRes sandboxtypes.Response, err error) {
+func (c *Controller) sandboxRun(ctx context.Context, br *buildResult, testParam string) (execRes sandboxtypes.Response, err error) {
 
-	exeBytes, err := os.ReadFile(exePath)
+	exeBytes, err := os.ReadFile(br.exePath)
 	if err != nil {
 		return execRes, err
 	}
 	ctx, cancel := context.WithTimeout(ctx, maxRunTime)
 	defer cancel()
-	sreq, err := http.NewRequestWithContext(ctx, "POST", sandboxBackendURL, bytes.NewReader(exeBytes))
+
+	mainDotGo, err := os.ReadFile(filepath.Join(br.goPath, "main.go"))
+	if err != nil {
+		return execRes, err
+	}
+
+	body, err := json.Marshal(sandboxtypes.Request{
+		Binary:    exeBytes,
+		MainDotGo: mainDotGo,
+		BuildLoc:  br.goPath,
+	})
+	if err != nil {
+		return execRes, err
+	}
+	sreq, err := http.NewRequestWithContext(ctx, "POST", sandboxBackendURL(), bytes.NewReader(body))
 	if err != nil {
 		return execRes, fmt.Errorf("NewRequestWithContext %q: %w", sandboxBackendURL, err)
 	}
@@ -57,4 +72,11 @@ func (c *Controller) sandboxRun(ctx context.Context, exePath, testParam string) 
 		return execRes, errors.New("error parsing JSON from backend")
 	}
 	return execRes, nil
+}
+
+func sandboxBackendURL() string {
+	if v := os.Getenv("SANDBOX_BACKEND_URL"); v != "" {
+		return v
+	}
+	return defaultSandboxBackendURL
 }

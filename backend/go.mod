@@ -4,11 +4,12 @@ go 1.24
 
 toolchain go1.24.0
 
-replace github.com/ahmedakef/gotutor => ../
+// replace github.com/ahmedakef/gotutor => ../
+// replace github.com/ahmedakef/gotutor/backend/src/sandbox => ./src/sandbox
 
 require (
-	github.com/ahmedakef/gotutor v0.0.0-00010101000000-000000000000
-	github.com/google/go-cmp v0.7.0
+	github.com/ahmedakef/gotutor v0.0.0-20250531002401-fd4e8b08b7c2
+	github.com/ahmedakef/gotutor/backend/src/sandbox v0.0.0-20250531001615-661c960e34ba
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/rs/zerolog v1.34.0
 	github.com/stretchr/testify v1.10.0
@@ -20,7 +21,6 @@ require (
 )
 
 require (
-	github.com/ahmedakef/gotutor/backend/src/sandbox v0.0.0-20250525193356-b1201ef59585 // indirect
 	github.com/cilium/ebpf v0.17.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-delve/delve v1.24.0 // indirect
