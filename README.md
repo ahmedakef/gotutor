@@ -1,4 +1,5 @@
 [![Ceasefire Now](https://badge.techforpalestine.org/default)](https://techforpalestine.org/learn-more)
+[![Mentioned in Awesome Go](https://awesome.re/mentioned-badge.svg)](https://github.com/avelino/awesome-go)
 # GoTutor
 
 GoTutor is a project aimed at capturing the execution steps of a Go program by interacting with the Delve debugger server. It retrieves variable values and stack information of all running Goroutines at each Go statement.
