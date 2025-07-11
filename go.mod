@@ -1,7 +1,6 @@
 module github.com/ahmedakef/gotutor
 
-go 1.22.6
-
+go 1.24
 require (
 	github.com/go-delve/delve v1.24.0
 	github.com/rs/zerolog v1.33.0

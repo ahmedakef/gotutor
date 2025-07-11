@@ -1,3 +1,3 @@
 module github.com/ahmedakef/gotutor/example
 
-go 1.22.6
+go 1.24

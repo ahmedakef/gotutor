@@ -15,7 +15,11 @@ import (
 
 func RunServerAndGetClient(debugName string, target string, buildFlags string, kind debugger.ExecuteKind) (*gateway.Debug, error) {
 	listener, clientConn := service.ListenerPipe()
-	defer listener.Close()
+	defer func() {
+		if err := listener.Close(); err != nil {
+			fmt.Printf("failed to close listener: %v\n", err)
+		}
+	}()
 
 	disconnectChan := make(chan struct{})
 	// Create and start a debugger server
@@ -81,6 +85,8 @@ func truncateFile(path string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create file: %w", err)
 	}
-	defer file.Close()
+	if err := file.Close(); err != nil {
+		return fmt.Errorf("failed to close file: %w", err)
+	}
 	return nil
 }

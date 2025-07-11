@@ -38,7 +38,11 @@ func getAndWriteSteps(ctx context.Context, client *gateway.Debug, logger zerolog
 	if err != nil {
 		return fmt.Errorf("failed to open steps.json file: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			logger.Error().Err(err).Msg("failed to close steps.json file")
+		}
+	}()
 
 	err = json.NewEncoder(file).Encode(steps)
 	if err != nil {

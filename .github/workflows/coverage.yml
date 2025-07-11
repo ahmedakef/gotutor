@@ -1,4 +1,3 @@
-
 name: Go Test
 
 on:
@@ -23,8 +22,18 @@ jobs:
       - name: Install dependencies
         run: go mod tidy
 
+      - name: Check code modernization
+        run: make modernize-check
+
       - name: Run tests
         run: go test ./... -v
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v7
+        with:
+          version: v2.1
+          args: --issues-exit-code=1 --timeout 5m
+          only-new-issues: true
 
       - name: Run tests with coverage
         run: go test -coverprofile=coverage.txt
