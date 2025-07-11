@@ -195,7 +195,7 @@ func outputContainsError(output string) (string, bool) {
 		startLoc := strings.Index(output, "data/main.go")
 		endLoc := strings.Index(output, "exit status")
 		if startLoc == -1 || endLoc == -1 {
-			return "failed to build the binary", true
+			return output, true
 		}
 		return output[startLoc : endLoc-2], true
 	} else if strings.Contains(output, "limit reached") {
