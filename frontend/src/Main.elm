@@ -181,7 +181,7 @@ heading =
 
 feedback : Html msg
 feedback =
-    div [ css [ Tw.flex, Tw.ml_10 ] ]
+    div [ css [ Tw.flex, Tw.ml_10, Tw.text_2xl ] ]
         [
             p [] [ text "Your feedback matters, please share your thoughts and suggestions" ]
             , a [css [ Tw.ml_1] , href "https://github.com/ahmedakef/gotutor/issues", target "_blank" ]
