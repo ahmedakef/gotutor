@@ -84,6 +84,7 @@ type Msg
     | GotFmt (Result String FmtResponse)
     | GotShareID (Result Http.Error String)
     | GotSharedCode (Result Http.Error String)
+    | GotFixedCode (Result String FixCodeResponse)
     | EditCode
     | OnScroll Scroll
     | CodeUpdated String
@@ -96,6 +97,7 @@ type Msg
     | ExampleSelected String
     | Fmt
     | Share
+    | FixCodeWithAI
     | ShowOnlyExportedFields Bool
     | ShowMemoryAddresses Bool
 
@@ -158,6 +160,19 @@ getFmt sourceCode env =
             , Http.stringPart "imports" "true"
             ]
         , expect = HttpHelper.expectJson GotFmt fmtResponseDecoder
+        , timeout = Just (60 * 1000) -- ms
+        , tracker = Nothing
+        }
+
+
+getFixCode : String -> Common.Env -> Cmd Msg
+getFixCode sourceCode env =
+    Http.request
+        { method = "POST"
+        , headers = []
+        , url = backendUrl env ++ "/fix-code"
+        , body = Http.jsonBody (Json.Encode.object [ ( "source_code", Json.Encode.string sourceCode ) ])
+        , expect = HttpHelper.expectJson GotFixedCode fixCodeResponseDecoder
         , timeout = Just (60 * 1000) -- ms
         , tracker = Nothing
         }
@@ -243,6 +258,14 @@ update msg state env =
                         Err err ->
                             ( Success { successState | mode = Edit, errorMessage = Just ("Error while formatting source code: " ++  err) }, Cmd.none )
 
+                GotFixedCode fixCodeResponseResult ->
+                    case fixCodeResponseResult of
+                        Ok fixCodeResponse ->
+                            ( Success { successState | sourceCode = fixCodeResponse.fixedCode, mode = Edit, errorMessage = Nothing }, Cmd.none )
+
+                        Err err ->
+                            ( Success { successState | mode = Edit, errorMessage = Just ("Error while fixing code with AI: " ++  err) }, Cmd.none )
+
                 GotShareID shareResult ->
                     case shareResult of
                         Ok id ->
@@ -291,6 +314,9 @@ update msg state env =
 
                 Fmt ->
                     ( Success { successState | mode = WaitingSourceCode }, getFmt successState.sourceCode env )
+
+                FixCodeWithAI ->
+                    ( Success { successState | mode = WaitingSourceCode }, getFixCode successState.sourceCode env )
 
                 Share ->
                     ( state, callShare successState.sourceCode )

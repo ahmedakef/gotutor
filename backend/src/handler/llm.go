@@ -50,7 +50,7 @@ func (h *Handler) HandleFixCode(w http.ResponseWriter, r *http.Request) {
 	resp, err := llm.Call(r.Context(), prompt)
 	if err != nil {
 		h.logger.Error().Err(err).Msg("failed to call LLM")
-		h.respondWithError(w, "failed to process code with LLM", http.StatusInternalServerError)
+		h.respondWithError(w, "failed to process code with LLM: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 

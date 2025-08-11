@@ -787,7 +787,16 @@ backendStateView state =
                            )
                     )
                 ]
-                [ p [ css [ Css.fontSize (Css.rem 1.5) ] ] [ text message ] ]
+                [ p [ css [ Css.fontSize (Css.rem 1.5) ] ] [ text message ]
+                , case state.flashMessage of
+                    Just _ ->
+                        div [ css [ Tw.mt_3 ] ]
+                            [ div [ onClick FixCodeWithAI, css [ secondaryButtonStyle, borderStyle ] ]
+                                [ text "Fix with AI ✨" ]
+                            ]
+                    Nothing ->
+                        div [] []
+                ]
 
 
 exampleSelector : Html Msg

@@ -33,6 +33,16 @@ fmtResponseDecoder =
         (field "body" string)
 
 
+type alias FixCodeResponse =
+    { fixedCode : String
+    }
+
+fixCodeResponseDecoder : Decoder FixCodeResponse
+fixCodeResponseDecoder =
+    map FixCodeResponse
+        (field "fixed_code" string)
+
+
 type alias Function =
     { name : String
     , value : Int
