@@ -165,13 +165,21 @@ getFmt sourceCode env =
         }
 
 
-getFixCode : String -> Common.Env -> Cmd Msg
-getFixCode sourceCode env =
+getFixCode : String -> Maybe String -> Common.Env -> Cmd Msg
+getFixCode sourceCode maybeError env =
+    let
+        bodyFields =
+            ( "source_code", Json.Encode.string sourceCode ) ::
+            (case maybeError of
+                Just error -> [ ( "error", Json.Encode.string error ) ]
+                Nothing -> []
+            )
+    in
     Http.request
         { method = "POST"
         , headers = []
         , url = backendUrl env ++ "/fix-code"
-        , body = Http.jsonBody (Json.Encode.object [ ( "source_code", Json.Encode.string sourceCode ) ])
+        , body = Http.jsonBody (Json.Encode.object bodyFields)
         , expect = HttpHelper.expectJson GotFixedCode fixCodeResponseDecoder
         , timeout = Just (60 * 1000) -- ms
         , tracker = Nothing
@@ -316,7 +324,7 @@ update msg state env =
                     ( Success { successState | mode = WaitingSourceCode }, getFmt successState.sourceCode env )
 
                 FixCodeWithAI ->
-                    ( Success { successState | mode = WaitingSourceCode }, getFixCode successState.sourceCode env )
+                    ( Success { successState | mode = WaitingSourceCode }, getFixCode successState.sourceCode successState.errorMessage env )
 
                 Share ->
                     ( state, callShare successState.sourceCode )

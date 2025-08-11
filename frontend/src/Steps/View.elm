@@ -771,11 +771,12 @@ backendStateView state =
         _ ->
             div
                 [ css
-                    ([ Css.displayFlex
-                     , Css.flexDirection Css.column
-                     , Css.alignItems Css.center
-                     , Css.marginBottom (Css.px 10)
-                     , Css.padding2 (Css.px 0) (Css.px 15)
+                    ([ Tw.flex
+                     , Tw.flex_row
+                     , Tw.justify_between
+                     , Tw.items_center
+                     , Tw.mb_4
+                     , Tw.px_4
                      , borderStyle
                      ]
                         ++ (case state.flashMessage of
@@ -790,10 +791,8 @@ backendStateView state =
                 [ p [ css [ Css.fontSize (Css.rem 1.5) ] ] [ text message ]
                 , case state.flashMessage of
                     Just _ ->
-                        div [ css [ Tw.mt_3 ] ]
-                            [ div [ onClick FixCodeWithAI, css [ secondaryButtonStyle, borderStyle ] ]
-                                [ text "Fix with AI ✨" ]
-                            ]
+                        div [ onClick FixCodeWithAI, css [ secondaryButtonStyle, borderStyle, Tw.mt_3] ]
+                            [ text "Fix with AI ✨" ]
                     Nothing ->
                         div [] []
                 ]

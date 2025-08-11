@@ -12,6 +12,7 @@ import (
 // FixCodeRequest is the request for the FixCode method
 type FixCodeRequest struct {
 	SourceCode string `json:"source_code"`
+	Error      string `json:"error,omitempty"`
 }
 
 // FixCodeResponse is the response for the FixCode method
@@ -44,7 +45,11 @@ func (h *Handler) HandleFixCode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create prompt for fixing code
-	prompt := "Fix this code and return the corrected version only: `" + req.SourceCode + "`"
+	prompt := "Fix this Go code and return the corrected version only"
+	if req.Error != "" {
+		prompt += ". The error encountered was: " + req.Error
+	}
+	prompt += ": `" + req.SourceCode + "`"
 
 	// Call LLM
 	resp, err := llm.Call(r.Context(), prompt)
