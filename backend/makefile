@@ -32,6 +32,14 @@ gVisor:
 	sudo chmod +x /var/lib/docker/runsc
 	sudo systemctl reload docker.service
 
+ollama-setup:
+	curl -fsSL https://ollama.com/install.sh | sh
+	ollama serve &
+	ollama run stable-code:3b
+
+ollama-run:
+	ollama serve &
+
 deploy: faketime build
 	sudo cp deployment/nginx/nginx.conf /etc/nginx/nginx.conf
 	sudo cp deployment/nginx/sites-enabled/gotutor.conf /etc/nginx/sites-enabled/gotutor.conf
