@@ -14,6 +14,7 @@ import (
 const (
 	CallsBucket       = "Calls"
 	GetExecutionSteps = "GetExecutionSteps"
+	FixCode           = "FixCode"
 	Compile           = "Compile"
 	Format            = "Format"
 	SourceCodeBucket  = "SourceCode"

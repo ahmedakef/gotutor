@@ -25,6 +25,7 @@ type Result struct {
 type Calls struct {
 	getExecutionSteps uint64
 	format            uint64
+	fixCode           uint64
 }
 
 func main() {
@@ -57,6 +58,7 @@ func getDBData() (Result, error) {
 	var sources []Source
 	var getExecutionSteps uint64
 	var format uint64
+	var fixCode uint64
 
 	err = db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(dbpkg.SourceCodeBucket))
@@ -81,6 +83,7 @@ func getDBData() (Result, error) {
 		callsBuckets := tx.Bucket([]byte(dbpkg.CallsBucket))
 		getExecutionSteps = bytesToUint64(callsBuckets.Get([]byte(dbpkg.GetExecutionSteps)))
 		format = bytesToUint64(callsBuckets.Get([]byte(dbpkg.Format)))
+		fixCode = bytesToUint64(callsBuckets.Get([]byte(dbpkg.FixCode)))
 		return nil
 	})
 
@@ -90,7 +93,7 @@ func getDBData() (Result, error) {
 
 	return Result{
 		sources: sources,
-		calls:   Calls{getExecutionSteps: getExecutionSteps, format: format},
+		calls:   Calls{getExecutionSteps: getExecutionSteps, format: format, fixCode: fixCode},
 	}, nil
 }
 
@@ -115,7 +118,7 @@ func printResults(result Result) {
 	fmt.Println("Calls:")
 	fmt.Println("GetExecutionSteps:", result.calls.getExecutionSteps)
 	fmt.Println("Format:", result.calls.format)
-
+	fmt.Println("FixCode:", result.calls.fixCode)
 }
 
 func bytesToUint64(b []byte) uint64 {

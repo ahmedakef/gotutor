@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/ahmedakef/gotutor/backend/src/db"
 	"github.com/tmc/langchaingo/llms/ollama"
 )
 
@@ -24,8 +25,13 @@ type FixCodeResponse struct {
 func (h *Handler) HandleFixCode(w http.ResponseWriter, r *http.Request) {
 	h.logRequest(r)
 
+	_, err := h.db.IncrementCallCounter(db.FixCode)
+	if err != nil {
+		h.logger.Err(err).Msg("failed to increment call counter")
+	}
+
 	var req FixCodeRequest
-	err := json.NewDecoder(r.Body).Decode(&req)
+	err = json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		h.respondWithError(w, "failed to decode request", http.StatusBadRequest)
 		return
