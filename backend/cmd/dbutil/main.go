@@ -35,10 +35,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// Sort sources by UpdatedAt in descending order
-	sort.Slice(result.sources, func(i, j int) bool {
-		return result.sources[i].UpdatedAt < result.sources[j].UpdatedAt
-	})
 
 	printResults(result)
 }
@@ -111,10 +107,15 @@ func getDBData() (Result, error) {
 		return Result{}, err
 	}
 
+	// Sort sources by UpdatedAt in descending order
+	sort.Slice(sources, func(i, j int) bool {
+		return sources[i].UpdatedAt < sources[j].UpdatedAt
+	})
+
 	return Result{
-		sources: sources,
+		sources: lastN(sources, 5),
 		calls:   Calls{getExecutionSteps: getExecutionSteps, format: format, fixCode: fixCode},
-		emails:  emails,
+		emails:  lastN(emails, 10),
 	}, nil
 }
 
@@ -138,12 +139,13 @@ func printResults(result Result) {
 	}
 	fmt.Println("=====================================")
 	fmt.Println("Email Subscriptions: (", len(result.emails), ")")
-	fmt.Println("=====================================")
 	if len(result.emails) > 0 {
 		fmt.Println(strings.Join(result.emails, ", "))
 	} else {
 		fmt.Println("No email subscriptions found")
 	}
+	fmt.Println("=====================================")
+
 	fmt.Println("Calls:")
 	fmt.Println("GetExecutionSteps:", result.calls.getExecutionSteps)
 	fmt.Println("Format:", result.calls.format)
@@ -153,4 +155,11 @@ func printResults(result Result) {
 
 func bytesToUint64(b []byte) uint64 {
 	return binary.BigEndian.Uint64(b)
+}
+
+func lastN[T any](s []T, n int) []T {
+	if len(s) < n {
+		return s
+	}
+	return s[len(s)-n:]
 }
