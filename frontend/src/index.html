@@ -56,6 +56,27 @@
             node: document.getElementById('myapp')
         });
 
+        // Handle localStorage ports
+        if (app.ports && app.ports.setLocalStorageWithValue) {
+            app.ports.setLocalStorageWithValue.subscribe(function(data) {
+                localStorage.setItem(data.key, data.value);
+            });
+        }
+
+        if (app.ports && app.ports.getLocalStorage) {
+            app.ports.getLocalStorage.subscribe(function(key) {
+                var value = localStorage.getItem(key) || '';
+                app.ports.localStorageReceived.send(value);
+            });
+        }
+
+        // Handle current time port
+        if (app.ports && app.ports.getCurrentTime) {
+            app.ports.getCurrentTime.subscribe(function() {
+                var currentTime = Date.now();
+                app.ports.currentTimeReceived.send(currentTime);
+            });
+        }
 
     </script>
 </body>

@@ -1,4 +1,4 @@
-module Main exposing (..)
+port module Main exposing (..)
 
 import Browser
 import Browser.Navigation as Nav
@@ -6,6 +6,7 @@ import Css
 import Helpers.Common as Common
 import Html.Styled as Html exposing (..)
 import Html.Styled.Attributes exposing (..)
+import Html.Styled.Events exposing (onClick)
 import Steps.Steps as Steps
 import Steps.View as StepsView
 import Styles
@@ -14,6 +15,16 @@ import Url.Parser as Parser exposing ((<?>), (</>), Parser )
 import Url.Parser.Query as Query
 import Tailwind.Theme as Tw
 import Tailwind.Utilities as Tw
+
+
+-- PORTS
+
+
+port setLocalStorageWithValue : { key : String, value : String } -> Cmd msg
+port getLocalStorage : String -> Cmd msg
+port getCurrentTime : () -> Cmd msg
+port localStorageReceived : (String -> msg) -> Sub msg
+port currentTimeReceived : (Float -> msg) -> Sub msg
 
 
 -- MAIN
@@ -49,6 +60,8 @@ type alias Model =
     , url : Url.Url
     , state : Steps.State
     , route : Steps.Route
+    , showFeedbackDialog : Bool
+    , currentTime : Maybe Float
     }
 
 
@@ -67,9 +80,9 @@ init _ url key =
             Steps.init route
 
         initialModel =
-            Model Common.Prod key url stepsState route
+            Model Common.Prod key url stepsState route False Nothing
     in
-    ( initialModel, Cmd.map StepsMsg stepsCmd )
+    ( initialModel, Cmd.batch [ Cmd.map StepsMsg stepsCmd, getLocalStorage "feedbackDialogDismissed", getCurrentTime () ] )
 
 
 
@@ -80,6 +93,10 @@ type Msg
     = LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
     | StepsMsg Steps.Msg
+    | DismissFeedbackDialogTemporary
+    | DismissFeedbackDialogPermanent
+    | LocalStorageReceived String
+    | CurrentTimeReceived Float
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -110,6 +127,50 @@ update msg model =
             in
             ( { model | state = state }, Cmd.map StepsMsg cmd )
 
+        DismissFeedbackDialogTemporary ->
+            case model.currentTime of
+                Just currentTime ->
+                    let
+                        timestampValue = "temporary:" ++ String.fromFloat currentTime
+                    in
+                    ( { model | showFeedbackDialog = False }, setLocalStorageWithValue { key = "feedbackDialogDismissed", value = timestampValue } )
+                Nothing ->
+                    ( { model | showFeedbackDialog = False }, getCurrentTime () )
+
+        DismissFeedbackDialogPermanent ->
+            ( { model | showFeedbackDialog = False }, setLocalStorageWithValue { key = "feedbackDialogDismissed", value = "permanent" } )
+
+        CurrentTimeReceived time ->
+            let
+                updatedModel = { model | currentTime = Just time }
+            in
+            -- If we were waiting for time to dismiss temporarily, do it now
+            if not model.showFeedbackDialog then
+                ( updatedModel, Cmd.none )
+            else
+                ( updatedModel, Cmd.none )
+
+        LocalStorageReceived value ->
+            if value == "permanent" then
+                ( { model | showFeedbackDialog = False }, Cmd.none )
+            else if String.startsWith "temporary:" value then
+                -- Check if 7 days have passed since temporary dismissal
+                case model.currentTime of
+                    Just currentTime ->
+                        let
+                            timestampStr = String.dropLeft 10 value -- Remove "temporary:" prefix
+                            dismissTime = String.toFloat timestampStr |> Maybe.withDefault 0
+                            sevenDaysInMs = 7 * 24 * 60 * 60 * 1000
+                        in
+                        if (currentTime - dismissTime) > sevenDaysInMs then
+                            ( model, Cmd.none ) -- Show dialog again
+                        else
+                            ( { model | showFeedbackDialog = False }, Cmd.none ) -- Keep hidden
+                    Nothing ->
+                        ( model, getCurrentTime () ) -- Get current time first
+            else
+                ( { model | showFeedbackDialog = True }, Cmd.none ) -- First time visitor, show dialog
+
 
 
 -- SUBSCRIPTIONS
@@ -117,11 +178,91 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    Sub.none
+    Sub.batch
+        [ localStorageReceived LocalStorageReceived
+        , currentTimeReceived CurrentTimeReceived
+        ]
 
 
 
 -- VIEW
+
+
+feedbackDialog : Html Msg
+feedbackDialog =
+    div
+        [ css
+            [ Tw.fixed
+            , Tw.inset_0
+            , Tw.bg_color Tw.black
+            , Css.backgroundColor (Css.rgba 0 0 0 0.5)
+            , Tw.flex
+            , Tw.items_center
+            , Tw.justify_center
+            , Tw.z_50
+            ]
+        ]
+        [ div
+            [ css
+                [ Tw.bg_color Tw.white
+                , Tw.rounded_lg
+                , Tw.p_6
+                , Tw.max_w_md
+                , Tw.mx_4
+                , Css.boxShadow5 (Css.px 0) (Css.px 10) (Css.px 25) (Css.px 0) (Css.rgba 0 0 0 0.1)
+                ]
+            ]
+            [ div [ css [ Tw.flex, Tw.items_center, Tw.mb_4 ] ]
+                [ img [ src "static/gopher.png", height 40, css [ Tw.mr_3 ] ] []
+                , h2 [ css [ Tw.text_xl, Tw.font_semibold, Tw.m_0 ] ]
+                    [ text "Welcome to GoTutor!" ]
+                ]
+            , p [ css [ Tw.mb_5, Css.lineHeight (Css.num 1.5), Tw.text_color Tw.gray_700 ] ]
+                [ text "Thank you for trying GoTutor! Your feedback is incredibly valuable to help improve this tool. "
+                , text "Please share your thoughts, suggestions, or report any issues you encounter."
+                ]
+            , div [ css [ Tw.flex, Tw.justify_end, Tw.gap_3 ] ]
+                [ button
+                    [ onClick DismissFeedbackDialogTemporary
+                    , css
+                        [ Tw.px_4
+                        , Tw.py_2
+                        , Tw.border_0
+                        , Tw.rounded
+                        , Tw.bg_color Tw.gray_100
+                        , Tw.text_color Tw.gray_700
+                        , Tw.cursor_pointer
+                        , Css.hover [ Tw.bg_color Tw.gray_200 ]
+                        , Tw.transition_colors
+                        ]
+                    ]
+                    [ text "Maybe Later" ]
+                , a
+                    [ href "https://github.com/ahmedakef/gotutor/issues"
+                    , target "_blank"
+                    , onClick DismissFeedbackDialogPermanent
+                    , css
+                        [ Tw.px_4
+                        , Tw.py_2
+                        , Tw.border_0
+                        , Tw.rounded
+                        , Tw.bg_color Tw.blue_600
+                        , Tw.text_color Tw.white
+                        , Css.textDecoration Css.none
+                        , Tw.cursor_pointer
+                        , Css.hover [ Tw.bg_color Tw.blue_700 ]
+                        , Tw.transition_colors
+                        , Tw.flex
+                        , Tw.items_center
+                        , Tw.gap_2
+                        ]
+                    ]
+                    [ img [ src "static/github-mark.svg", height 16, css [ Tw.mr_2 ] ] []
+                    , text "Share Feedback on GitHub"
+                    ]
+                ]
+            ]
+        ]
 
 
 view : Model -> Browser.Document Msg
@@ -132,14 +273,14 @@ view model =
 
         body =
             div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.minHeight (Css.vh 100) ] ]
-                [ Styles.globalStyles
+                ([ Styles.globalStyles
                 , navigation
                 , heading
                 , feedback
                 , Html.map StepsMsg (StepsView.view model.state)
                 , palastineSupport
                 , pageFooter
-                ]
+                ] ++ (if model.showFeedbackDialog then [ feedbackDialog ] else []))
     in
     { title = title
     , body = [ toUnstyled body ]
