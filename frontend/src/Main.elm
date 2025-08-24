@@ -4,9 +4,13 @@ import Browser
 import Browser.Navigation as Nav
 import Css
 import Helpers.Common as Common
+import Helpers.Http as HttpHelper
 import Html.Styled as Html exposing (..)
 import Html.Styled.Attributes exposing (..)
-import Html.Styled.Events exposing (onClick)
+import Html.Styled.Events exposing (onClick, preventDefaultOn)
+import Http
+import Json.Decode as Decode
+import Json.Encode as Encode
 import Steps.Steps as Steps
 import Steps.View as StepsView
 import Styles
@@ -62,6 +66,7 @@ type alias Model =
     , route : Steps.Route
     , showFeedbackDialog : Bool
     , currentTime : Maybe Float
+    , subscriptionStatus : Maybe (Result String String)
     }
 
 
@@ -80,7 +85,7 @@ init _ url key =
             Steps.init route
 
         initialModel =
-            Model Common.Prod key url stepsState route False Nothing
+            Model Common.Prod key url stepsState route False Nothing Nothing
     in
     ( initialModel, Cmd.batch [ Cmd.map StepsMsg stepsCmd, getLocalStorage "feedbackDialogDismissed", getCurrentTime () ] )
 
@@ -97,6 +102,8 @@ type Msg
     | DismissFeedbackDialogPermanent
     | LocalStorageReceived String
     | CurrentTimeReceived Float
+    | SubmitSubscription String
+    | GotSubscriptionResponse (Result String SubscriptionResponse)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -171,6 +178,22 @@ update msg model =
             else
                 ( { model | showFeedbackDialog = True }, Cmd.none ) -- First time visitor, show dialog
 
+        SubmitSubscription email ->
+            let
+                trimmedEmail = String.trim email
+            in
+            if String.isEmpty trimmedEmail then
+                ( model, Cmd.none )
+            else
+                ( model, submitEmailSubscription trimmedEmail model.env )
+
+        GotSubscriptionResponse result ->
+            case result of
+                Ok response ->
+                    ( { model | subscriptionStatus = Just (Ok response.message) }, Cmd.none )
+                Err err ->
+                    ( { model | subscriptionStatus = Just (Err err) }, Cmd.none )
+
 
 
 -- SUBSCRIPTIONS
@@ -184,12 +207,49 @@ subscriptions _ =
         ]
 
 
+-- HTTP
+
+
+backendUrl : Common.Env -> String
+backendUrl env =
+    case env of
+        Common.Dev ->
+            "http://localhost:8080"
+
+        Common.Prod ->
+            "https://backend.gotutor.dev"
+
+
+type alias SubscriptionResponse =
+    { message : String
+    }
+
+
+submitEmailSubscription : String -> Common.Env -> Cmd Msg
+submitEmailSubscription email env =
+    Http.request
+        { method = "POST"
+        , headers = []
+        , url = backendUrl env ++ "/subscribe-email"
+        , body = Http.jsonBody (Encode.object [ ( "email", Encode.string email ) ])
+        , expect = HttpHelper.expectJson GotSubscriptionResponse subscriptionResponseDecoder
+        , timeout = Just (60 * 1000) -- ms
+        , tracker = Nothing
+        }
+
+
+subscriptionResponseDecoder : Decode.Decoder SubscriptionResponse
+subscriptionResponseDecoder =
+    Decode.map SubscriptionResponse
+        (Decode.field "message" Decode.string)
+
+
 
 -- VIEW
 
 
-feedbackDialog : Html Msg
-feedbackDialog =
+feedbackDialog : Model -> Html Msg
+feedbackDialog model =
     div
         [ css
             [ Tw.fixed
@@ -217,11 +277,59 @@ feedbackDialog =
                 , h2 [ css [ Tw.text_xl, Tw.font_semibold, Tw.m_0 ] ]
                     [ text "Welcome to GoTutor!" ]
                 ]
+                                    , Html.form
+                [ preventDefaultOn "submit" (Decode.map (\email -> (SubmitSubscription email, True)) (Decode.at ["target", "email", "value"] Decode.string))
+                , css [ Tw.mb_4 ]
+                ]
+                [ label [ css [ Tw.block, Tw.text_sm, Tw.font_medium, Tw.mb_2, Tw.text_color Tw.gray_700 ] ]
+                    [ text "Subscribe to updates (optional)" ]
+                , div [ css [ Tw.flex, Tw.gap_2 ] ]
+                    [ input
+                        [ type_ "email"
+                        , name "email"
+                        , placeholder "your.email@example.com"
+                        , css
+                            [ Tw.flex_1
+                            , Tw.px_3
+                            , Tw.py_2
+                            , Tw.border
+                            , Tw.border_color Tw.gray_300
+                            , Tw.rounded
+                            , Css.focus [ Tw.border_color Tw.blue_500, Css.outline Css.none ]
+                            ]
+                        ]
+                        []
+                    , button
+                        [ type_ "submit"
+                        , css
+                            [ Tw.px_4
+                            , Tw.py_2
+                            , Tw.border_0
+                            , Tw.rounded
+                            , Tw.bg_color Tw.green_600
+                            , Tw.text_color Tw.white
+                            , Tw.cursor_pointer
+                            , Css.hover [ Tw.bg_color Tw.green_700 ]
+                            , Tw.transition_colors
+                            ]
+                        ]
+                        [ text "Subscribe" ]
+                    ]
+                , case model.subscriptionStatus of
+                    Just (Ok message) ->
+                        div [ css [ Tw.text_sm, Tw.text_color Tw.green_600, Tw.mt_2 ] ]
+                            [ text message ]
+                    Just (Err error) ->
+                        div [ css [ Tw.text_sm, Tw.text_color Tw.red_600, Tw.mt_2 ] ]
+                            [ text error ]
+                    Nothing ->
+                        text ""
+                ]
             , p [ css [ Tw.mb_5, Css.lineHeight (Css.num 1.5), Tw.text_color Tw.gray_700 ] ]
                 [ text "Thank you for trying GoTutor! Your feedback is incredibly valuable to help improve this tool. "
                 , text "Please share your thoughts, suggestions, or report any issues you encounter."
                 ]
-            , div [ css [ Tw.flex, Tw.justify_end, Tw.gap_3 ] ]
+            , div [ css [ Tw.flex, Tw.justify_between, Tw.items_center ] ]
                 [ button
                     [ onClick DismissFeedbackDialogTemporary
                     , css
@@ -237,28 +345,30 @@ feedbackDialog =
                         ]
                     ]
                     [ text "Maybe Later" ]
-                , a
-                    [ href "https://github.com/ahmedakef/gotutor/issues"
-                    , target "_blank"
-                    , onClick DismissFeedbackDialogPermanent
-                    , css
-                        [ Tw.px_4
-                        , Tw.py_2
-                        , Tw.border_0
-                        , Tw.rounded
-                        , Tw.bg_color Tw.blue_600
-                        , Tw.text_color Tw.white
-                        , Css.textDecoration Css.none
-                        , Tw.cursor_pointer
-                        , Css.hover [ Tw.bg_color Tw.blue_700 ]
-                        , Tw.transition_colors
-                        , Tw.flex
-                        , Tw.items_center
-                        , Tw.gap_2
+                , div [ css [ Tw.flex, Tw.gap_3 ] ]
+                    [ a
+                        [ href "https://github.com/ahmedakef/gotutor/issues"
+                        , target "_blank"
+                        , onClick DismissFeedbackDialogPermanent
+                        , css
+                            [ Tw.px_4
+                            , Tw.py_2
+                            , Tw.border_0
+                            , Tw.rounded
+                            , Tw.bg_color Tw.blue_600
+                            , Tw.text_color Tw.white
+                            , Css.textDecoration Css.none
+                            , Tw.cursor_pointer
+                            , Css.hover [ Tw.bg_color Tw.blue_700 ]
+                            , Tw.transition_colors
+                            , Tw.flex
+                            , Tw.items_center
+                            , Tw.gap_2
+                            ]
                         ]
-                    ]
-                    [ img [ src "static/github-mark.svg", height 16, css [ Tw.mr_2 ] ] []
-                    , text "Share Feedback on GitHub"
+                        [ img [ src "static/github-mark.svg", height 16, css [ Tw.mr_2 ] ] []
+                        , text "Share Feedback on GitHub"
+                        ]
                     ]
                 ]
             ]
@@ -280,7 +390,7 @@ view model =
                 , Html.map StepsMsg (StepsView.view model.state)
                 , palastineSupport
                 , pageFooter
-                ] ++ (if model.showFeedbackDialog then [ feedbackDialog ] else []))
+                ] ++ (if model.showFeedbackDialog then [ feedbackDialog model ] else []))
     in
     { title = title
     , body = [ toUnstyled body ]

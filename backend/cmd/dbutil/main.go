@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"sort"
+	"strings"
 
 	dbpkg "github.com/ahmedakef/gotutor/backend/src/db"
 	bolt "go.etcd.io/bbolt"
@@ -21,6 +22,7 @@ type Source struct {
 type Result struct {
 	sources []Source
 	calls   Calls
+	emails  []string
 }
 type Calls struct {
 	getExecutionSteps uint64
@@ -56,6 +58,7 @@ func getDBData() (Result, error) {
 	defer db.Close()
 
 	var sources []Source
+	var emails []string
 	var getExecutionSteps uint64
 	var format uint64
 	var fixCode uint64
@@ -80,6 +83,23 @@ func getDBData() (Result, error) {
 		if err != nil {
 			return fmt.Errorf("failed to list source code files: %w", err)
 		}
+
+		// Get email subscriptions
+		emailsBucket := tx.Bucket([]byte(dbpkg.EmailsBucket))
+		if emailsBucket != nil {
+			err := emailsBucket.ForEachBucket(func(k []byte) error {
+				emailBucket := emailsBucket.Bucket(k)
+				email := emailBucket.Get([]byte(dbpkg.EmailKey))
+				if email != nil {
+					emails = append(emails, string(email))
+				}
+				return nil
+			})
+			if err != nil {
+				return fmt.Errorf("failed to list emails: %w", err)
+			}
+		}
+
 		callsBuckets := tx.Bucket([]byte(dbpkg.CallsBucket))
 		getExecutionSteps = bytesToUint64(callsBuckets.Get([]byte(dbpkg.GetExecutionSteps)))
 		format = bytesToUint64(callsBuckets.Get([]byte(dbpkg.Format)))
@@ -94,6 +114,7 @@ func getDBData() (Result, error) {
 	return Result{
 		sources: sources,
 		calls:   Calls{getExecutionSteps: getExecutionSteps, format: format, fixCode: fixCode},
+		emails:  emails,
 	}, nil
 }
 
@@ -115,10 +136,19 @@ func printResults(result Result) {
 		fmt.Println(source.Code)
 		fmt.Println("----------------------------------------")
 	}
+	fmt.Println("=====================================")
+	fmt.Println("Email Subscriptions: (", len(result.emails), ")")
+	fmt.Println("=====================================")
+	if len(result.emails) > 0 {
+		fmt.Println(strings.Join(result.emails, ", "))
+	} else {
+		fmt.Println("No email subscriptions found")
+	}
 	fmt.Println("Calls:")
 	fmt.Println("GetExecutionSteps:", result.calls.getExecutionSteps)
 	fmt.Println("Format:", result.calls.format)
 	fmt.Println("FixCode:", result.calls.fixCode)
+
 }
 
 func bytesToUint64(b []byte) uint64 {

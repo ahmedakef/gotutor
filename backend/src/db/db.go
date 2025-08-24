@@ -18,8 +18,11 @@ const (
 	Compile           = "Compile"
 	Format            = "Format"
 	SourceCodeBucket  = "SourceCode"
+	EmailsBucket      = "Emails"
 	CodeKey           = "code"
 	UpdatedAtKey      = "updated_at"
+	EmailKey          = "email"
+	SubscribedAtKey   = "subscribed_at"
 )
 
 type DB struct {
@@ -41,7 +44,7 @@ func New(dbPath string) (*DB, error) {
 	}
 
 	db := &DB{bdb}
-	if err := db.ensureBuckets([]string{SourceCodeBucket, CallsBucket}); err != nil {
+	if err := db.ensureBuckets([]string{SourceCodeBucket, CallsBucket, EmailsBucket}); err != nil {
 		return nil, err
 	}
 
@@ -114,5 +117,33 @@ func (db *DB) SaveSourceCode(sourceCode string) error {
 		}
 
 		return codeBucket.Put([]byte(UpdatedAtKey), []byte(time.Now().String()))
+	})
+}
+
+// SaveEmailSubscription stores an email subscription
+func (db *DB) SaveEmailSubscription(email string) error {
+	return db.Update(func(tx *bolt.Tx) error {
+		emailsBucket := tx.Bucket([]byte(EmailsBucket))
+		if emailsBucket == nil {
+			return fmt.Errorf("bucket %s not found", EmailsBucket)
+		}
+
+		// Use email as key to prevent duplicates
+		emailBucket, err := emailsBucket.CreateBucketIfNotExists([]byte(email))
+		if err != nil {
+			return fmt.Errorf("failed to create email bucket: %w", err)
+		}
+
+		// Check if email already exists
+		if v := emailBucket.Get([]byte(EmailKey)); v != nil {
+			return nil // Email already subscribed
+		}
+
+		err = emailBucket.Put([]byte(EmailKey), []byte(email))
+		if err != nil {
+			return fmt.Errorf("failed to save email: %w", err)
+		}
+
+		return emailBucket.Put([]byte(SubscribedAtKey), []byte(time.Now().String()))
 	})
 }

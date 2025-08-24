@@ -48,6 +48,7 @@ func main() {
 	mux.HandleFunc("/compile", h.HandleCompile)
 	mux.HandleFunc("/fmt", h.HandleFmt)
 	mux.HandleFunc("/fix-code", h.HandleFixCode)
+	mux.HandleFunc("/subscribe-email", h.HandleEmailSubscription)
 
 	logger.Info().Msg(fmt.Sprintf("starting server on http://localhost:%d", _port))
 	if err := http.ListenAndServe(fmt.Sprintf(":%d", _port), handler.CorsMiddleware(mux)); err != nil {
