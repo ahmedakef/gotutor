@@ -87,7 +87,7 @@ init _ url key =
         initialModel =
             Model Common.Prod key url stepsState route False Nothing Nothing
     in
-    ( initialModel, Cmd.batch [ Cmd.map StepsMsg stepsCmd, getLocalStorage "feedbackDialogDismissed", getCurrentTime () ] )
+    ( initialModel, Cmd.batch [ Cmd.map StepsMsg stepsCmd, getLocalStorage "feedbackDialogDismissed1", getCurrentTime () ] )
 
 
 
@@ -140,12 +140,12 @@ update msg model =
                     let
                         timestampValue = "temporary:" ++ String.fromFloat currentTime
                     in
-                    ( { model | showFeedbackDialog = False }, setLocalStorageWithValue { key = "feedbackDialogDismissed", value = timestampValue } )
+                    ( { model | showFeedbackDialog = False }, setLocalStorageWithValue { key = "feedbackDialogDismissed1", value = timestampValue } )
                 Nothing ->
                     ( { model | showFeedbackDialog = False }, getCurrentTime () )
 
         DismissFeedbackDialogPermanent ->
-            ( { model | showFeedbackDialog = False }, setLocalStorageWithValue { key = "feedbackDialogDismissed", value = "permanent" } )
+            ( { model | showFeedbackDialog = False }, setLocalStorageWithValue { key = "feedbackDialogDismissed1", value = "permanent" } )
 
         CurrentTimeReceived time ->
             let
@@ -327,27 +327,13 @@ feedbackDialog model =
                 ]
             , p [ css [ Tw.mb_5, Css.lineHeight (Css.num 1.5), Tw.text_color Tw.gray_700 ] ]
                 [ text "Thank you for trying GoTutor! Your feedback is incredibly valuable to help improve this tool. "
-                , text "Please share your thoughts, suggestions, or report any issues you encounter."
+                , text "Please Give a star on GitHub and share your thoughts, suggestions, or report any issues you encounter."
                 ]
             , div [ css [ Tw.flex, Tw.justify_between, Tw.items_center ] ]
-                [ button
-                    [ onClick DismissFeedbackDialogTemporary
-                    , css
-                        [ Tw.px_4
-                        , Tw.py_2
-                        , Tw.border_0
-                        , Tw.rounded
-                        , Tw.bg_color Tw.gray_100
-                        , Tw.text_color Tw.gray_700
-                        , Tw.cursor_pointer
-                        , Css.hover [ Tw.bg_color Tw.gray_200 ]
-                        , Tw.transition_colors
-                        ]
-                    ]
-                    [ text "Maybe Later" ]
-                , div [ css [ Tw.flex, Tw.gap_3 ] ]
+                [
+                 div [ css [ Tw.flex, Tw.gap_3 ] ]
                     [ a
-                        [ href "https://github.com/ahmedakef/gotutor/issues"
+                        [ href "https://github.com/ahmedakef/gotutor"
                         , target "_blank"
                         , onClick DismissFeedbackDialogPermanent
                         , css
@@ -367,9 +353,10 @@ feedbackDialog model =
                             ]
                         ]
                         [ img [ src "static/github-mark.svg", height 16, css [ Tw.mr_2 ] ] []
-                        , text "Share Feedback on GitHub"
+                        , text "Give a Star on GitHub"
                         ]
                     ]
+                , koFiButton
                 ]
             ]
         ]
