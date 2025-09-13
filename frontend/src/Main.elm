@@ -277,54 +277,7 @@ feedbackDialog model =
                 , h2 [ css [ Tw.text_xl, Tw.font_semibold, Tw.m_0 ] ]
                     [ text "Welcome to GoTutor!" ]
                 ]
-                                    , Html.form
-                [ preventDefaultOn "submit" (Decode.map (\email -> (SubmitSubscription email, True)) (Decode.at ["target", "email", "value"] Decode.string))
-                , css [ Tw.mb_4 ]
-                ]
-                [ label [ css [ Tw.block, Tw.text_sm, Tw.font_medium, Tw.mb_2, Tw.text_color Tw.gray_700 ] ]
-                    [ text "Subscribe to updates (optional)" ]
-                , div [ css [ Tw.flex, Tw.gap_2 ] ]
-                    [ input
-                        [ type_ "email"
-                        , name "email"
-                        , placeholder "your.email@example.com"
-                        , css
-                            [ Tw.flex_1
-                            , Tw.px_3
-                            , Tw.py_2
-                            , Tw.border
-                            , Tw.border_color Tw.gray_300
-                            , Tw.rounded
-                            , Css.focus [ Tw.border_color Tw.blue_500, Css.outline Css.none ]
-                            ]
-                        ]
-                        []
-                    , button
-                        [ type_ "submit"
-                        , css
-                            [ Tw.px_4
-                            , Tw.py_2
-                            , Tw.border_0
-                            , Tw.rounded
-                            , Tw.bg_color Tw.green_600
-                            , Tw.text_color Tw.white
-                            , Tw.cursor_pointer
-                            , Css.hover [ Tw.bg_color Tw.green_700 ]
-                            , Tw.transition_colors
-                            ]
-                        ]
-                        [ text "Subscribe" ]
-                    ]
-                , case model.subscriptionStatus of
-                    Just (Ok message) ->
-                        div [ css [ Tw.text_sm, Tw.text_color Tw.green_600, Tw.mt_2 ] ]
-                            [ text message ]
-                    Just (Err error) ->
-                        div [ css [ Tw.text_sm, Tw.text_color Tw.red_600, Tw.mt_2 ] ]
-                            [ text error ]
-                    Nothing ->
-                        text ""
-                ]
+                , subscriptionForm model
             , p [ css [ Tw.mb_5, Css.lineHeight (Css.num 1.5), Tw.text_color Tw.gray_700 ] ]
                 [ text "Thank you for trying GoTutor! Your feedback is incredibly valuable to help improve this tool. "
                 , text "Please Give a star on GitHub and share your thoughts, suggestions, or report any issues you encounter."
@@ -376,7 +329,7 @@ view model =
                 , feedback
                 , Html.map StepsMsg (StepsView.view model.state)
                 , palastineSupport
-                , pageFooter
+                , pageFooter model
                 ] ++ (if model.showFeedbackDialog then [ feedbackDialog model ] else []))
     in
     { title = title
@@ -435,8 +388,8 @@ palastineSupport =
             ]
         ]
 
-pageFooter : Html msg
-pageFooter =
+pageFooter : Model -> Html Msg
+pageFooter model =
     footer
         [ id "about"
         , css
@@ -466,6 +419,17 @@ pageFooter =
             , text "Copyright © 2024 by "
             , a [ href "https://www.linkedin.com/in/ahmedakef4/", target "_blank", css [ Css.textDecoration Css.none ] ] [ text "Ahmed Akef" ]
             , text "."
+            ]
+        , div
+            [ css
+                [ Css.flex (Css.num 1)
+                , Css.paddingTop (Css.px 20)
+                , Css.paddingRight (Css.px 20)
+                , Css.paddingBottom (Css.px 10)
+                , Css.maxWidth (Css.px 400)
+                ]
+            ]
+            [ subscriptionForm model
             ]
         ]
 
@@ -504,6 +468,56 @@ koFiButton =
             []
         ]
 
+subscriptionForm : Model -> Html Msg
+subscriptionForm model =
+    Html.form
+        [ preventDefaultOn "submit" (Decode.map (\email -> (SubmitSubscription email, True)) (Decode.at ["target", "email", "value"] Decode.string))
+        , css [ Tw.mb_4 ]
+        ]
+        [ label [ css [ Tw.block, Tw.text_sm, Tw.font_medium, Tw.mb_2, Tw.text_color Tw.gray_700 ] ]
+            [ text "Subscribe to updates (optional)" ]
+        , div [ css [ Tw.flex, Tw.gap_2 ] ]
+            [ input
+                [ type_ "email"
+                , name "email"
+                , placeholder "your.email@example.com"
+                , css
+                    [ Tw.flex_1
+                    , Tw.px_3
+                    , Tw.py_2
+                    , Tw.border
+                    , Tw.border_color Tw.gray_300
+                    , Tw.rounded
+                    , Css.focus [ Tw.border_color Tw.blue_500, Css.outline Css.none ]
+                    ]
+                ]
+                []
+            , button
+                [ type_ "submit"
+                , css
+                    [ Tw.px_4
+                    , Tw.py_2
+                    , Tw.border_0
+                    , Tw.rounded
+                    , Tw.bg_color Tw.green_600
+                    , Tw.text_color Tw.white
+                    , Tw.cursor_pointer
+                    , Css.hover [ Tw.bg_color Tw.green_700 ]
+                    , Tw.transition_colors
+                    ]
+                ]
+                [ text "Subscribe" ]
+            ]
+        , case model.subscriptionStatus of
+            Just (Ok message) ->
+                div [ css [ Tw.text_sm, Tw.text_color Tw.green_600, Tw.mt_2 ] ]
+                    [ text message ]
+            Just (Err error) ->
+                div [ css [ Tw.text_sm, Tw.text_color Tw.red_600, Tw.mt_2 ] ]
+                    [ text error ]
+            Nothing ->
+                text ""
+        ]
 
 navBarItemsStyle : Css.Style
 navBarItemsStyle =
