@@ -115,7 +115,7 @@ func getDBData() (Result, error) {
 	return Result{
 		sources: lastN(sources, 5),
 		calls:   Calls{getExecutionSteps: getExecutionSteps, format: format, fixCode: fixCode},
-		emails:  lastN(emails, 10),
+		emails:  emails,
 	}, nil
 }
 
