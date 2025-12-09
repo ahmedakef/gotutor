@@ -87,7 +87,7 @@ init _ url key =
         initialModel =
             Model Common.Prod key url stepsState route False Nothing Nothing
     in
-    ( initialModel, Cmd.batch [ Cmd.map StepsMsg stepsCmd, getLocalStorage "feedbackDialogDismissed1", getCurrentTime () ] )
+    ( initialModel, Cmd.batch [ Cmd.map StepsMsg stepsCmd, getLocalStorage "feedbackDialogDismissed2", getCurrentTime () ] )
 
 
 
@@ -140,12 +140,12 @@ update msg model =
                     let
                         timestampValue = "temporary:" ++ String.fromFloat currentTime
                     in
-                    ( { model | showFeedbackDialog = False }, setLocalStorageWithValue { key = "feedbackDialogDismissed1", value = timestampValue } )
+                    ( { model | showFeedbackDialog = False }, setLocalStorageWithValue { key = "feedbackDialogDismissed2", value = timestampValue } )
                 Nothing ->
                     ( { model | showFeedbackDialog = False }, getCurrentTime () )
 
         DismissFeedbackDialogPermanent ->
-            ( { model | showFeedbackDialog = False }, setLocalStorageWithValue { key = "feedbackDialogDismissed1", value = "permanent" } )
+            ( { model | showFeedbackDialog = False }, setLocalStorageWithValue { key = "feedbackDialogDismissed2", value = "permanent" } )
 
         CurrentTimeReceived time ->
             let
@@ -272,15 +272,31 @@ feedbackDialog model =
                 , Css.boxShadow5 (Css.px 0) (Css.px 10) (Css.px 25) (Css.px 0) (Css.rgba 0 0 0 0.1)
                 ]
             ]
-            [ div [ css [ Tw.flex, Tw.items_center, Tw.mb_4 ] ]
-                [ img [ src "static/gopher.png", height 40, css [ Tw.mr_3 ] ] []
-                , h2 [ css [ Tw.text_xl, Tw.font_semibold, Tw.m_0 ] ]
-                    [ text "Welcome to GoTutor!" ]
+            [ div [ css [ Tw.flex, Tw.items_center, Tw.justify_between, Tw.mb_4 ] ]
+                [ div [ css [ Tw.flex, Tw.items_center ] ]
+                    [ img [ src "static/gopher.png", height 40, css [ Tw.mr_3 ] ] []
+                    , h2 [ css [ Tw.text_xl, Tw.font_semibold, Tw.m_0 ] ]
+                        [ text "Welcome to GoTutor!" ]
+                    ]
+                , button
+                    [ onClick DismissFeedbackDialogTemporary
+                    , css
+                        [ Tw.p_2
+                        , Tw.border_0
+                        , Tw.bg_color Tw.transparent
+                        , Tw.text_color Tw.gray_500
+                        , Tw.cursor_pointer
+                        , Css.hover [ Tw.text_color Tw.gray_700 ]
+                        , Tw.text_xl
+                        , Tw.leading_none
+                        ]
+                    ]
+                    [ text "×" ]
                 ]
                 , subscriptionForm model
             , p [ css [ Tw.mb_5, Css.lineHeight (Css.num 1.5), Tw.text_color Tw.gray_700 ] ]
-                [ text "Thank you for trying GoTutor! Your feedback is incredibly valuable to help improve this tool. "
-                , text "Please Give a star on GitHub and share your thoughts, suggestions, or report any issues you encounter."
+                [ text "Thank you for trying GoTutor! I'm currently running this project on AWS free tier and need your support to keep it alive. "
+                , text "Without community backing, the project may need to be closed. Please consider giving a star on GitHub and supporting the project!"
                 ]
             , div [ css [ Tw.flex, Tw.justify_between, Tw.items_center ] ]
                 [
