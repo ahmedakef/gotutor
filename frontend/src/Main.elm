@@ -87,7 +87,7 @@ init _ url key =
         initialModel =
             Model Common.Prod key url stepsState route False Nothing Nothing
     in
-    ( initialModel, Cmd.batch [ Cmd.map StepsMsg stepsCmd, getLocalStorage "feedbackDialogDismissed2", getCurrentTime () ] )
+    ( initialModel, Cmd.batch [ Cmd.map StepsMsg stepsCmd, getLocalStorage "feedbackDialogDismissed3", getCurrentTime () ] )
 
 
 
@@ -140,12 +140,12 @@ update msg model =
                     let
                         timestampValue = "temporary:" ++ String.fromFloat currentTime
                     in
-                    ( { model | showFeedbackDialog = False }, setLocalStorageWithValue { key = "feedbackDialogDismissed2", value = timestampValue } )
+                    ( { model | showFeedbackDialog = False }, setLocalStorageWithValue { key = "feedbackDialogDismissed3", value = timestampValue } )
                 Nothing ->
                     ( { model | showFeedbackDialog = False }, getCurrentTime () )
 
         DismissFeedbackDialogPermanent ->
-            ( { model | showFeedbackDialog = False }, setLocalStorageWithValue { key = "feedbackDialogDismissed2", value = "permanent" } )
+            ( { model | showFeedbackDialog = False }, setLocalStorageWithValue { key = "feedbackDialogDismissed3", value = "permanent" } )
 
         CurrentTimeReceived time ->
             let
@@ -295,8 +295,8 @@ feedbackDialog model =
                 ]
                 , subscriptionForm model
             , p [ css [ Tw.mb_5, Css.lineHeight (Css.num 1.5), Tw.text_color Tw.gray_700 ] ]
-                [ text "Thank you for trying GoTutor! I'm currently running this project on AWS free tier and need your support to keep it alive. "
-                , text "Without community backing, the project may need to be closed. Please consider giving a star on GitHub and supporting the project!"
+                [ text "Thank you for trying GoTutor! This tool used AWS free tier and it will expire within a month, so the project will be closed. "
+                , text "Please either make suggestions on the issues page on GitHub, or give a star or buy me a coffee!"
                 ]
             , div [ css [ Tw.flex, Tw.justify_between, Tw.items_center ] ]
                 [
