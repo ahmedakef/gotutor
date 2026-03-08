@@ -110,7 +110,7 @@ backendUrl env =
             "http://localhost:8080"
 
         Common.Prod ->
-            "https://backend.gotutor.dev"
+            "https://gotutor.onrender.com"
 
 getSteps : String -> Common.Env -> Cmd Msg
 getSteps sourceCode env =
