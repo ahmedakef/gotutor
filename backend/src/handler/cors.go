@@ -1,19 +1,29 @@
 package handler
 
-import "net/http"
+import (
+	"net/http"
+	"strings"
+)
 
-// Allowed origins
+// Allowed origins (exact or prefix match for localhost)
 var allowedOrigins = map[string]bool{
-	"http://localhost:8000":       true,
 	"https://ahmedakef.github.io": true,
 	"https://gotutor.dev":         true,
+}
+
+func isAllowedOrigin(origin string) bool {
+	if allowedOrigins[origin] {
+		return true
+	}
+	// Allow any localhost / 127.0.0.1 for local dev hitting production
+	return strings.HasPrefix(origin, "http://localhost:") || strings.HasPrefix(origin, "http://127.0.0.1:")
 }
 
 // CorsMiddleware is a middleware that adds CORS headers to the response
 func CorsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
-		if allowedOrigins[origin] {
+		if isAllowedOrigin(origin) {
 			// Set CORS headers
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Vary", "Origin")
