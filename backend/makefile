@@ -40,7 +40,7 @@ ollama-setup:
 ollama-run:
 	ollama serve &
 
-deploy: faketime build
+update-config:
 	sudo cp deployment/nginx/nginx.conf /etc/nginx/nginx.conf
 	sudo cp deployment/nginx/sites-enabled/gotutor.conf /etc/nginx/sites-enabled/gotutor.conf
 	sudo cp deployment/systemd/system/gotutor.service /etc/systemd/system/gotutor.service
@@ -48,3 +48,5 @@ deploy: faketime build
 	sudo systemctl enable nginx
 	sudo systemctl restart gotutor
 	# check the logs with sudo journalctl -u gotutor.service -n 10 -f
+
+deploy: faketime build update-config
