@@ -14,6 +14,9 @@ User=ubuntu
 # Create a writable directory at /run/gotutor/
 RuntimeDirectory=gotutor
 
+# Create persistent data directory at /var/lib/gotutor/data/
+StateDirectory=gotutor/data
+
 # Change the working directory to /run/gotutor/
 WorkingDirectory=/run/gotutor
 

@@ -36,7 +36,10 @@ func main() {
 
 	db, err := db.New(dbPath)
 	if err != nil {
-		logger.Info().Err(err).Msg("failed to create database")
+		logger.Fatal().Err(err).Msg("failed to create database")
+	}
+	if db == nil {
+		logger.Fatal().Msg("database is unexpectedly nil")
 	}
 	defer db.Close()
 
