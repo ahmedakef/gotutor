@@ -217,7 +217,7 @@ backendUrl env =
             "http://localhost:8080"
 
         Common.Prod ->
-            "https://gotutor.onrender.com"
+            "https://backend.gotutor.dev"
 
 
 type alias SubscriptionResponse =
