@@ -5,11 +5,11 @@ Description=Go Application
 Environment=ENV=production
 Environment=PATH=/usr/local/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
-ExecStart=/home/ec2-user/gotutor/backend/backend
+ExecStart=/home/ubuntu/gotutor/backend/backend
 
 Restart=always
 
-User=ec2-user
+User=ubuntu
 
 # Create a writable directory at /run/gotutor/
 RuntimeDirectory=gotutor
