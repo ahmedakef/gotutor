@@ -190,7 +190,7 @@ callShare : String -> Cmd Msg
 callShare sourceCode =
     Http.request
         { method = "POST"
-        , headers = [ Http.header "User-Agent" "gotutor.dev" ]
+        , headers = []
         , url = "https://play.golang.org/share"
         , body = Http.stringBody "text/plain" sourceCode
         , expect = Http.expectString GotShareID
@@ -202,7 +202,7 @@ getSharedCode : String -> Cmd Msg
 getSharedCode id =
     Http.request
         { method = "GET"
-        , headers = [ Http.header "User-Agent" "gotutor.dev" ]
+        , headers = []
         , url = "https://play.golang.org/p/" ++ id ++ ".go"
         , body = Http.emptyBody
         , expect = Http.expectString GotSharedCode
