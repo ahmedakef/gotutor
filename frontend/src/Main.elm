@@ -383,52 +383,7 @@ heading =
             , h1 [ css [ Tw.text_2xl, Tw.font_bold ] ] [ text "Online Go Debugger & Visualizer" ]
             ]
         , p [] [ text "It shows the state of all the running Goroutines, the state of each stack frame and can go back in time." ]
-        , awsExpirationBanner
         ]
-
-
-awsExpirationBanner : Html msg
-awsExpirationBanner =
-    div
-        [ css
-            [ Tw.bg_color Tw.red_600
-            , Tw.text_color Tw.white
-            , Tw.px_6
-            , Tw.py_3
-            , Tw.rounded
-            , Tw.mt_4
-            , Tw.max_w_2xl
-            , Tw.text_center
-            , Css.lineHeight (Css.num 1.6)
-            ]
-        ]
-        [ p [ css [ Tw.m_0, Tw.font_semibold ] ]
-            [ text "⚠️ Important Notice: This tool uses AWS free tier which will expire within a day, so the project will be down. "
-            , text "If it's helpful within your company or organization, you can "
-            , a
-                [ href "https://github.com/sponsors/ahmedakef"
-                , target "_blank"
-                , css [ Tw.text_color Tw.white, Tw.underline, Css.fontWeight Css.bold, Css.hover [ Css.opacity (Css.num 0.8) ]]
-                ]
-                [ text "sponsor it" ]
-            , text ", give a "
-            , a
-                [ href "https://github.com/ahmedakef/gotutor"
-                , target "_blank"
-                , css [ Tw.text_color Tw.white, Tw.underline, Css.fontWeight Css.bold, Css.hover [ Css.opacity (Css.num 0.8) ]]
-                ]
-                [ text "star on GitHub" ]
-            , text ", or "
-            , a
-                [ href "https://ko-fi.com/M4M319RW5Y"
-                , target "_blank"
-                , css [ Tw.text_color Tw.white, Tw.underline, Css.fontWeight Css.bold, Css.hover [ Css.opacity (Css.num 0.8) ]]
-                ]
-                [ text "buy me a coffee" ]
-            , text "!"
-            ]
-        ]
-
 
 feedback : Html msg
 feedback =
