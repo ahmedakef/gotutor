@@ -73,14 +73,17 @@ func (h *Handler) HandleFixCode(w http.ResponseWriter, r *http.Request) {
 
 // cleanCodeResponse extracts clean Go code from LLM response
 func cleanCodeResponse(resp string) string {
-	// Remove markdown code blocks
-	re := regexp.MustCompile("```(?:go)?\n?(.*?)\n?```")
-	matches := re.FindStringSubmatch(resp)
-	if len(matches) > 1 {
-		resp = matches[1]
+	resp = strings.TrimSpace(resp)
+
+	// Markdown fences often wrap multiline code; "." must match newlines (?s).
+	re := regexp.MustCompile("(?s)```(?:golang|go)?\\s*\\r?\\n?(.*?)```")
+	if m := re.FindStringSubmatch(resp); len(m) > 1 {
+		if inner := strings.TrimSpace(m[1]); inner != "" {
+			return inner
+		}
 	}
 
-	// Split by lines and find the code section
+	// No usable fenced block: scan for a Go snippet (not only full packages).
 	lines := strings.Split(resp, "\n")
 	var codeLines []string
 	inCode := false
@@ -88,30 +91,31 @@ func cleanCodeResponse(resp string) string {
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
 
-		// Start collecting when we see "package main"
-		if strings.HasPrefix(trimmed, "package main") {
-			inCode = true
-			codeLines = append(codeLines, line)
+		if !inCode {
+			if strings.HasPrefix(trimmed, "package ") {
+				inCode = true
+			} else if strings.HasPrefix(trimmed, "func ") || strings.HasPrefix(trimmed, "import ") {
+				inCode = true
+			}
+			if inCode {
+				codeLines = append(codeLines, line)
+			}
 			continue
 		}
 
-		// Stop collecting when we hit explanation text
-		if inCode && (strings.HasPrefix(trimmed, "Explanation:") ||
+		if strings.HasPrefix(trimmed, "Explanation:") ||
 			strings.HasPrefix(trimmed, "```") ||
 			strings.HasPrefix(trimmed, "Here's") ||
 			strings.HasPrefix(trimmed, "This corrected") ||
-			strings.HasPrefix(trimmed, "*")) {
+			strings.HasPrefix(trimmed, "*") {
 			break
 		}
 
-		// Collect code lines
-		if inCode {
-			codeLines = append(codeLines, line)
-		}
+		codeLines = append(codeLines, line)
 	}
 
 	if len(codeLines) > 0 {
-		return strings.Join(codeLines, "\n")
+		return strings.TrimSpace(strings.Join(codeLines, "\n"))
 	}
 
 	return resp
