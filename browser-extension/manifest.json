@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "GoTutor",
+  "version": "1.0.0",
+  "description": "Adds an 'Open in GoTutor' button to Go by Example and Go Tour pages to visualize Go code step-by-step.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "gotutor@ahmedakef.github.io",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://gobyexample.com/*"],
+      "js": ["content-gobyexample.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["*://go.dev/tour/*"],
+      "js": ["content-gotour.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": ["activeTab"]
+}
