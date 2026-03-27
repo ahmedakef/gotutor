@@ -283,7 +283,7 @@ update msg state env =
                             ( Success { successState | mode = Edit, errorMessage = Just ("Error while sharing source code: " ++ HttpHelper.errorToString err) }, Cmd.none )
 
                 CodeUpdated code ->
-                    ( Success { successState | sourceCode = code }, Cmd.none )
+                    ( Success { successState | sourceCode = code, shareUrl = Nothing }, Cmd.none )
 
                 EditCode ->
                     ( Success { successState | mode = Edit }, Cmd.none )
