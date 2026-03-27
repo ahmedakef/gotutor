@@ -362,7 +362,7 @@ update msg state env =
                 GotSharedCode sharedCodeResult ->
                     case sharedCodeResult of
                         Ok sharedCode ->
-                            ( Success (StepsState Edit { steps = [], duration = "", stdout = "", stderr = "" } 0 sharedCode Nothing (Scroll 0 0) Nothing Nothing { showOnlyExportedFields = True, showMemoryAddresses = False }), Cmd.none )
+                            ( Success (StepsState WaitingSteps { steps = [], duration = "", stdout = "", stderr = "" } 0 sharedCode Nothing (Scroll 0 0) Nothing Nothing { showOnlyExportedFields = True, showMemoryAddresses = False }), getSteps sharedCode env )
 
                         Err err ->
                             ( Failure ("Error while loading shared source code: " ++ HttpHelper.errorToString err), Cmd.none )
