@@ -35,7 +35,7 @@ gVisor:
 ollama-setup:
 	curl -fsSL https://ollama.com/install.sh | sh
 	ollama serve &
-	ollama run stable-code:3b
+	ollama run qwen2.5-coder:0.5b
 
 ollama-run:
 	ollama serve &

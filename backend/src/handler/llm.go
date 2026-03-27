@@ -43,7 +43,7 @@ func (h *Handler) HandleFixCode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Initialize LLM
-	llm, err := ollama.New(ollama.WithModel("stable-code:3b"))
+	llm, err := ollama.New(ollama.WithModel("qwen2.5-coder:0.5b"))
 	if err != nil {
 		h.logger.Error().Err(err).Msg("failed to initialize LLM")
 		h.respondWithError(w, "failed to initialize LLM", http.StatusInternalServerError)
