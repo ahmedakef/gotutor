@@ -446,8 +446,11 @@ varView config v =
                         _ ->
                             var.value
 
+                isSliceOrArray =
+                    String.startsWith "[]" var.type_ || isArrayType var.type_
+
                 children =
-                    if String.startsWith "[]" var.type_ then
+                    if isSliceOrArray then
                         var.children
                             |> List.indexedMap
                                 (\i child ->
@@ -492,7 +495,7 @@ varView config v =
 
                          , text value
                          ]
-                            ++ (if String.startsWith "[]" var.type_ then
+                            ++ (if isSliceOrArray then
                                     [ sub [] [ text <| "len: " ++ String.fromInt var.len ++ ", cap:" ++ String.fromInt var.cap ] ]
 
                                 else
@@ -502,6 +505,21 @@ varView config v =
                     , ul [ css [ Tw.list_none ] ] (List.map (varView config) children)
                     ]
                 ]
+
+
+isArrayType : String -> Bool
+isArrayType type_ =
+    case String.uncons type_ of
+        Just ( '[', rest ) ->
+            case String.uncons rest of
+                Just ( firstChar, _ ) ->
+                    Char.isDigit firstChar
+
+                Nothing ->
+                    False
+
+        _ ->
+            False
 
 
 varsView : Config -> String -> Maybe (List Variable) -> List (Attribute msg) -> Html msg
