@@ -432,6 +432,9 @@ editOrViewButton mode =
         WaitingSourceCode ->
             p [ css [ Css.marginTop (Css.px 10), Css.marginBottom (Css.px 0) ] ] [ text "Waiting for source code... ⏳" ]
 
+        WaitingLLM ->
+            p [ css [ Css.marginTop (Css.px 10), Css.marginBottom (Css.px 0) ] ] [ text "Waiting for LLM response... ⏳" ]
+
 
 varView : Config -> Variable -> Html msg
 varView config v =

@@ -65,6 +65,7 @@ type Mode
     | View
     | WaitingSteps
     | WaitingSourceCode
+    | WaitingLLM
 
 
 type alias Scroll =
@@ -324,7 +325,7 @@ update msg state env =
                     ( Success { successState | mode = WaitingSourceCode }, getFmt successState.sourceCode env )
 
                 FixCodeWithAI ->
-                    ( Success { successState | mode = WaitingSourceCode }, getFixCode successState.sourceCode successState.errorMessage env )
+                    ( Success { successState | mode = WaitingLLM }, getFixCode successState.sourceCode successState.errorMessage env )
 
                 Share ->
                     ( state, callShare successState.sourceCode )
