@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "GoTutor",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Adds an 'Open in GoTutor' button to Go by Example and Go Tour pages to visualize Go code step-by-step.",
   "browser_specific_settings": {
     "gecko": {
@@ -30,5 +30,13 @@
       "run_at": "document_idle"
     }
   ],
-  "permissions": ["activeTab"]
+  "permissions": ["activeTab"],
+  "action": {
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "GoTutor"
+  }
 }
