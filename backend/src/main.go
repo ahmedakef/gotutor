@@ -14,12 +14,10 @@ import (
 )
 
 const (
-	_port             = 8080
-	_maxCacheSize     = 250 * 1024 * 1024 // 100MB
-	_maxCacheItems    = 100
-	_cacheTTL         = 0
-	_callsBucket      = "GetExecutionStepsCalls"
-	_sourceCodeBucket = "SourceCode"
+	_port          = 8080
+	_maxCacheSize  = 250 * 1024 * 1024 // 100MB
+	_maxCacheItems = 100
+	_cacheTTL      = 0
 )
 
 func main() {
@@ -52,6 +50,7 @@ func main() {
 	mux.HandleFunc("/fmt", h.HandleFmt)
 	mux.HandleFunc("/fix-code", h.HandleFixCode)
 	mux.HandleFunc("/subscribe-email", h.HandleEmailSubscription)
+	mux.HandleFunc("/dashboard", h.HandleDashboard)
 
 	logger.Info().Msg(fmt.Sprintf("starting server on http://localhost:%d", _port))
 	if err := http.ListenAndServe(fmt.Sprintf(":%d", _port), handler.CorsMiddleware(mux)); err != nil {

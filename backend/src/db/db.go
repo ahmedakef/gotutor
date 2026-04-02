@@ -120,6 +120,87 @@ func (db *DB) SaveSourceCode(sourceCode string) error {
 	})
 }
 
+// SourceCodeEntry represents a stored source code entry
+type SourceCodeEntry struct {
+	Hash      string
+	Code      string
+	UpdatedAt string
+}
+
+// EmailEntry represents a stored email subscription
+type EmailEntry struct {
+	Email        string
+	SubscribedAt string
+}
+
+// GetAllCallCounters returns all API call counters
+func (db *DB) GetAllCallCounters() (map[string]uint64, error) {
+	counters := make(map[string]uint64)
+	err := db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(CallsBucket))
+		if b == nil {
+			return nil
+		}
+		return b.ForEach(func(k, v []byte) error {
+			if len(v) == 8 {
+				counters[string(k)] = binary.BigEndian.Uint64(v)
+			}
+			return nil
+		})
+	})
+	return counters, err
+}
+
+// GetAllSourceCodes returns all stored source codes
+func (db *DB) GetAllSourceCodes() ([]SourceCodeEntry, error) {
+	var entries []SourceCodeEntry
+	err := db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(SourceCodeBucket))
+		if b == nil {
+			return nil
+		}
+		return b.ForEach(func(k, v []byte) error {
+			// Each key is a hash, value is nil (it's a nested bucket)
+			codeBucket := b.Bucket(k)
+			if codeBucket == nil {
+				return nil
+			}
+			entry := SourceCodeEntry{
+				Hash:      fmt.Sprintf("%x", k),
+				Code:      string(codeBucket.Get([]byte(CodeKey))),
+				UpdatedAt: string(codeBucket.Get([]byte(UpdatedAtKey))),
+			}
+			entries = append(entries, entry)
+			return nil
+		})
+	})
+	return entries, err
+}
+
+// GetAllEmails returns all email subscriptions
+func (db *DB) GetAllEmails() ([]EmailEntry, error) {
+	var entries []EmailEntry
+	err := db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(EmailsBucket))
+		if b == nil {
+			return nil
+		}
+		return b.ForEach(func(k, v []byte) error {
+			emailBucket := b.Bucket(k)
+			if emailBucket == nil {
+				return nil
+			}
+			entry := EmailEntry{
+				Email:        string(emailBucket.Get([]byte(EmailKey))),
+				SubscribedAt: string(emailBucket.Get([]byte(SubscribedAtKey))),
+			}
+			entries = append(entries, entry)
+			return nil
+		})
+	})
+	return entries, err
+}
+
 // SaveEmailSubscription stores an email subscription
 func (db *DB) SaveEmailSubscription(email string) error {
 	return db.Update(func(tx *bolt.Tx) error {

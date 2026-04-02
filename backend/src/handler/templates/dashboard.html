@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>GoTutor Dashboard</title>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f0f2f5;
+            color: #333;
+        }
+
+        h1 {
+            margin: 0 0 24px;
+        }
+
+        h2 {
+            margin: 32px 0 12px;
+            color: #555;
+        }
+
+        .badge {
+            background: #3498db;
+            color: #fff;
+            border-radius: 12px;
+            padding: 2px 10px;
+            font-size: 14px;
+            margin-left: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 24px;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 10px 14px;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background: #fafafa;
+            font-weight: 600;
+            color: #555;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-break: break-all;
+            font-size: 13px;
+            max-width: 600px;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="top-bar">
+        <h1>GoTutor Dashboard</h1>
+        <form method="GET" action="/dashboard"><button type="submit"
+                style="padding:8px 16px;cursor:pointer;">Logout</button></form>
+    </div>
+
+    <h2>API Call Counters <span class="badge">{{len .CallCounters}}</span></h2>
+    <table>
+        <tr>
+            <th>Endpoint</th>
+            <th>Count</th>
+        </tr>
+        {{range $endpoint, $count := .CallCounters}}
+        <tr>
+            <td>{{$endpoint}}</td>
+            <td>{{$count}}</td>
+        </tr>
+        {{end}}
+    </table>
+
+    <h2>Source Codes <span class="badge">{{len .SourceCodes}}</span></h2>
+    <table>
+        <tr>
+            <th>Hash</th>
+            <th>Code</th>
+            <th>Updated At</th>
+        </tr>
+        {{range .SourceCodes}}
+        <tr>
+            <td title="{{.Hash}}">{{.ShortHash}}…</td>
+            <td>
+                <pre>{{.TruncatedCode}}</pre>
+            </td>
+            <td>{{.UpdatedAt}}</td>
+        </tr>
+        {{end}}
+    </table>
+
+    <h2>Email Subscriptions <span class="badge">{{len .Emails}}</span></h2>
+    <table>
+        <tr>
+            <th>Email</th>
+            <th>Subscribed At</th>
+        </tr>
+        {{range .Emails}}
+        <tr>
+            <td>{{.Email}}</td>
+            <td>{{.SubscribedAt}}</td>
+        </tr>
+        {{end}}
+    </table>
+</body>
+
+</html>
