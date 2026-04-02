@@ -1,7 +1,11 @@
 package handler
 
 import (
+	"crypto/hmac"
+	"crypto/rand"
+	"crypto/sha256"
 	"embed"
+	"encoding/hex"
 	"html/template"
 	"net/http"
 	"os"
@@ -13,6 +17,17 @@ import (
 var templateFS embed.FS
 
 var templates = template.Must(template.ParseFS(templateFS, "templates/*.html"))
+
+// sessionKey is generated at startup for signing cookies. Sessions don't survive restarts.
+var sessionKey = func() []byte {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		panic(err)
+	}
+	return b
+}()
+
+const sessionCookieName = "gotutor_session"
 
 func getDashboardPassword() string {
 	if p := os.Getenv("DASHBOARD_PASSWORD"); p != "" {
@@ -49,7 +64,12 @@ type emailView struct {
 func (h *Handler) HandleDashboard(w http.ResponseWriter, r *http.Request) {
 	h.logRequest(r)
 
+	// Check for valid session cookie on GET requests
 	if r.Method == http.MethodGet {
+		if isValidSession(r) {
+			h.renderDashboard(w)
+			return
+		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		templates.ExecuteTemplate(w, "login.html", loginData{})
 		return
@@ -73,6 +93,34 @@ func (h *Handler) HandleDashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Set session cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     sessionCookieName,
+		Value:    generateSessionToken(),
+		Path:     "/dashboard",
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   86400, // 24 hours
+	})
+
+	h.renderDashboard(w)
+}
+
+func generateSessionToken() string {
+	mac := hmac.New(sha256.New, sessionKey)
+	mac.Write([]byte(getDashboardPassword()))
+	return hex.EncodeToString(mac.Sum(nil))
+}
+
+func isValidSession(r *http.Request) bool {
+	cookie, err := r.Cookie(sessionCookieName)
+	if err != nil {
+		return false
+	}
+	return cookie.Value == generateSessionToken()
+}
+
+func (h *Handler) renderDashboard(w http.ResponseWriter) {
 	callCounters, err := h.db.GetAllCallCounters()
 	if err != nil {
 		h.logger.Error().Err(err).Msg("failed to get call counters")
