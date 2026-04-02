@@ -446,7 +446,7 @@ varView config v =
                 value =
                     case var.type_ of
                         "string" ->
-                            "\"" ++ var.value ++ "\""
+                            quotedString var.value
 
                         _ ->
                             var.value
@@ -454,8 +454,14 @@ varView config v =
                 isSliceOrArray =
                     String.startsWith "[]" var.type_ || isArrayType var.type_
 
+                isMap =
+                    String.startsWith "map[" var.type_
+
                 children =
-                    if isSliceOrArray then
+                    if isMap then
+                        pairMapChildren var.children
+
+                    else if isSliceOrArray then
                         var.children
                             |> List.indexedMap
                                 (\i child ->
@@ -503,6 +509,9 @@ varView config v =
                             ++ (if isSliceOrArray then
                                     [ sub [] [ text <| "len: " ++ String.fromInt var.len ++ ", cap:" ++ String.fromInt var.cap ] ]
 
+                                else if isMap then
+                                    [ sub [] [ text <| "len: " ++ String.fromInt var.len ] ]
+
                                 else
                                     []
                                )
@@ -525,6 +534,30 @@ isArrayType type_ =
 
         _ ->
             False
+
+
+quotedString : String -> String
+quotedString s =
+    "\"" ++ s ++ "\""
+
+
+pairMapChildren : List Variable -> List Variable
+pairMapChildren children =
+    case children of
+        (VariableI key) :: (VariableI val) :: rest ->
+            let
+                keyStr =
+                    case key.type_ of
+                        "string" ->
+                            quotedString key.value
+
+                        _ ->
+                            key.value
+            in
+            VariableI { val | name = keyStr } :: pairMapChildren rest
+
+        _ ->
+            []
 
 
 varsView : Config -> String -> Maybe (List Variable) -> List (Attribute msg) -> Html msg

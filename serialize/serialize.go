@@ -16,7 +16,13 @@ import (
 )
 
 var errNoMain = errors.New("main function not found")
-var defaultLoadConfig = api.LoadConfig{MaxStringLen: 64, MaxStructFields: 10, MaxArrayValues: 10}
+var defaultLoadConfig = api.LoadConfig{
+	FollowPointers:     true,
+	MaxVariableRecurse: 2,
+	MaxStringLen:       64,
+	MaxStructFields:    10,
+	MaxArrayValues:     10,
+}
 
 type Serializer struct {
 	client *gateway.Debug
