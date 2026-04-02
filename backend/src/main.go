@@ -50,6 +50,7 @@ func main() {
 	mux.HandleFunc("/fmt", h.HandleFmt)
 	mux.HandleFunc("/fix-code", h.HandleFixCode)
 	mux.HandleFunc("/subscribe-email", h.HandleEmailSubscription)
+	mux.HandleFunc("/unsubscribe", h.HandleUnsubscribe)
 	mux.HandleFunc("/dashboard", h.HandleDashboard)
 
 	logger.Info().Msg(fmt.Sprintf("starting server on http://localhost:%d", _port))

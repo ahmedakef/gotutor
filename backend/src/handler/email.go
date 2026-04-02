@@ -2,6 +2,8 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
+	"html"
 	"net/http"
 )
 
@@ -67,4 +69,41 @@ func isValidEmail(email string) bool {
 	}
 
 	return atIndex > 0 && atIndex < len(email)-1
+}
+
+type unsubscribeData struct {
+	Title    string
+	Message  string
+	Color    string
+	ShowForm bool
+}
+
+// HandleUnsubscribe handles email unsubscribe requests via GET.
+func (h *Handler) HandleUnsubscribe(w http.ResponseWriter, r *http.Request) {
+	h.logRequest(r)
+
+	email := r.URL.Query().Get("email")
+	if email == "" {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		templates.ExecuteTemplate(w, "unsubscribe.html", unsubscribeData{
+			Title: "Unsubscribe", ShowForm: true,
+		})
+		return
+	}
+
+	err := h.db.DeleteEmailSubscription(email)
+	if err != nil {
+		h.logger.Error().Err(err).Str("email", email).Msg("failed to unsubscribe email")
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(http.StatusInternalServerError)
+		templates.ExecuteTemplate(w, "unsubscribe.html", unsubscribeData{
+			Title: "Unsubscribe Failed", Message: fmt.Sprintf("Something went wrong. Please try again later: %s", err.Error()), Color: "#e74c3c",
+		})
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	templates.ExecuteTemplate(w, "unsubscribe.html", unsubscribeData{
+		Title: "Unsubscribed", Message: "You have been successfully unsubscribed: " + html.EscapeString(email), Color: "#27ae60",
+	})
 }

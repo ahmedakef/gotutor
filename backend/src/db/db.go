@@ -230,6 +230,17 @@ func (db *DB) SaveEmailSubscription(email string) error {
 	})
 }
 
+// DeleteEmailSubscription removes an email subscription
+func (db *DB) DeleteEmailSubscription(email string) error {
+	return db.Update(func(tx *bolt.Tx) error {
+		emailsBucket := tx.Bucket([]byte(EmailsBucket))
+		if emailsBucket == nil {
+			return fmt.Errorf("bucket %s not found", EmailsBucket)
+		}
+		return emailsBucket.DeleteBucket([]byte(email))
+	})
+}
+
 // ParseTimestamp parses timestamps stored in the DB.
 // Handles both RFC822 (new format) and time.Now().String() (old format).
 func ParseTimestamp(raw string) time.Time {

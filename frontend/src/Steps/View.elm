@@ -56,6 +56,8 @@ view state =
                             , div [] [editOrViewButton visualizeState.mode]
                             ]
                             , codeView visualizeState
+                            , div [ css [ Tw.text_xs, Tw.text_color Tw.gray_400, Tw.mt_1, Css.width (Css.pct 85) ] ]
+                                [ text "Your code is sent to our server for execution and cached to improve performance. We don't share it." ]
                             , div [ css [ Css.displayFlex, Css.flexDirection Css.column, Tw.box_border
                                     ,Tw.bg_color Tw.white, Tw.p_4, borderStyle, Tw.rounded_lg, Tw.mt_4, Css.width (Css.pct 85) ] ]
                                 [ div [ css [ Tw.flex, Tw.flex_row, Tw.items_center, Tw.gap_2, Tw.justify_between ] ]

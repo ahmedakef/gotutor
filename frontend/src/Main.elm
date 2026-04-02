@@ -523,6 +523,8 @@ subscriptionForm model =
                 ]
                 [ text "Subscribe" ]
             ]
+        , div [ css [ Tw.text_xs, Tw.text_color Tw.gray_500, Tw.mt_1 ] ]
+            [ text "By subscribing, you agree to receive updates. You can unsubscribe anytime." ]
         , case model.subscriptionStatus of
             Just (Ok message) ->
                 div [ css [ Tw.text_sm, Tw.text_color Tw.green_600, Tw.mt_2 ] ]
