@@ -4,6 +4,7 @@ Description=Go Application
 [Service]
 Environment=ENV=production
 Environment=PATH=/usr/local/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+EnvironmentFile=/etc/gotutor/env
 
 ExecStart=/home/ubuntu/gotutor/backend/backend
 
