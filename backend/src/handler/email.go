@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html"
 	"net/http"
+	"strings"
 )
 
 // EmailSubscriptionRequest is the request for the email subscription
@@ -28,6 +29,7 @@ func (h *Handler) HandleEmailSubscription(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	req.Email = strings.TrimSpace(req.Email)
 	if req.Email == "" {
 		h.respondWithError(w, "email is required", http.StatusBadRequest)
 		return
@@ -51,24 +53,34 @@ func (h *Handler) HandleEmailSubscription(w http.ResponseWriter, r *http.Request
 	}, http.StatusOK)
 }
 
-// isValidEmail performs basic email validation
+// isValidEmail validates email format.
 func isValidEmail(email string) bool {
-	// Basic email validation - contains @ and has parts before and after
-	if len(email) < 3 {
+	if len(email) < 5 || len(email) > 254 {
 		return false
 	}
 
-	atIndex := -1
-	for i, char := range email {
-		if char == '@' {
-			if atIndex != -1 {
-				return false // Multiple @ symbols
-			}
-			atIndex = i
-		}
+	parts := strings.Split(email, "@")
+	if len(parts) != 2 {
+		return false
+	}
+	local, domain := parts[0], parts[1]
+
+	// Local part: 1-64 chars, no leading/trailing dots, no consecutive dots
+	if len(local) == 0 || len(local) > 64 {
+		return false
+	}
+	if local[0] == '.' || local[len(local)-1] == '.' {
+		return false
+	}
+	// Domain: must have at least one dot, no leading/trailing/consecutive dots or hyphens
+	if len(domain) == 0 || len(domain) > 253 {
+		return false
+	}
+	if !strings.Contains(domain, ".") {
+		return false
 	}
 
-	return atIndex > 0 && atIndex < len(email)-1
+	return true
 }
 
 type unsubscribeData struct {
@@ -82,11 +94,20 @@ type unsubscribeData struct {
 func (h *Handler) HandleUnsubscribe(w http.ResponseWriter, r *http.Request) {
 	h.logRequest(r)
 
-	email := r.URL.Query().Get("email")
+	email := strings.TrimSpace(r.URL.Query().Get("email"))
 	if email == "" {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		templates.ExecuteTemplate(w, "unsubscribe.html", unsubscribeData{
 			Title: "Unsubscribe", ShowForm: true,
+		})
+		return
+	}
+
+	if !isValidEmail(email) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(http.StatusBadRequest)
+		templates.ExecuteTemplate(w, "unsubscribe.html", unsubscribeData{
+			Title: "Invalid Email", Message: "Please provide a valid email address.", Color: "#e74c3c", ShowForm: true,
 		})
 		return
 	}
