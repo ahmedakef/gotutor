@@ -110,7 +110,8 @@ func (h *Handler) HandleDashboard(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   86400, // 24 hours
 	})
 
-	h.renderDashboard(w)
+	// Redirect to GET to avoid "Confirm Form Resubmission" on refresh
+	http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
 }
 
 func generateSessionToken() string {
