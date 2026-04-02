@@ -114,14 +114,14 @@
     </table>
 
     <h2>Source Codes <span class="badge">{{len .SourceCodes}}</span></h2>
-    <table>
+    <table id="source-codes-table">
         <tr>
             <th>Hash</th>
             <th>Code</th>
             <th>Updated At</th>
         </tr>
         {{range .SourceCodes}}
-        <tr>
+        <tr class="data-row">
             <td title="{{.Hash}}">{{.ShortHash}}…</td>
             <td>
                 <pre class="code-preview">{{.TruncatedCode}}</pre>
@@ -134,21 +134,45 @@
         </tr>
         {{end}}
     </table>
+    {{if gt (len .SourceCodes) 10}}
+    <button class="see-more-btn" onclick="toggleTable('source-codes-table', this)">Show all ({{len .SourceCodes}})</button>
+    {{end}}
 
     <h2>Email Subscriptions <span class="badge">{{len .Emails}}</span></h2>
-    <table>
+    <table id="emails-table">
         <tr>
             <th>Email</th>
             <th>Subscribed At</th>
         </tr>
         {{range .Emails}}
-        <tr>
+        <tr class="data-row">
             <td>{{.Email}}</td>
             <td>{{.SubscribedAt}}</td>
         </tr>
         {{end}}
     </table>
+    {{if gt (len .Emails) 10}}
+    <button class="see-more-btn" onclick="toggleTable('emails-table', this)">Show all ({{len .Emails}})</button>
+    {{end}}
 <script>
+var LIMIT = 10;
+
+function limitRows(tableId) {
+    var rows = document.getElementById(tableId).querySelectorAll('.data-row');
+    for (var i = LIMIT; i < rows.length; i++) {
+        rows[i].style.display = 'none';
+    }
+}
+
+function toggleTable(tableId, btn) {
+    var rows = document.getElementById(tableId).querySelectorAll('.data-row');
+    var hidden = rows.length > LIMIT && rows[LIMIT].style.display === 'none';
+    for (var i = LIMIT; i < rows.length; i++) {
+        rows[i].style.display = hidden ? '' : 'none';
+    }
+    btn.textContent = hidden ? 'Show less' : 'Show all (' + rows.length + ')';
+}
+
 function toggleCode(btn) {
     var td = btn.parentElement;
     var preview = td.querySelector('.code-preview');
@@ -163,6 +187,9 @@ function toggleCode(btn) {
         btn.textContent = 'See more';
     }
 }
+
+limitRows('source-codes-table');
+limitRows('emails-table');
 </script>
 </body>
 
