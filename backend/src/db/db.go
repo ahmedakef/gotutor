@@ -116,7 +116,7 @@ func (db *DB) SaveSourceCode(sourceCode string) error {
 			return fmt.Errorf("failed to save source code: %w", err)
 		}
 
-		return codeBucket.Put([]byte(UpdatedAtKey), []byte(time.Now().String()))
+		return codeBucket.Put([]byte(UpdatedAtKey), []byte(time.Now().Format(time.RFC822)))
 	})
 }
 
@@ -225,6 +225,6 @@ func (db *DB) SaveEmailSubscription(email string) error {
 			return fmt.Errorf("failed to save email: %w", err)
 		}
 
-		return emailBucket.Put([]byte(SubscribedAtKey), []byte(time.Now().String()))
+		return emailBucket.Put([]byte(SubscribedAtKey), []byte(time.Now().Format(time.RFC822)))
 	})
 }

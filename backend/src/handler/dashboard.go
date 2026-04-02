@@ -5,6 +5,8 @@ import (
 	"html/template"
 	"net/http"
 	"os"
+	"strings"
+	"time"
 )
 
 //go:embed templates/*.html
@@ -27,6 +29,8 @@ type sourceCodeView struct {
 	Hash          string
 	ShortHash     string
 	TruncatedCode string
+	FullCode      string
+	IsTruncated   bool
 	UpdatedAt     string
 }
 
@@ -92,9 +96,10 @@ func (h *Handler) HandleDashboard(w http.ResponseWriter, r *http.Request) {
 
 	var codeViews []sourceCodeView
 	for _, entry := range sourceCodes {
-		code := entry.Code
-		if len(code) > 200 {
-			code = code[:200] + "..."
+		truncated := entry.Code
+		isTruncated := len(truncated) > 200
+		if isTruncated {
+			truncated = truncated[:200] + "..."
 		}
 		shortHash := entry.Hash
 		if len(shortHash) > 16 {
@@ -103,8 +108,10 @@ func (h *Handler) HandleDashboard(w http.ResponseWriter, r *http.Request) {
 		codeViews = append(codeViews, sourceCodeView{
 			Hash:          entry.Hash,
 			ShortHash:     shortHash,
-			TruncatedCode: code,
-			UpdatedAt:     entry.UpdatedAt,
+			TruncatedCode: truncated,
+			FullCode:      entry.Code,
+			IsTruncated:   isTruncated,
+			UpdatedAt:     formatTimestamp(entry.UpdatedAt),
 		})
 	}
 
@@ -112,7 +119,7 @@ func (h *Handler) HandleDashboard(w http.ResponseWriter, r *http.Request) {
 	for _, entry := range emails {
 		emailViews = append(emailViews, emailView{
 			Email:        entry.Email,
-			SubscribedAt: entry.SubscribedAt,
+			SubscribedAt: formatTimestamp(entry.SubscribedAt),
 		})
 	}
 
@@ -122,4 +129,17 @@ func (h *Handler) HandleDashboard(w http.ResponseWriter, r *http.Request) {
 		SourceCodes:  codeViews,
 		Emails:       emailViews,
 	})
+}
+
+// formatTimestamp parses the Go time.String() format and returns a human-friendly string.
+func formatTimestamp(raw string) string {
+	// New entries use RFC822. Old entries used time.Now().String() — try both.
+	if t, err := time.Parse(time.RFC822, raw); err == nil {
+		return t.Format(time.RFC822)
+	}
+	raw, _, _ = strings.Cut(raw, " m=")
+	if t, err := time.Parse("2006-01-02 15:04:05.999999999 +0000 UTC", raw); err == nil {
+		return t.Format(time.RFC822)
+	}
+	return raw
 }

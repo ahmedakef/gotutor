@@ -72,6 +72,22 @@
             align-items: center;
             margin-bottom: 24px;
         }
+
+        .see-more-btn {
+            background: none;
+            border: 1px solid #3498db;
+            color: #3498db;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-top: 6px;
+        }
+
+        .see-more-btn:hover {
+            background: #3498db;
+            color: #fff;
+        }
     </style>
 </head>
 
@@ -107,7 +123,11 @@
         <tr>
             <td title="{{.Hash}}">{{.ShortHash}}…</td>
             <td>
-                <pre>{{.TruncatedCode}}</pre>
+                <pre class="code-preview">{{.TruncatedCode}}</pre>
+                {{if .IsTruncated}}
+                <pre class="code-full" style="display:none;">{{.FullCode}}</pre>
+                <button class="see-more-btn" onclick="toggleCode(this)">See more</button>
+                {{end}}
             </td>
             <td>{{.UpdatedAt}}</td>
         </tr>
@@ -127,6 +147,22 @@
         </tr>
         {{end}}
     </table>
+<script>
+function toggleCode(btn) {
+    var td = btn.parentElement;
+    var preview = td.querySelector('.code-preview');
+    var full = td.querySelector('.code-full');
+    if (full.style.display === 'none') {
+        preview.style.display = 'none';
+        full.style.display = '';
+        btn.textContent = 'See less';
+    } else {
+        full.style.display = 'none';
+        preview.style.display = '';
+        btn.textContent = 'See more';
+    }
+}
+</script>
 </body>
 
 </html>
