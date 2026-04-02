@@ -9,8 +9,10 @@ import (
 	"html/template"
 	"net/http"
 	"os"
-	"strings"
+	"sort"
 	"time"
+
+	"github.com/ahmedakef/gotutor/backend/src/db"
 )
 
 //go:embed templates/*.html
@@ -47,6 +49,7 @@ type sourceCodeView struct {
 	FullCode      string
 	IsTruncated   bool
 	UpdatedAt     string
+	updatedAtTime time.Time
 }
 
 type dashboardData struct {
@@ -159,15 +162,20 @@ func (h *Handler) renderDashboard(w http.ResponseWriter) {
 			TruncatedCode: truncated,
 			FullCode:      entry.Code,
 			IsTruncated:   isTruncated,
-			UpdatedAt:     formatTimestamp(entry.UpdatedAt),
+			UpdatedAt:     db.FormatTimestamp(entry.UpdatedAt),
+			updatedAtTime: db.ParseTimestamp(entry.UpdatedAt),
 		})
 	}
+
+	sort.Slice(codeViews, func(i, j int) bool {
+		return codeViews[i].updatedAtTime.After(codeViews[j].updatedAtTime)
+	})
 
 	var emailViews []emailView
 	for _, entry := range emails {
 		emailViews = append(emailViews, emailView{
 			Email:        entry.Email,
-			SubscribedAt: formatTimestamp(entry.SubscribedAt),
+			SubscribedAt: db.FormatTimestamp(entry.SubscribedAt),
 		})
 	}
 
@@ -179,15 +187,3 @@ func (h *Handler) renderDashboard(w http.ResponseWriter) {
 	})
 }
 
-// formatTimestamp parses the Go time.String() format and returns a human-friendly string.
-func formatTimestamp(raw string) string {
-	// New entries use RFC822. Old entries used time.Now().String() — try both.
-	if t, err := time.Parse(time.RFC822, raw); err == nil {
-		return t.Format(time.RFC822)
-	}
-	raw, _, _ = strings.Cut(raw, " m=")
-	if t, err := time.Parse("2006-01-02 15:04:05.999999999 +0000 UTC", raw); err == nil {
-		return t.Format(time.RFC822)
-	}
-	return raw
-}

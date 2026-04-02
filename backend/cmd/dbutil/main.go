@@ -109,7 +109,7 @@ func getDBData() (Result, error) {
 
 	// Sort sources by UpdatedAt in descending order
 	sort.Slice(sources, func(i, j int) bool {
-		return sources[i].UpdatedAt < sources[j].UpdatedAt
+		return dbpkg.ParseTimestamp(sources[i].UpdatedAt).After(dbpkg.ParseTimestamp(sources[j].UpdatedAt))
 	})
 
 	return Result{

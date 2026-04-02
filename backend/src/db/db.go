@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	bolt "go.etcd.io/bbolt"
@@ -227,4 +228,25 @@ func (db *DB) SaveEmailSubscription(email string) error {
 
 		return emailBucket.Put([]byte(SubscribedAtKey), []byte(time.Now().Format(time.RFC822)))
 	})
+}
+
+// ParseTimestamp parses timestamps stored in the DB.
+// Handles both RFC822 (new format) and time.Now().String() (old format).
+func ParseTimestamp(raw string) time.Time {
+	if t, err := time.Parse(time.RFC822, raw); err == nil {
+		return t
+	}
+	raw, _, _ = strings.Cut(raw, " m=")
+	if t, err := time.Parse("2006-01-02 15:04:05.999999999 +0000 UTC", raw); err == nil {
+		return t
+	}
+	return time.Time{}
+}
+
+// FormatTimestamp parses a stored timestamp and returns it in RFC822 format.
+func FormatTimestamp(raw string) string {
+	if t := ParseTimestamp(raw); !t.IsZero() {
+		return t.Format(time.RFC822)
+	}
+	return raw
 }
