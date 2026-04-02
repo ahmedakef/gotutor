@@ -15,6 +15,10 @@ import (
 	"github.com/ahmedakef/gotutor/backend/src/db"
 )
 
+const (
+	sourceCodeTruncatedLength = 450
+)
+
 //go:embed templates/*.html
 var templateFS embed.FS
 
@@ -148,9 +152,9 @@ func (h *Handler) renderDashboard(w http.ResponseWriter) {
 	var codeViews []sourceCodeView
 	for _, entry := range sourceCodes {
 		truncated := entry.Code
-		isTruncated := len(truncated) > 200
+		isTruncated := len(truncated) > sourceCodeTruncatedLength
 		if isTruncated {
-			truncated = truncated[:200] + "..."
+			truncated = truncated[:sourceCodeTruncatedLength] + "..."
 		}
 		shortHash := entry.Hash
 		if len(shortHash) > 16 {
@@ -186,4 +190,3 @@ func (h *Handler) renderDashboard(w http.ResponseWriter) {
 		Emails:       emailViews,
 	})
 }
-
