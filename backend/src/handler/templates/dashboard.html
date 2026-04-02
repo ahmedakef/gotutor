@@ -89,6 +89,22 @@
             background: #3498db;
             color: #fff;
         }
+
+        .section-heading-with-action {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        a.see-more-btn {
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .section-action {
+            margin-left: auto;
+        }
     </style>
 </head>
 
@@ -141,16 +157,20 @@
     <button class="see-more-btn" onclick="toggleTable('source-codes-table', this)">Show all ({{len .SourceCodes}})</button>
     {{end}}
 
-    <h2>Email Subscriptions <span class="badge">{{len .Emails}}</span></h2>
+    <h2 class="section-heading-with-action">Email Subscriptions <span class="badge">{{len .Emails}}</span>
+        <a href="/unsubscribe" target="_blank" rel="noopener noreferrer" class="see-more-btn section-action">Unsubscribe page</a>
+    </h2>
     <table id="emails-table">
         <tr>
             <th>Email</th>
             <th>Subscribed At</th>
+            <th></th>
         </tr>
         {{range .Emails}}
         <tr class="data-row">
             <td>{{.Email}}</td>
             <td>{{.SubscribedAt}}</td>
+            <td><a href="{{.UnsubscribeURL}}" target="_blank" rel="noopener noreferrer" class="see-more-btn">Unsubscribe</a></td>
         </tr>
         {{end}}
     </table>

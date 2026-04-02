@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"html/template"
 	"net/http"
+	"net/url"
 	"os"
 	"sort"
 	"time"
@@ -63,8 +64,10 @@ type dashboardData struct {
 }
 
 type emailView struct {
-	Email        string
-	SubscribedAt string
+	Email            string
+	SubscribedAt     string
+	UnsubscribeURL   string
+	subscribedAtTime time.Time
 }
 
 // HandleDashboard serves a password-protected dashboard showing DB contents.
@@ -179,10 +182,15 @@ func (h *Handler) renderDashboard(w http.ResponseWriter) {
 	var emailViews []emailView
 	for _, entry := range emails {
 		emailViews = append(emailViews, emailView{
-			Email:        entry.Email,
-			SubscribedAt: db.FormatTimestamp(entry.SubscribedAt),
+			Email:            entry.Email,
+			SubscribedAt:     db.FormatTimestamp(entry.SubscribedAt),
+			UnsubscribeURL:   "/unsubscribe?" + url.Values{"email": {entry.Email}}.Encode(),
+			subscribedAtTime: db.ParseTimestamp(entry.SubscribedAt),
 		})
 	}
+	sort.Slice(emailViews, func(i, j int) bool {
+		return emailViews[i].subscribedAtTime.After(emailViews[j].subscribedAtTime)
+	})
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	templates.ExecuteTemplate(w, "dashboard.html", dashboardData{
