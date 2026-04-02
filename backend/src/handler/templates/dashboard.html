@@ -119,18 +119,20 @@
             <th>Hash</th>
             <th>Code</th>
             <th>Updated At</th>
+            <th></th>
         </tr>
         {{range .SourceCodes}}
         <tr class="data-row">
             <td title="{{.Hash}}">{{.ShortHash}}…</td>
             <td>
                 <pre class="code-preview">{{.TruncatedCode}}</pre>
-                {{if .IsTruncated}}
                 <pre class="code-full" style="display:none;">{{.FullCode}}</pre>
+                {{if .IsTruncated}}
                 <button class="see-more-btn" onclick="toggleCode(this)">See more</button>
                 {{end}}
             </td>
             <td>{{.UpdatedAt}}</td>
+            <td><button class="see-more-btn" onclick="openInGoTutor(this)">Open in GoTutor</button></td>
         </tr>
         {{end}}
     </table>
@@ -156,7 +158,6 @@
     {{end}}
 <script>
 var LIMIT = 10;
-
 function limitRows(tableId) {
     var rows = document.getElementById(tableId).querySelectorAll('.data-row');
     for (var i = LIMIT; i < rows.length; i++) {
@@ -186,6 +187,28 @@ function toggleCode(btn) {
         preview.style.display = '';
         btn.textContent = 'See more';
     }
+}
+
+function openInGoTutor(btn) {
+    var row = btn.closest('.data-row');
+    var code = row.querySelector('.code-full').textContent;
+    btn.textContent = 'Sharing…';
+    btn.disabled = true;
+    fetch('https://play.golang.org/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+        body: code
+    }).then(function(resp) {
+        if (!resp.ok) throw new Error('Server returned ' + resp.status);
+        return resp.text();
+    }).then(function(id) {
+        window.open('https://gotutor.dev/?id=' + id, '_blank');
+    }).catch(function(err) {
+        alert('Failed to share code: ' + err.message);
+    }).finally(function() {
+        btn.textContent = 'Open in GoTutor';
+        btn.disabled = false;
+    });
 }
 
 limitRows('source-codes-table');
