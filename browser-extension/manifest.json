@@ -30,7 +30,7 @@
       "run_at": "document_idle"
     }
   ],
-  "permissions": ["activeTab"],
+  "permissions": [],
   "action": {
     "default_icon": {
       "16": "icons/icon16.png",
