@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<!-- Chrome Web Store privacy policy for the GoTutor extension; deployed with the rest of this directory via GitHub Pages. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy Policy — GoTutor browser extension</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; line-height: 1.55; max-width: 42rem; margin: 2rem auto; padding: 0 1.25rem; color: #1a1a1a; }
+    h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
+    .meta { color: #555; font-size: 0.9rem; margin-bottom: 1.5rem; }
+    h2 { font-size: 1.1rem; margin-top: 1.75rem; }
+    ul { padding-left: 1.25rem; }
+    a { color: #007d9c; }
+    footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #ddd; font-size: 0.9rem; color: #555; }
+  </style>
+</head>
+<body>
+  <h1>Privacy Policy — GoTutor browser extension</h1>
+  <p class="meta">Last updated: April 7, 2026. Applies to the GoTutor extension published for Chromium-based browsers.</p>
+
+  <p>This policy describes how the <strong>GoTutor browser extension</strong> handles information. The extension adds shortcuts to open Go code in <a href="https://gotutor.dev/">GoTutor</a> from <a href="https://gobyexample.com/">Go by Example</a> and the <a href="https://go.dev/tour/">Go Tour</a>, and includes an optional popup to paste code.</p>
+
+  <h2>1. Data the extension collects</h2>
+  <p>The extension requests <strong>no browser permissions</strong> (such as storage, history, or broad site access). It does not run analytics, ads, or account login inside the extension. It does not read passwords or unrelated page content beyond what is needed to show its controls on the supported sites.</p>
+
+  <h2>2. What happens when you use the extension</h2>
+  <ul>
+    <li><strong>Go by Example:</strong> The extension adds links that open <code>https://gotutor.dev/?id=…</code> using playground snippet IDs already present in links on the page. It does not send your code anywhere by itself in this flow.</li>
+    <li><strong>Go Tour and extension popup:</strong> When you choose to open GoTutor, the extension may send your editor or pasted Go source code to Go’s official share endpoint (<code>https://go.dev/_/share</code>) to obtain a snippet identifier, then open GoTutor with that ID in a new tab. That request is subject to <strong>Google’s / Go’s</strong> terms and privacy practices (see below).</li>
+    <li><strong>GoTutor website (<code>gotutor.dev</code>):</strong> After you open a tab there, the web app may load shared code and send it to GoTutor servers to execute and visualize your program. The site may use its own cookies, analytics, and backend practices as described on that site. In short: <strong>your code can be processed on GoTutor’s servers and cached for performance</strong>, consistent with the in-app notice on <a href="https://gotutor.dev/">gotutor.dev</a>.</li>
+  </ul>
+
+  <h2>3. Third-party services</h2>
+  <p>The extension interacts with services you explicitly trigger. Their policies govern those services:</p>
+  <ul>
+    <li><strong>go.dev / Go Playground share</strong> — operated by Google; see <a href="https://policies.google.com/privacy">Google Privacy Policy</a> and <a href="https://go.dev/doc/website-policy">go.dev website policies</a>.</li>
+    <li><strong>gotutor.dev</strong> — operated by the GoTutor project; use the contact or policy information published on that site for questions about the web application.</li>
+    <li><strong>gobyexample.com</strong> and pages under <strong>go.dev</strong> — subject to those sites’ own policies when you browse them.</li>
+  </ul>
+
+  <h2>4. Changes</h2>
+  <p>We may update this policy when the extension or related services change. The “Last updated” date at the top will reflect the latest revision.</p>
+
+  <h2>5. Contact</h2>
+  <p>Questions about this extension policy: open an issue on the <a href="https://github.com/ahmedakef/gotutor">GoTutor GitHub repository</a> or use the contact options listed for the project there.</p>
+
+  <footer>
+    <p>GoTutor privacy policy for the browser extension.</a>.</p>
+  </footer>
+</body>
+</html>
