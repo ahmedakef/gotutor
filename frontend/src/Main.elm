@@ -58,6 +58,11 @@ routeParser =
         ]
 
 
+firefoxAddonUrl : String
+firefoxAddonUrl =
+    "https://addons.mozilla.org/en-US/firefox/addon/gotutor/"
+
+
 type alias Model =
     { env : Common.Env
     , key : Nav.Key
@@ -368,7 +373,13 @@ navigation =
             ]
         , ul [ css [ Tw.my_0, Tw.list_none, Tw.flex, Tw.items_center, Css.flex (Css.num 2), Tw.gap_5 ] ]
             [
-                li [ css [ navBarItemsStyle ] ] [ viewLink "About" "#about" "_self" ]
+                li [ css [ navBarItemsStyle ] ]
+                    [ a [ href firefoxAddonUrl, target "_blank", css [ Styles.navItems ], title "Firefox add-on" ]
+                        [ img [ src "static/firefox.svg", height 22, alt "Firefox add-on" ] [] ]
+                    ]
+                , li [ css [ Tw.p_2, Tw.opacity_40, Tw.cursor_not_allowed ], title "Chrome Web Store listing is not published yet" ]
+                    [ img [ src "static/chrome.svg", height 22, alt "Chrome extension (coming soon)" ] [] ]
+                , li [ css [ navBarItemsStyle ] ] [ viewLink "About" "#about" "_self" ]
                 , li [ css [ navBarItemsStyle ] ] [ viewLink "Github" "https://github.com/ahmedakef/gotutor" "_blank" ]
                 , li [ ] [ githubSponsorsButton ]
                 , li [ ] [ koFiButton ]
