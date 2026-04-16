@@ -3,8 +3,10 @@ module Steps.Steps exposing (..)
 import Helpers.Common as Common
 import Helpers.Http as HttpHelper
 import Http
+import Browser.Dom
 import Json.Encode
 import Steps.Decoder exposing (..)
+import Task
 
 
 
@@ -101,6 +103,7 @@ type Msg
     | FixCodeWithAI
     | ShowOnlyExportedFields Bool
     | ShowMemoryAddresses Bool
+    | ScrollResult (Result Browser.Dom.Error ())
 
 -- load data
 
@@ -216,6 +219,72 @@ shareUrl id =
     "https://gotutor.dev/?id=" ++ id
 
 
+goToPosition : StepsState -> Int -> ( State, Cmd Msg )
+goToPosition stepsState position =
+    let
+        clampedPosition =
+            clamp 0 (List.length stepsState.executionResponse.steps) position
+
+        newState =
+            { stepsState | position = clampedPosition }
+
+        scrollCmd =
+            case getCurrentLine newState of
+                Just line ->
+                    scrollToLineIfNeeded line (String.lines newState.sourceCode |> List.length)
+
+                Nothing ->
+                    Cmd.none
+    in
+    ( Success newState, scrollCmd )
+
+
+scrollToLineIfNeeded : Int -> Int -> Cmd Msg
+scrollToLineIfNeeded lineNumber totalLines =
+    Browser.Dom.getViewportOf "code-textarea"
+        |> Task.andThen
+            (\viewport ->
+                let
+                    lineHeight =
+                        viewport.scene.height / toFloat totalLines
+
+                    lineTop =
+                        lineHeight * toFloat (lineNumber - 1)
+
+                    lineBottom =
+                        lineTop + lineHeight
+
+                    visibleTop =
+                        viewport.viewport.y
+
+                    visibleBottom =
+                        visibleTop + viewport.viewport.height
+                in
+                if lineTop < visibleTop || lineBottom > visibleBottom then
+                    Browser.Dom.setViewportOf "code-textarea" viewport.viewport.x (max 0 (lineTop - viewport.viewport.height / 2))
+
+                else
+                    Task.succeed ()
+            )
+        |> Task.attempt ScrollResult
+
+
+getCurrentLine : StepsState -> Maybe Int
+getCurrentLine stepsState =
+    stepsState.executionResponse.steps
+        |> List.take stepsState.position
+        |> List.reverse
+        |> List.head
+        |> Maybe.andThen
+            (\step ->
+                List.head step.goroutinesData
+                    |> Maybe.map .stacktrace
+                    |> Maybe.map (List.filter (\frame -> String.endsWith "main.go" frame.file))
+                    |> Maybe.andThen List.head
+                    |> Maybe.map .line
+            )
+
+
 -- Update
 
 
@@ -296,21 +365,13 @@ update msg state env =
                     ( Success { successState | mode = WaitingSteps, executionResponse = { steps = [], duration = "", stdout = "", stderr = "" }, position = 0 }, getSteps successState.sourceCode env )
 
                 Next ->
-                    if successState.position + 1 > List.length successState.executionResponse.steps then
-                        ( Success successState, Cmd.none )
-
-                    else
-                        ( Success { successState | position = successState.position + 1 }, Cmd.none )
+                    goToPosition successState (successState.position + 1)
 
                 Prev ->
-                    if successState.position - 1 < 0 then
-                        ( Success successState, Cmd.none )
-
-                    else
-                        ( Success { successState | position = successState.position - 1 }, Cmd.none )
+                    goToPosition successState (successState.position - 1)
 
                 SliderChange position ->
-                    ( Success { successState | position = position }, Cmd.none )
+                    goToPosition successState position
 
                 Highlight line ->
                     ( Success { successState | highlightedLine = Just line }, Cmd.none )

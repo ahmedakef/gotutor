@@ -325,6 +325,7 @@ codeView state =
                 )
             , value state.sourceCode
             , readonly (not (state.mode == Edit))
+            , id "code-textarea"
             , class "code-style"
             , class "code-textarea"
             , class "code-textarea-lc"
