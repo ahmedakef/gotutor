@@ -1,9 +1,9 @@
 module Steps.Steps exposing (..)
 
+import Browser.Dom
 import Helpers.Common as Common
 import Helpers.Http as HttpHelper
 import Http
-import Browser.Dom
 import Json.Encode
 import Steps.Decoder exposing (..)
 import Task
@@ -23,6 +23,7 @@ init route =
             case route of
                 Home (Just id) ->
                     getSharedCode id
+
                 _ ->
                     Cmd.batch [ getInitSteps, getInitSourceCode ]
     in
@@ -34,7 +35,7 @@ init route =
 
 
 type Route
-    = Home (Maybe String)  -- String is the id parameter
+    = Home (Maybe String) -- String is the id parameter
 
 
 type alias StepsState =
@@ -105,7 +106,10 @@ type Msg
     | ShowMemoryAddresses Bool
     | ScrollResult (Result Browser.Dom.Error ())
 
+
+
 -- load data
+
 
 backendUrl : Common.Env -> String
 backendUrl env =
@@ -116,6 +120,7 @@ backendUrl env =
         Common.Prod ->
             "https://backend.gotutor.dev"
 
+
 getSteps : String -> Common.Env -> Cmd Msg
 getSteps sourceCode env =
     Http.request
@@ -124,7 +129,7 @@ getSteps sourceCode env =
         , url = backendUrl env ++ "/GetExecutionSteps"
         , body = Http.jsonBody (Json.Encode.object [ ( "source_code", Json.Encode.string sourceCode ) ])
         , expect = HttpHelper.expectJson GotExecutionResponse executionResponseDecoder
-        , timeout = Just (60 * 1000) -- ms
+        , timeout = Just (180 * 1000) -- ms
         , tracker = Nothing
         }
 
@@ -159,10 +164,11 @@ getFmt sourceCode env =
         { method = "POST"
         , headers = []
         , url = backendUrl env ++ "/fmt"
-        , body = Http.multipartBody
-            [ Http.stringPart "body" sourceCode
-            , Http.stringPart "imports" "true"
-            ]
+        , body =
+            Http.multipartBody
+                [ Http.stringPart "body" sourceCode
+                , Http.stringPart "imports" "true"
+                ]
         , expect = HttpHelper.expectJson GotFmt fmtResponseDecoder
         , timeout = Just (60 * 1000) -- ms
         , tracker = Nothing
@@ -173,11 +179,14 @@ getFixCode : String -> Maybe String -> Common.Env -> Cmd Msg
 getFixCode sourceCode maybeError env =
     let
         bodyFields =
-            ( "source_code", Json.Encode.string sourceCode ) ::
-            (case maybeError of
-                Just error -> [ ( "error", Json.Encode.string error ) ]
-                Nothing -> []
-            )
+            ( "source_code", Json.Encode.string sourceCode )
+                :: (case maybeError of
+                        Just error ->
+                            [ ( "error", Json.Encode.string error ) ]
+
+                        Nothing ->
+                            []
+                   )
     in
     Http.request
         { method = "POST"
@@ -185,7 +194,7 @@ getFixCode sourceCode maybeError env =
         , url = backendUrl env ++ "/fix-code"
         , body = Http.jsonBody (Json.Encode.object bodyFields)
         , expect = HttpHelper.expectJson GotFixedCode fixCodeResponseDecoder
-        , timeout = Just (60 * 1000) -- ms
+        , timeout = Just (120 * 1000) -- ms
         , tracker = Nothing
         }
 
@@ -202,6 +211,7 @@ callShare sourceCode =
         , tracker = Nothing
         }
 
+
 getSharedCode : String -> Cmd Msg
 getSharedCode id =
     Http.request
@@ -213,6 +223,7 @@ getSharedCode id =
         , timeout = Just (60 * 1000) -- ms
         , tracker = Nothing
         }
+
 
 shareUrl : String -> String
 shareUrl id =
@@ -285,6 +296,7 @@ getCurrentLine stepsState =
             )
 
 
+
 -- Update
 
 
@@ -297,7 +309,6 @@ update msg state env =
                     successState.config
             in
             case msg of
-
                 GotExecutionResponse gotExecutionStepsResponseResult ->
                     case gotExecutionStepsResponseResult of
                         Ok executionResponse ->
@@ -334,7 +345,7 @@ update msg state env =
                             ( Success { successState | sourceCode = fmtResponse.body, mode = Edit, errorMessage = Nothing }, Cmd.none )
 
                         Err err ->
-                            ( Success { successState | mode = Edit, errorMessage = Just ("Error while formatting source code: " ++  err) }, Cmd.none )
+                            ( Success { successState | mode = Edit, errorMessage = Just ("Error while formatting source code: " ++ err) }, Cmd.none )
 
                 GotFixedCode fixCodeResponseResult ->
                     case fixCodeResponseResult of
@@ -342,7 +353,7 @@ update msg state env =
                             ( Success { successState | sourceCode = fixCodeResponse.fixedCode, mode = Edit, errorMessage = Nothing }, Cmd.none )
 
                         Err err ->
-                            ( Success { successState | mode = Edit, errorMessage = Just ("Error while fixing code with AI: " ++  err) }, Cmd.none )
+                            ( Success { successState | mode = Edit, errorMessage = Just ("Error while fixing code with AI: " ++ err) }, Cmd.none )
 
                 GotShareID shareResult ->
                     case shareResult of
