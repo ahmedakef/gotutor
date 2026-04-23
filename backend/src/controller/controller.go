@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"time"
 
 	"github.com/ahmedakef/gotutor/backend/src/cache"
@@ -83,8 +84,29 @@ func (c *Controller) GetExecutionSteps(ctx context.Context, sourceCode string) (
 	outputMapping := fmt.Sprintf("%s:/root/output", tmpDir)
 	deadlineCtx, cancel := context.WithTimeout(ctx, 300*time.Second)
 	defer cancel()
-	dockerCommand := exec.CommandContext(deadlineCtx, "docker", "run", "--rm", "--network", "none", "-v", sourceCodeMapping, "-v", outputMapping, "ahmedakef/gotutor", "debug", "/data/main.go")
+	containerName := fmt.Sprintf("gotutor-%s", filepath.Base(tmpDir))
+	dockerCommand := exec.CommandContext(deadlineCtx, "docker", "run", "--rm",
+		"--name", containerName,
+		"--network", "none",
+		"--cpus", "1",
+		"--memory", "512m",
+		"--pids-limit", "256",
+		"-v", sourceCodeMapping, "-v", outputMapping,
+		"ahmedakef/gotutor", "debug", "/data/main.go")
+	// CommandContext only kills the docker CLI client when ctx is cancelled;
+	// the container keeps running under dockerd. Stop the container explicitly.
+	dockerCommand.Cancel = func() error {
+		return exec.Command("docker", "kill", containerName).Run()
+	}
+	dockerCommand.WaitDelay = 30 * time.Second
 	dockerOut, err := dockerCommand.CombinedOutput()
+	// Belt-and-suspenders: if the CLI returned but the container is somehow
+	// still around (e.g. CLI crash), make sure it's gone.
+	defer func() {
+		killCtx, killCancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer killCancel()
+		_ = exec.CommandContext(killCtx, "docker", "kill", containerName).Run()
+	}()
 	if err != nil {
 		return serialize.ExecutionResponse{}, fmt.Errorf("failed to run docker command: %w : %s", err, string(dockerOut))
 	}
