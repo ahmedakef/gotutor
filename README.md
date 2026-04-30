@@ -6,6 +6,9 @@ GoTutor is a project aimed at capturing the execution steps of a Go program by i
 
 https://gotutor.dev/
 
+## Live  demo
+![Example Demo](demo.gif?raw=true "Example demo")
+
 ## Features
 
 - Capture running Goroutines and its stack frames state at each Go statement of the main Goroutine.
