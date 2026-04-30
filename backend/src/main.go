@@ -45,6 +45,7 @@ func main() {
 	h := handler.NewHandler(logger, db, controller)
 
 	mux := http.NewServeMux()
+	mux.HandleFunc("/healthz", h.HandleHealthz)
 	mux.HandleFunc("/GetExecutionSteps", h.HandleGetExecutionSteps)
 	mux.HandleFunc("/compile", h.HandleCompile)
 	mux.HandleFunc("/fmt", h.HandleFmt)

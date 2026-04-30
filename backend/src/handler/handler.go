@@ -58,6 +58,14 @@ func (h *Handler) logRequest(r *http.Request) {
 	h.logger.Info().Strs("X-Real-Ip", r.Header["X-Real-Ip"]).Msg("request received")
 }
 
+// HandleHealthz is a liveness probe. It deliberately does no work: no DB call,
+// no semaphore acquire, no logging. If the HTTP loop is wedged this won't
+// answer either, which is exactly the signal an external monitor needs.
+func (h *Handler) HandleHealthz(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte("ok"))
+}
+
 // GetExecutionStepsRequest is the request for the GetExecutionSteps method
 type GetExecutionStepsRequest struct {
 	SourceCode string `json:"source_code"`
