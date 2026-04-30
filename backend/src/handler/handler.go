@@ -15,14 +15,16 @@ type Handler struct {
 	logger     zerolog.Logger
 	db         *db.DB
 	controller *controller.Controller
+	pprofPort  int
 }
 
 // NewHandler creates a new Handler
-func NewHandler(logger zerolog.Logger, db *db.DB, controller *controller.Controller) *Handler {
+func NewHandler(logger zerolog.Logger, db *db.DB, controller *controller.Controller, pprofPort int) *Handler {
 	return &Handler{
 		logger:     logger,
 		db:         db,
 		controller: controller,
+		pprofPort:  pprofPort,
 	}
 }
 

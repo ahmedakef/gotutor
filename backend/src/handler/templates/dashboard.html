@@ -181,6 +181,24 @@
     {{if gt (len .Emails) 10}}
     <button class="see-more-btn" onclick="toggleTable('emails-table', this)">Show all ({{len .Emails}})</button>
     {{end}}
+
+    <h2>Diagnostics</h2>
+    <table>
+        <tr>
+            <th>pprof</th>
+            <td>
+                <a href="http://127.0.0.1:{{.PprofPort}}/debug/pprof/" target="_blank" rel="noopener noreferrer">http://127.0.0.1:{{.PprofPort}}/debug/pprof/</a>
+                <div style="font-size:12px;color:#888;margin-top:6px;">
+                    Bound to loopback (port changes on each restart). For remote access, tunnel first:
+                    <code style="background:#eef;padding:2px 6px;border-radius:3px;">ssh -L {{.PprofPort}}:127.0.0.1:{{.PprofPort}} user@host</code>
+                </div>
+                <div style="font-size:12px;color:#888;margin-top:4px;">
+                    Quick goroutine dump (when the server feels stuck):
+                    <code style="background:#eef;padding:2px 6px;border-radius:3px;">curl http://127.0.0.1:{{.PprofPort}}/debug/pprof/goroutine?debug=2</code>
+                </div>
+            </td>
+        </tr>
+    </table>
 <script>
 var LIMIT = 10;
 function limitRows(tableId) {

@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"net/http"
+	"net/http/pprof"
 	"os"
 	"time"
 
@@ -42,7 +44,10 @@ func main() {
 	defer db.Close()
 
 	controller := controller.NewController(logger, cache, db)
-	h := handler.NewHandler(logger, db, controller)
+
+	pprofPort := startPprof(logger)
+
+	h := handler.NewHandler(logger, db, controller, pprofPort)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", h.HandleHealthz)
@@ -67,4 +72,30 @@ func main() {
 	if err := srv.ListenAndServe(); err != nil {
 		logger.Fatal().Err(err).Msg("failed to start server")
 	}
+}
+
+// startPprof binds an unauthenticated pprof server to a random loopback port.
+// Loopback-only is deliberate: pprof exposes goroutine dumps, heap, and
+// /debug/pprof/cmdline (args/env), so it must never be reachable from the
+// public interface. Remote access requires an SSH tunnel.
+func startPprof(logger zerolog.Logger) int {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/debug/pprof/", pprof.Index)
+	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		logger.Fatal().Err(err).Msg("failed to start pprof listener")
+	}
+	port := ln.Addr().(*net.TCPAddr).Port
+	go func() {
+		if err := http.Serve(ln, mux); err != nil {
+			logger.Error().Err(err).Msg("pprof server stopped")
+		}
+	}()
+	logger.Info().Int("port", port).Msg("pprof listening on 127.0.0.1")
+	return port
 }

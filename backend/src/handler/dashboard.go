@@ -61,6 +61,7 @@ type dashboardData struct {
 	CallCounters map[string]uint64
 	SourceCodes  []sourceCodeView
 	Emails       []emailView
+	PprofPort    int
 }
 
 type emailView struct {
@@ -197,5 +198,6 @@ func (h *Handler) renderDashboard(w http.ResponseWriter) {
 		CallCounters: callCounters,
 		SourceCodes:  codeViews,
 		Emails:       emailViews,
+		PprofPort:    h.pprofPort,
 	})
 }
