@@ -54,8 +54,17 @@ func main() {
 	mux.HandleFunc("/unsubscribe", h.HandleUnsubscribe)
 	mux.HandleFunc("/dashboard", h.HandleDashboard)
 
+	srv := &http.Server{
+		Addr:              fmt.Sprintf(":%d", _port),
+		Handler:           handler.CorsMiddleware(mux),
+		ReadHeaderTimeout: 30 * time.Second,
+		ReadTimeout:       3 * time.Minute,
+		WriteTimeout:      3 * time.Minute,
+		IdleTimeout:       3 * time.Minute,
+	}
+
 	logger.Info().Msg(fmt.Sprintf("starting server on http://localhost:%d", _port))
-	if err := http.ListenAndServe(fmt.Sprintf(":%d", _port), handler.CorsMiddleware(mux)); err != nil {
+	if err := srv.ListenAndServe(); err != nil {
 		logger.Fatal().Err(err).Msg("failed to start server")
 	}
 }
