@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"github.com/ahmedakef/gotutor/backend/src/controller"
 	"github.com/ahmedakef/gotutor/backend/src/db"
 	"github.com/ahmedakef/gotutor/backend/src/handler"
+	"github.com/ahmedakef/gotutor/backend/src/metrics"
 	"github.com/rs/zerolog"
 )
 
@@ -47,7 +49,10 @@ func main() {
 
 	pprofPort := startPprof(logger)
 
-	h := handler.NewHandler(logger, db, controller, pprofPort)
+	containerWatcher := metrics.NewContainerWatcher(logger)
+	containerWatcher.Start(context.Background())
+
+	h := handler.NewHandler(logger, db, controller, pprofPort, containerWatcher)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", h.HandleHealthz)

@@ -8,23 +8,26 @@ import (
 
 	"github.com/ahmedakef/gotutor/backend/src/controller"
 	"github.com/ahmedakef/gotutor/backend/src/db"
+	"github.com/ahmedakef/gotutor/backend/src/metrics"
 	"github.com/rs/zerolog"
 )
 
 type Handler struct {
-	logger     zerolog.Logger
-	db         *db.DB
-	controller *controller.Controller
-	pprofPort  int
+	logger           zerolog.Logger
+	db               *db.DB
+	controller       *controller.Controller
+	pprofPort        int
+	containerWatcher *metrics.ContainerWatcher
 }
 
 // NewHandler creates a new Handler
-func NewHandler(logger zerolog.Logger, db *db.DB, controller *controller.Controller, pprofPort int) *Handler {
+func NewHandler(logger zerolog.Logger, db *db.DB, controller *controller.Controller, pprofPort int, containerWatcher *metrics.ContainerWatcher) *Handler {
 	return &Handler{
-		logger:     logger,
-		db:         db,
-		controller: controller,
-		pprofPort:  pprofPort,
+		logger:           logger,
+		db:               db,
+		controller:       controller,
+		pprofPort:        pprofPort,
+		containerWatcher: containerWatcher,
 	}
 }
 

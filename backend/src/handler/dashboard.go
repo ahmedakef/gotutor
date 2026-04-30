@@ -58,10 +58,14 @@ type sourceCodeView struct {
 }
 
 type dashboardData struct {
-	CallCounters map[string]uint64
-	SourceCodes  []sourceCodeView
-	Emails       []emailView
-	PprofPort    int
+	CallCounters    map[string]uint64
+	SourceCodes     []sourceCodeView
+	Emails          []emailView
+	PprofPort       int
+	ContainerCount  int
+	ContainerOldest string
+	ContainerLastPoll string
+	ContainerError  string
 }
 
 type emailView struct {
@@ -193,11 +197,25 @@ func (h *Handler) renderDashboard(w http.ResponseWriter) {
 		return emailViews[i].subscribedAtTime.After(emailViews[j].subscribedAtTime)
 	})
 
+	stats := h.containerWatcher.Stats()
+	oldestStr := "—"
+	if stats.Count > 0 {
+		oldestStr = stats.OldestAge.Truncate(time.Second).String()
+	}
+	lastPollStr := "never"
+	if !stats.LastPoll.IsZero() {
+		lastPollStr = time.Since(stats.LastPoll).Truncate(time.Second).String() + " ago"
+	}
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	templates.ExecuteTemplate(w, "dashboard.html", dashboardData{
-		CallCounters: callCounters,
-		SourceCodes:  codeViews,
-		Emails:       emailViews,
-		PprofPort:    h.pprofPort,
+		CallCounters:      callCounters,
+		SourceCodes:       codeViews,
+		Emails:            emailViews,
+		PprofPort:         h.pprofPort,
+		ContainerCount:    stats.Count,
+		ContainerOldest:   oldestStr,
+		ContainerLastPoll: lastPollStr,
+		ContainerError:    stats.LastError,
 	})
 }
