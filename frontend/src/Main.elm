@@ -63,6 +63,11 @@ firefoxAddonUrl =
     "https://addons.mozilla.org/en-US/firefox/addon/gotutor/"
 
 
+chromeExtensionUrl : String
+chromeExtensionUrl =
+    "https://chromewebstore.google.com/detail/gotutor/jpmhhnokngjcnoefeiipogbhlnpmcdbh"
+
+
 type alias Model =
     { env : Common.Env
     , key : Nav.Key
@@ -377,8 +382,10 @@ navigation =
                     [ a [ href firefoxAddonUrl, target "_blank", css [ Styles.navItems ], title "Firefox add-on" ]
                         [ img [ src "static/firefox.svg", height 22, alt "Firefox add-on" ] [] ]
                     ]
-                , li [ css [ Tw.p_2, Tw.opacity_40, Tw.cursor_not_allowed ], title "Chrome Web Store listing is not published yet" ]
-                    [ img [ src "static/chrome.svg", height 22, alt "Chrome extension (coming soon)" ] [] ]
+                , li [ css [ navBarItemsStyle ] ]
+                    [ a [ href chromeExtensionUrl, target "_blank", css [ Styles.navItems ], title "Chrome extension" ]
+                        [ img [ src "static/chrome.svg", height 22, alt "Chrome extension" ] [] ]
+                    ]
                 , li [ css [ navBarItemsStyle ] ] [ viewLink "About" "#about" "_self" ]
                 , li [ css [ navBarItemsStyle ] ] [ viewLink "Github" "https://github.com/ahmedakef/gotutor" "_blank" ]
                 , li [ ] [ githubSponsorsButton ]
