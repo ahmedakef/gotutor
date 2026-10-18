@@ -52,8 +52,14 @@
       </script>
     <div id="myapp"></div>
     <script>
+        var savedSourceCode = null;
+        try {
+            savedSourceCode = localStorage.getItem('sourceCode');
+        } catch (e) {}
+
         var app = Elm.Main.init({
-            node: document.getElementById('myapp')
+            node: document.getElementById('myapp'),
+            flags: savedSourceCode
         });
 
         // Handle localStorage ports

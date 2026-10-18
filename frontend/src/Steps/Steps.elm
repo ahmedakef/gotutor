@@ -13,21 +13,18 @@ import Task
 -- Init
 
 
-init : Route -> ( State, Cmd Msg )
-init route =
-    let
-        initialModel =
-            Loading
+init : Route -> Maybe String -> ( State, Cmd Msg )
+init route savedCode =
+    case ( route, savedCode ) of
+        ( Home (Just id), _ ) ->
+            -- shared links take priority over locally saved code
+            ( Loading, getSharedCode id )
 
-        combinedCmd =
-            case route of
-                Home (Just id) ->
-                    getSharedCode id
+        ( _, Just code ) ->
+            ( Success (StepsState Edit { steps = [], duration = "", stdout = "", stderr = "" } 0 code Nothing (Scroll 0 0) Nothing Nothing { showOnlyExportedFields = True, showMemoryAddresses = False }), Cmd.none )
 
-                _ ->
-                    Cmd.batch [ getInitSteps, getInitSourceCode ]
-    in
-    ( initialModel, combinedCmd )
+        _ ->
+            ( Loading, Cmd.batch [ getInitSteps, getInitSourceCode ] )
 
 
 
@@ -298,6 +295,19 @@ getCurrentLine stepsState =
 
 
 -- Update
+
+
+{-| Source code the user is working on, used to persist it across page refreshes.
+The initial load (default or shared program) is not counted as the user's code.
+-}
+userSourceCode : State -> Maybe String
+userSourceCode state =
+    case state of
+        Success successState ->
+            Just successState.sourceCode
+
+        _ ->
+            Nothing
 
 
 update : Msg -> State -> Common.Env -> ( State, Cmd Msg )

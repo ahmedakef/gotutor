@@ -34,7 +34,7 @@ port currentTimeReceived : (Float -> msg) -> Sub msg
 -- MAIN
 
 
-main : Program () Model Msg
+main : Program (Maybe String) Model Msg
 main =
     Browser.application
         { init = init
@@ -84,15 +84,29 @@ type alias Model =
 -- Init
 
 
-init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
-init _ url key =
+sourceCodeStorageKey : String
+sourceCodeStorageKey =
+    "sourceCode"
+
+
+nonBlank : String -> Maybe String
+nonBlank value =
+    if String.isEmpty (String.trim value) then
+        Nothing
+
+    else
+        Just value
+
+
+init : Maybe String -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
+init savedSourceCode url key =
     let
         route =
             Parser.parse routeParser url
                 |> Maybe.withDefault (Steps.Home Nothing)
 
         ( stepsState, stepsCmd ) =
-            Steps.init route
+            Steps.init route (savedSourceCode |> Maybe.andThen nonBlank)
 
         initialModel =
             Model Common.Prod key url stepsState route False Nothing Nothing
@@ -141,8 +155,26 @@ update msg model =
             let
                 ( state, cmd ) =
                     Steps.update stepsMsg model.state model.env
+
+                previousCode =
+                    Steps.userSourceCode model.state
+
+                newCode =
+                    Steps.userSourceCode state
+
+                saveCmd =
+                    case ( previousCode, newCode ) of
+                        ( Just previous, Just code ) ->
+                            if previous /= code then
+                                setLocalStorageWithValue { key = sourceCodeStorageKey, value = code }
+
+                            else
+                                Cmd.none
+
+                        _ ->
+                            Cmd.none
             in
-            ( { model | state = state }, Cmd.map StepsMsg cmd )
+            ( { model | state = state }, Cmd.batch [ Cmd.map StepsMsg cmd, saveCmd ] )
 
         DismissFeedbackDialogTemporary ->
             case model.currentTime of
