@@ -23,6 +23,11 @@ WORKDIR /root/
 COPY --from=builder /usr/local/go/ /usr/local/go/
 ENV PATH="/usr/local/go/bin:${PATH}"
 
+# Pre-compile std with the same flags delve uses (pkg/gobuild adds
+# -gcflags='all=-N -l') so each run only compiles the user's main.go.
+# This must run in this stage so GOROOT, HOME and CGO match the runtime.
+RUN go build -gcflags='all=-N -l' std
+
 # Copy the compiled binary from the builder stage
 COPY --from=builder /app/gotutor .
 # Make sure the binary is executable
