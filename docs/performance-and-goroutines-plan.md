@@ -4,7 +4,7 @@
 |---|----------|--------|
 | 1 | Pre-warm the Go build cache in the image + timing logs | Implemented |
 | 2 | Breakpoint on every user line, then `Continue` (real goroutine tracing) | **Deferred** |
-| 3 | Make `buildStep` cheaper (user goroutines and user frames only) | Planned |
+| 3 | Make `buildStep` cheaper (user goroutines, user frames, main package vars only) | Implemented |
 | 4 | Drop duplicate stdout/stderr bytes from the response | Planned |
 | 5 | Frontend "running" badge + regenerated example steps | Planned |
 
@@ -62,12 +62,23 @@ Tests to add along with it:
 - **Channels + select:** both goroutines appear as active.
 - **Panic:** the last step points at the panic line.
 
-## 3. Make `buildStep` cheaper (Planned)
+## 3. Make `buildStep` cheaper (Implemented)
 Changes:
 - List only user goroutines with `ListGoroutinesWithFilter(…, GoroutineUser)`, capped at 100, which matches what the frontend shows. Delve counts `runtime.main` as user code, so the main goroutine stays in the list.
 - Fetch each stack trace without loading variables. Then load locals and arguments only for frames in `main.go`, and drop every other frame.
 - Leave out goroutines that have no user frames. The frontend hides them anyway.
 - Keep `api.Stackframe` and `api.Goroutine` unchanged, so the Elm decoders keep working.
+- Found while profiling: `ListPackageVariables("^main.")` was ~90% of `buildStep`. Delve loads the value of every package variable in the binary (thousands, mostly from std) and only then applies the regex. Now the names of `main`'s variables are looked up once, without loading values, and each step evaluates only those names with `EvalVariable`.
+
+Results with delve on macOS, where the trace time excludes the build:
+
+| Example | Trace time | `steps.json` size |
+|---------|-----------:|------------------:|
+| `example/main.go` (includes a 2s sleep) | 6.1s → 3.8s | 3.9MB → 69KB |
+| fib | 4.5s → 1.4s | 4.0MB → 40KB |
+| pi | 6.3s → 2.2s | 8.8MB → 646KB |
+| sieve | 7.2s → 2.7s | 11.6MB → 1.6MB |
+| tree | 53.7s → 17.1s | 65MB → 9.1MB |
 
 ## 4. Shrink the response payload (Planned)
 `StdOutBytes` and `StdErrBytes` are only needed on the `/compile` path. In the `/GetExecutionSteps` response they are base64 copies of `StdOut`/`StdErr`. The controller clears them before caching and returning, and the fields are now tagged `omitempty`.

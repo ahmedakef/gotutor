@@ -57,6 +57,19 @@ func (d *Debug) ListPackageVariables(ctx context.Context, filter string, cfg api
 	return d.client.ListPackageVariables(filter, cfg)
 }
 
+func (d *Debug) EvalVariable(ctx context.Context, scope api.EvalScope, expr string, cfg api.LoadConfig) (*api.Variable, error) {
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+	d.getToken()
+	defer d.releaseToken()
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+
+	return d.client.EvalVariable(scope, expr, cfg)
+}
+
 func (d *Debug) CreateBreakpoint(ctx context.Context, breakPoint *api.Breakpoint) (*api.Breakpoint, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
@@ -164,6 +177,20 @@ func (d *Debug) ListGoroutines(ctx context.Context, start, count int) ([]*api.Go
 	}
 
 	return d.client.ListGoroutines(start, count)
+}
+
+func (d *Debug) ListGoroutinesWithFilter(ctx context.Context, start, count int, filters []api.ListGoroutinesFilter) ([]*api.Goroutine, error) {
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+	d.getToken()
+	defer d.releaseToken()
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+
+	goroutines, _, _, _, err := d.client.ListGoroutinesWithFilter(start, count, filters, nil, nil)
+	return goroutines, err
 }
 
 func (d *Debug) SwitchGoroutine(ctx context.Context, goroutineID int64) (*api.DebuggerState, error) {

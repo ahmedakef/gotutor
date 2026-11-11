@@ -15,6 +15,9 @@ import (
 	"github.com/go-delve/delve/service/api"
 )
 
+// _maxGoroutines matches the number of goroutines the frontend shows
+const _maxGoroutines = 100
+
 var errNoMain = errors.New("main function not found")
 var defaultLoadConfig = api.LoadConfig{
 	FollowPointers:     true,
@@ -27,6 +30,9 @@ var defaultLoadConfig = api.LoadConfig{
 type Serializer struct {
 	client *gateway.Debug
 	logger zerolog.Logger
+
+	// packageVarNames caches the names of main's package variables, see packageVariables
+	packageVarNames []string
 }
 
 func NewSerializer(client *gateway.Debug, logger zerolog.Logger) *Serializer {
@@ -165,22 +171,19 @@ func (v *Serializer) goToNextLine(ctx context.Context, goroutine *api.Goroutine)
 
 func (v *Serializer) buildStep(ctx context.Context, debugState *api.DebuggerState) (Step, error) {
 
-	packageVars, err := v.client.ListPackageVariables(ctx,
-		"^main.",
-		defaultLoadConfig,
-	)
+	packageVars, err := v.packageVariables(ctx)
 	if err != nil {
-		return Step{}, fmt.Errorf("ListPackageVariables: %w", err)
+		return Step{}, fmt.Errorf("package variables: %w", err)
 	}
 
-	stacktrace, err := v.client.Stacktrace(ctx, debugState.SelectedGoroutine.ID, 100, 0, &defaultLoadConfig)
+	stacktrace, err := v.userStacktrace(ctx, debugState.SelectedGoroutine.ID)
 	if err != nil {
 		return Step{}, fmt.Errorf("stacktrace: %w", err)
 	}
 
-	goroutines, err := v.getAllGoroutines(ctx)
+	goroutines, err := v.listUserGoroutines(ctx)
 	if err != nil {
-		return Step{}, fmt.Errorf("get all goroutines: %w", err)
+		return Step{}, fmt.Errorf("list user goroutines: %w", err)
 	}
 
 	goroutinesData := []GoRoutineData{{ // we want to make the current goroutine the first one
@@ -189,9 +192,13 @@ func (v *Serializer) buildStep(ctx context.Context, debugState *api.DebuggerStat
 	}}
 	goroutines = removeGorotine(goroutines, debugState.SelectedGoroutine)
 	for _, goroutine := range goroutines {
-		stacktrace, err := v.client.Stacktrace(ctx, goroutine.ID, 100, 0, &defaultLoadConfig)
+		stacktrace, err := v.userStacktrace(ctx, goroutine.ID)
 		if err != nil {
 			return Step{}, fmt.Errorf("goroutine: %d, stacktrace: %w", goroutine.ID, err)
+		}
+		// the frontend only shows goroutines that are running user code
+		if len(stacktrace) == 0 {
+			continue
 		}
 		goroutinesData = append(goroutinesData, GoRoutineData{
 			Goroutine:  goroutine,
@@ -215,9 +222,68 @@ func removeGorotine(goroutines []*api.Goroutine, goroutine *api.Goroutine) []*ap
 	return filteredGoroutines
 }
 
-func (v *Serializer) getAllGoroutines(ctx context.Context) ([]*api.Goroutine, error) {
-	goroutines, _, err := v.client.ListGoroutines(ctx, 0, 0)
-	return goroutines, err
+// packageVariables loads the package variables of package main.
+// delve's ListPackageVariables loads the value of every package variable in the binary
+// (thousands, mostly from std) before filtering them, so it's only called once, without
+// loading values, to find the names; each step then evaluates just those names.
+func (v *Serializer) packageVariables(ctx context.Context) ([]api.Variable, error) {
+	if v.packageVarNames == nil {
+		vars, err := v.client.ListPackageVariables(ctx, `^main\.`, api.LoadConfig{})
+		if err != nil {
+			return nil, fmt.Errorf("ListPackageVariables: %w", err)
+		}
+		v.packageVarNames = make([]string, 0, len(vars))
+		for _, pv := range vars {
+			v.packageVarNames = append(v.packageVarNames, pv.Name)
+		}
+	}
+
+	packageVars := make([]api.Variable, 0, len(v.packageVarNames))
+	for _, name := range v.packageVarNames {
+		pv, err := v.client.EvalVariable(ctx, api.EvalScope{GoroutineID: -1}, name, defaultLoadConfig)
+		if err != nil {
+			// like ListPackageVariables, skip variables whose value can't be read
+			v.logger.Debug().Err(err).Str("name", name).Msg("eval package variable")
+			continue
+		}
+		packageVars = append(packageVars, *pv)
+	}
+	return packageVars, nil
+}
+
+// listUserGoroutines lists goroutines that aren't runtime-internal (GC workers, finalizers, ...),
+// capped at the number of goroutines the frontend shows.
+func (v *Serializer) listUserGoroutines(ctx context.Context) ([]*api.Goroutine, error) {
+	return v.client.ListGoroutinesWithFilter(ctx, 0, _maxGoroutines, []api.ListGoroutinesFilter{
+		{Kind: api.GoroutineUser},
+	})
+}
+
+// userStacktrace returns the frames of the goroutine that are in main.go, with their variables loaded.
+// Variables are loaded only for these frames because loading them for runtime frames
+// (gopark, selectgo, chanrecv, ...) is expensive and the frontend drops those frames anyway.
+func (v *Serializer) userStacktrace(ctx context.Context, goroutineID int64) ([]api.Stackframe, error) {
+	frames, err := v.client.Stacktrace(ctx, goroutineID, 100, 0, nil)
+	if err != nil {
+		return nil, err
+	}
+	var userFrames []api.Stackframe
+	for i, frame := range frames {
+		if !isInMainDotGo(frame.File) {
+			continue
+		}
+		scope := api.EvalScope{GoroutineID: goroutineID, Frame: i}
+		frame.Locals, err = v.client.ListLocalVariables(ctx, scope, defaultLoadConfig)
+		if err != nil {
+			return nil, fmt.Errorf("frame: %d, list local variables: %w", i, err)
+		}
+		frame.Arguments, err = v.client.ListFunctionArgs(ctx, scope, defaultLoadConfig)
+		if err != nil {
+			return nil, fmt.Errorf("frame: %d, list function args: %w", i, err)
+		}
+		userFrames = append(userFrames, frame)
+	}
+	return userFrames, nil
 }
 
 func (v *Serializer) isInvokingGoroutine(filePath string, line int) (bool, error) {
