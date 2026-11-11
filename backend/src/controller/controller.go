@@ -125,6 +125,10 @@ func (c *Controller) GetExecutionSteps(ctx context.Context, sourceCode string) (
 	if err != nil {
 		return serialize.ExecutionResponse{}, fmt.Errorf("failed to decode output: %w", err)
 	}
+	// the raw bytes are only needed by Compile to decode playground events,
+	// here they're base64 copies of StdOut/StdErr so don't cache or send them
+	response.StdOutBytes = nil
+	response.StdErrBytes = nil
 
 	c.cache.Set(sourceCode, response)
 	return response, nil
