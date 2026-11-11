@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/ahmedakef/gotutor/gateway"
 	"github.com/ahmedakef/gotutor/serialize"
@@ -24,10 +25,12 @@ func getAndWriteSteps(ctx context.Context, client *gateway.Debug, logger zerolog
 	}()
 
 	serializer := serialize.NewSerializer(client, logger)
+	traceStart := time.Now()
 	steps, err := serializer.ExecutionSteps(ctx, _stepsLimit)
 	if err != nil {
 		return fmt.Errorf("failed to get execution steps: %w", err)
 	}
+	logger.Info().Dur("duration", time.Since(traceStart)).Int("steps", len(steps.Steps)).Msg("execution traced")
 	// make sure the output directory exists
 	err = os.MkdirAll("output", 0755)
 	if err != nil {

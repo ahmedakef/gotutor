@@ -2,7 +2,7 @@
 
 | # | Approach | Status |
 |---|----------|--------|
-| 1 | Pre-warm the Go build cache in the image + timing logs | Planned |
+| 1 | Pre-warm the Go build cache in the image + timing logs | Implemented |
 | 2 | Breakpoint on every user line, then `Continue` (real goroutine tracing) | **Deferred** |
 | 3 | Make `buildStep` cheaper (user goroutines and user frames only) | Planned |
 | 4 | Drop duplicate stdout/stderr bytes from the response | Planned |
@@ -25,7 +25,7 @@ A `/GetExecutionSteps` request goes through these steps:
 
    The frontend then throws all of that runtime data away (`frontend/src/Steps/View.elm` `filterUserFrames`). For the checked-in example, the tracer alone took 3.9s, not counting the build.
 
-## 1. Pre-warm the Go build cache in the image (Planned)
+## 1. Pre-warm the Go build cache in the image (Implemented)
 In the final stage of the `Dockerfile`, run `go build -gcflags='all=-N -l' std`. This fills `/root/.cache/go-build` with std compiled exactly the way delve compiles it, so a user build only has to compile `main.go` and link. The command has to run in the final alpine stage, because that stage has the same GOROOT, HOME, and CGO settings as the runtime and the cache keys depend on them.
 
 `cmd/debug.go` logs the build time and the trace time, so improvements and regressions can be measured.

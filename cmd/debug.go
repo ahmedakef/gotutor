@@ -6,6 +6,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/rs/zerolog"
 
@@ -39,11 +40,13 @@ func debug(cmd *cobra.Command, args []string) error {
 	if len(args) == 1 {
 		sourcePath = args[0]
 	}
+	buildStart := time.Now()
 	binaryPath, err := dlv.Build(sourcePath, "")
 	if err != nil {
 		logger.Error().Err(err).Msg("failed to build binary")
 		return nil
 	}
+	logger.Info().Dur("duration", time.Since(buildStart)).Msg("binary built")
 	defer gobuild.Remove(binaryPath)
 
 	client, err := dlv.RunServerAndGetClient(binaryPath, sourcePath, dlv.GetBuildFlags(), debugger.ExecutingGeneratedFile)
