@@ -5,7 +5,7 @@
 | 1 | Pre-warm the Go build cache in the image + timing logs | Implemented |
 | 2 | Breakpoint on every user line, then `Continue` (real goroutine tracing) | **Deferred** |
 | 3 | Make `buildStep` cheaper (user goroutines, user frames, main package vars only) | Implemented |
-| 4 | Drop duplicate stdout/stderr bytes from the response | Planned |
+| 4 | Drop duplicate stdout/stderr bytes from the response | Implemented |
 | 5 | Frontend "running" badge + regenerated example steps | Planned |
 
 ## How a request works today
@@ -80,8 +80,10 @@ Results with delve on macOS, where the trace time excludes the build:
 | sieve | 7.2s → 2.7s | 11.6MB → 1.6MB |
 | tree | 53.7s → 17.1s | 65MB → 9.1MB |
 
-## 4. Shrink the response payload (Planned)
-`StdOutBytes` and `StdErrBytes` are only needed on the `/compile` path. In the `/GetExecutionSteps` response they are base64 copies of `StdOut`/`StdErr`. The controller clears them before caching and returning, and the fields are now tagged `omitempty`.
+## 4. Shrink the response payload (Implemented)
+`StdOutBytes` and `StdErrBytes` are only needed on the `/compile` path. In the `/GetExecutionSteps` response they are base64 copies of `StdOut`/`StdErr`. The controller clears them before caching and returning, and the fields are now tagged `omitempty`. The CLI still writes them, because `/compile` runs `gotutor exec` in the gVisor sandbox and decodes playground events from the raw bytes.
+
+The backend module pins `github.com/ahmedakef/gotutor` to a published version (the `replace` in `backend/go.mod` is commented out). The `omitempty` tag only takes effect once that dependency is bumped. Until then the response carries `"stdoutBytes": null` instead of the base64 copy.
 
 ## 5. Frontend touch (Planned)
 The goroutine whose line is highlighted is marked as "running" in the goroutines panel. `frontend/src/initialProgram/steps.json` is regenerated with `make updateExample`.

@@ -9,8 +9,8 @@ type ExecutionResponse struct {
 	Duration    string `json:"duration"`
 	StdOut      string `json:"stdout"`
 	StdErr      string `json:"stderr"`
-	StdOutBytes []byte `json:"stdoutBytes"`
-	StdErrBytes []byte `json:"stderrBytes"`
+	StdOutBytes []byte `json:"stdoutBytes,omitempty"`
+	StdErrBytes []byte `json:"stderrBytes,omitempty"`
 }
 
 type GoRoutineData struct {
