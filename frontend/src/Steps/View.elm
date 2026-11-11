@@ -682,15 +682,21 @@ goroutinesView config goroutinesData =
                 , Css.property "justify-content" "space-evenly"
                 ]
             ]
-            (List.map (goroutineView config) goroutines)
+            -- the first goroutine is the one executing the highlighted line
+            (List.indexedMap (\index -> goroutineView config (index == 0)) goroutines)
         ]
 
 
-goroutineView : Config -> GoroutinesData -> Html Msg
-goroutineView config goroutineData =
+goroutineView : Config -> Bool -> GoroutinesData -> Html Msg
+goroutineView config isRunning goroutineData =
     div
         [ css
             [ borderStyle
+            , if isRunning then
+                Css.batch [ Tw.border_2, Tw.border_color Tw.green_600 ]
+
+              else
+                Css.batch []
             , Css.paddingLeft (Css.px 10)
             , Css.paddingRight (Css.px 10)
             , Css.marginBottom (Css.px 10)
@@ -699,13 +705,13 @@ goroutineView config goroutineData =
         ]
         [
             img [ src "static/megaphone-gopher.svg", alt "goroutine", css [ Tw.absolute, Tw.w_10, Tw.h_10, Tw.neg_inset_5 ] ] []
-            , goroutineInfoView goroutineData
+            , goroutineInfoView isRunning goroutineData
         , stackView config (goroutineData.stacktrace |> filterUserFrames)
         ]
 
 
-goroutineInfoView : GoroutinesData -> Html msg
-goroutineInfoView goroutineData =
+goroutineInfoView : Bool -> GoroutinesData -> Html msg
+goroutineInfoView isRunning goroutineData =
     let
         gInfo =
             if goroutineData.goroutine.id == 1 then
@@ -713,10 +719,19 @@ goroutineInfoView goroutineData =
 
             else
                 "Goroutine #" ++ String.fromInt goroutineData.goroutine.id
+
+        runningBadge =
+            if isRunning then
+                span
+                    [ css [ Tw.bg_color Tw.green_100, Tw.text_color Tw.green_600, Tw.rounded_full, Tw.px_2, Tw.py_0_dot_5, Tw.text_xs, Tw.font_semibold, Tw.ml_2 ] ]
+                    [ text "running" ]
+
+            else
+                text ""
     in
     div
         [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.alignItems Css.center, Css.marginBottom (Css.px 10) ] ]
-        [ p [ css [ Css.fontSize (Css.rem 1.3) ] ] [ text gInfo ] ]
+        [ p [ css [ Css.fontSize (Css.rem 1.3) ] ] [ text gInfo, runningBadge ] ]
 
 
 stackView : Config -> List StackFrame -> Html Msg
