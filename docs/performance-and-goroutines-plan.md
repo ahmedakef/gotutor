@@ -6,7 +6,7 @@
 | 2 | Breakpoint on every user line, then `Continue` (real goroutine tracing) | **Deferred** |
 | 3 | Make `buildStep` cheaper (user goroutines, user frames, main package vars only) | Implemented |
 | 4 | Drop duplicate stdout/stderr bytes from the response | Implemented |
-| 5 | Frontend "running" badge + regenerated example steps | Planned |
+| 5 | Frontend "running" badge + regenerated example steps | Implemented |
 
 ## How a request works today
 A `/GetExecutionSteps` request goes through these steps:
@@ -85,5 +85,5 @@ Results with delve on macOS, where the trace time excludes the build:
 
 The backend module pins `github.com/ahmedakef/gotutor` to a published version (the `replace` in `backend/go.mod` is commented out). The `omitempty` tag only takes effect once that dependency is bumped. Until then the response carries `"stdoutBytes": null` instead of the base64 copy.
 
-## 5. Frontend touch (Planned)
+## 5. Frontend touch (Implemented)
 The goroutine whose line is highlighted is marked as "running" in the goroutines panel. `frontend/src/initialProgram/steps.json` is regenerated with `make updateExample`.
