@@ -232,8 +232,12 @@ shareUrl id =
 goToPosition : StepsState -> Int -> ( State, Cmd Msg )
 goToPosition stepsState position =
     let
+        stepsCount =
+            List.length stepsState.executionResponse.steps
+
+        -- position 0 means "no step", so only allow it when there are no steps
         clampedPosition =
-            clamp 0 (List.length stepsState.executionResponse.steps) position
+            clamp (min 1 stepsCount) stepsCount position
 
         newState =
             { stepsState | position = clampedPosition }
