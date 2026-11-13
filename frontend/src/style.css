@@ -1,18 +1,39 @@
 :root {
     --main-bg-color: #007d9c;
-    --slider-track-color: hsl(195, 58%, 63%);
+    --brand: #007d9c;
+    --brand-bright: #00add8;
+    --slider-track-color: #e2e8f0;
+    /* the textarea's left padding is derived from these so it stays aligned with the highlighted code */
+    --code-pad: 5px;
+    --gutter-w: 4ch;
+    --gutter-pad: 16px;
+    --code-line-height: 1.375rem;
 }
 
+
+/* range slider: the skateboarding gopher rides a thin track */
 
 input[type=range] {
     appearance: none;
+    -webkit-appearance: none;
     background-color: transparent;
-    transform: scale(2.7);
+    height: 40px;
+    margin: 0;
+    cursor: pointer;
+}
+
+input[type=range]:focus {
+    outline: none;
+}
+
+input[type=range]:focus-visible {
+    outline: 2px solid var(--brand-bright);
+    outline-offset: 2px;
+    border-radius: 4px;
 }
 
 input[type=range]::-webkit-slider-runnable-track {
-    width: 300px;
-    height: 3px;
+    height: 4px;
     background: var(--slider-track-color);
     border: none;
     border-radius: 2px;
@@ -21,20 +42,19 @@ input[type=range]::-webkit-slider-runnable-track {
 input[type=range]::-webkit-slider-thumb {
     -webkit-appearance: none;
     border: none;
-    height: 20px;
-    width: 20px;
+    height: 40px;
+    width: 40px;
     background-color: transparent;
     background-image: url('static/skateboarding.svg');
-    background-size: 100% auto;
+    background-size: contain;
     background-position: center center;
     background-repeat: no-repeat;
-    margin-top: -10px;
+    margin-top: -18px;
     cursor: grab;
 }
 
 input[type=range]::-moz-range-track {
-    width: 150px;
-    height: 3px;
+    height: 4px;
     background: var(--slider-track-color);
     border: none;
     border-radius: 2px;
@@ -43,69 +63,144 @@ input[type=range]::-moz-range-track {
 
 input[type=range]::-moz-range-thumb {
     border: none;
-    height: 20px;
-    width: 20px;
+    border-radius: 0;
+    height: 40px;
+    width: 40px;
     background-color: transparent;
     background-image: url('static/skateboarding.svg');
-    background-size: 100% auto;
+    background-size: contain;
     background-position: center center;
     background-repeat: no-repeat;
-    margin-top: -10px;
     cursor: grab;
     -moz-appearance: none;
+}
+
+input[type=range]:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+/* disclosure widgets: replace the default triangles with a chevron */
+
+summary {
+    list-style: none;
+    cursor: pointer;
+}
+
+summary::-webkit-details-marker {
+    display: none;
+}
+
+summary::marker {
+    content: "";
+}
+
+summary::before {
+    content: "";
+    display: inline-block;
+    width: 0.35em;
+    height: 0.35em;
+    margin-right: 0.5em;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: translateY(-0.15em) rotate(-45deg);
+    transition: transform 0.15s ease;
+    opacity: 0.6;
+}
+
+details[open] > summary::before {
+    transform: translateY(-0.25em) rotate(45deg);
+}
+
+details.leaf > summary {
+    cursor: default;
+}
+
+details.leaf > summary::before {
+    visibility: hidden;
+}
+
+summary.no-chevron::before {
+    display: none;
 }
 
 /* elmsh styles */
 
 pre.elmsh {
-    padding: 5px;
+    padding: var(--code-pad);
     margin: 0;
     text-align: left;
+    min-width: 100%;
+    width: max-content;
+    box-sizing: border-box;
 }
+
+/* the line number sits in the line's padding rather than inline, so tab stops are measured
+   from the start of the code just like in the textarea */
+.elmsh-line {
+    position: relative;
+    min-height: var(--code-line-height); /* keeps a trailing empty line from collapsing */
+    padding-left: calc(var(--gutter-w) + var(--gutter-pad));
+}
+
 .elmsh-line:hover {
-    background-color: rgb(241, 245, 249);
+    background-color: #f8fafc;
 }
+
 .elmsh-line:before {
     content: attr(data-elmsh-lc);
-    display: inline-block;
+    position: absolute;
+    left: 0;
+    width: var(--gutter-w);
     text-align: right;
-    width: 20px;
-    padding: 0 20px 0 0;
-    opacity: 0.3;
+    color: #94a3b8;
 }
 
 .elmsh-add:before {
     content: "▶";
-    opacity: 0.5;
+    color: var(--brand-bright);
 }
 
 .elmsh-hl:before {
     content: "🔥";
-    opacity: 0.5;
 }
 
-/* text area style */
+/* code editor: a transparent textarea on top of the highlighted code */
 
 .code-container {
     position: relative;
     overflow: hidden;
-    width: 85%;
-    height: 55vh;
-    border-bottom-left-radius: 0.5rem;
-    border-bottom-right-radius: 0.5rem;
+    width: 100%;
+    height: 60vh;
+}
+
+@media (min-width: 1024px) {
+    .code-container {
+        flex: 1 1 0;
+        min-height: 0;
+        height: auto;
+    }
 }
 
 
 .code-style {
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-    tab-size: 5;
-    font-family: JetBrains Mono,monospace;
+    font-size: 0.8125rem;
+    line-height: var(--code-line-height);
+    tab-size: 4;
+    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-variant-ligatures: none;
     letter-spacing: normal;
     word-spacing: normal;
     padding: 0;
     margin: 0;
     white-space: pre;
+}
+
+/* the browser's default `pre, code { font-family: monospace }` would otherwise
+   win over .code-style and misalign the highlighted code with the textarea */
+.code-view-container pre,
+.code-view-container code {
+    font: inherit;
 }
 
 
@@ -123,24 +218,52 @@ pre.elmsh {
 .code-textarea {
     box-sizing: border-box;
     color: rgba(0, 0, 0, 0);
-    ;
-    caret-color: black;
+    caret-color: #0f172a;
     resize: none;
     z-index: 2;
-    position: relative;
-    padding: 5px;
+    position: absolute;
+    inset: 0;
+    padding: var(--code-pad);
     border: 0;
     background: transparent;
     width: 100%;
     height: 100%;
+    overscroll-behavior: contain;
+}
+
+.code-textarea::selection {
+    background: rgba(0, 173, 216, 0.25);
 }
 
 .code-textarea-lc {
-    padding-left: 45px;
+    padding-left: calc(var(--code-pad) + var(--gutter-w) + var(--gutter-pad));
 }
 
 .code-textarea:focus {
     outline: none;
+}
+
+/* thin, neutral scrollbars */
+
+.thin-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+}
+
+.thin-scroll::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+.thin-scroll::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 8px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+}
+
+.thin-scroll::-webkit-scrollbar-track {
+    background: transparent;
 }
 
 
@@ -151,11 +274,12 @@ pre.elmsh {
 }
 
 .elmsh-hl {
-    background: #fffbdd;
+    background: #fef3c7;
 }
 
 .elmsh-add {
-    background: #eaffea;
+    background: #e0f5fb;
+    box-shadow: inset 2px 0 0 var(--brand-bright);
 }
 
 .elmsh-del {
@@ -163,7 +287,7 @@ pre.elmsh {
 }
 
 .elmsh-comm {
-    color: #969896;
+    color: #6a737d;
 }
 
 .elmsh1 {

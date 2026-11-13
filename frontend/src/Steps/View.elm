@@ -2,24 +2,27 @@ module Steps.View exposing (..)
 
 import Char
 import Css
-import Css.Global exposing (children)
 import Helpers.Hex
 import Html as UnSytyled
 import Html.Attributes
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events exposing (..)
+import Html.Styled.Keyed as Keyed
+import Icons
 import Json.Decode as Json
 import Steps.Decoder exposing (..)
 import Steps.Steps exposing (..)
+import Styles
 import SyntaxHighlight as SH
+import Tailwind.Breakpoints as Bp
 import Tailwind.Theme as Tw
 import Tailwind.Utilities as Tw
-import Svg
-import Svg.Attributes as SvgAttr
 
 
-view : State -> Html Msg
+{-| The editor and program state panes, followed by the output panel.
+-}
+view : State -> List (Html Msg)
 view state =
     case state of
         Success stepsState ->
@@ -27,171 +30,67 @@ view state =
                 visualizeState =
                     stateToVisualize stepsState
             in
-            main_ [ css [ Tw.flex, Tw.flex_wrap, Tw.flex_1 ] ]
-                [ div [ css [ Tw.flex, Tw.flex_col, Tw.items_center, Tw.flex_1, Tw.pb_4 ] ]
-                        [ div [ css [Tw.box_border, borderStyle, Tw.px_2 ,Tw.py_2, Tw.flex, Tw.flex_wrap, Tw.flex_row, Tw.items_center,
-                                Tw.justify_between, Tw.gap_2, Css.width (Css.pct 85), Css.backgroundColor mutedColor, Tw.rounded_t_lg ] ] [
-                            div [css [ Tw.flex, Tw.flex_row, Tw.items_center, Tw.gap_2 ]] ( exampleSelector :: (case visualizeState.mode of
-                                Edit ->
-                                    [ div [ onClick Fmt, css [ secondaryButtonStyle, borderStyle ] ] [
-                                        formatSvg
-                                        , text "Format"
-                                        ]
-                                    ]
-
-                                View ->
-                                    [ case stepsState.shareUrl of
-                                        Just url ->
-                                            input [ type_ "text", value url, css [ Tw.w_56, Tw.p_2, Tw.bg_color Tw.slate_50, borderStyle ] ] []
-                                        Nothing ->
-                                            input [ type_ "text", hidden True ] []
-                                    , div [ onClick Share, css [ secondaryButtonStyle, borderStyle ] ] [
-                                        shareSvg
-                                        , text "Share"
-                                    ]
-                                    ]
-                                _ ->
-                                    []
-                            ) )
-                            , div [] [editOrViewButton visualizeState.mode]
-                            ]
-                            , codeView visualizeState
-                            , div [ css [ Tw.text_xs, Tw.text_color Tw.gray_400, Tw.mt_1, Css.width (Css.pct 85) ] ]
-                                [ text "Your code is sent to our server for execution and cached to improve performance. We don't share it." ]
-                            , div [ css [ Css.displayFlex, Css.flexDirection Css.column, Tw.box_border
-                                    ,Tw.bg_color Tw.white, Tw.p_4, borderStyle, Tw.rounded_lg, Tw.mt_4, Css.width (Css.pct 85) ] ]
-                                [ div [ css [ Tw.flex, Tw.flex_row, Tw.items_center, Tw.gap_2, Tw.justify_between ] ]
-                                    [ div [ css [ Tw.text_color Tw.gray_500 ] ]
-                                        [ text ("Step " ++ String.fromInt stepsState.position ++ " of " ++ (List.length stepsState.executionResponse.steps |> String.fromInt))
-                                        ]
-                                    , div [] [
-                                        div [ onClick Prev, css [ secondaryButtonStyle, borderStyle, Tw.mr_4 ] ] [ previousSvg ]
-                                        , div [ onClick Next, css [ secondaryButtonStyle, borderStyle, Tw.ml_4 ] ] [ nextSvg ]
-                                    ]
-                                    ]
-                                    , div [ css [ Tw.flex, Tw.justify_center, Tw.mt_4 ] ]
-                                        [ input
-                                            [ type_ "range"
-                                            , Html.Styled.Attributes.min "1"
-                                            , Html.Styled.Attributes.max (String.fromInt (List.length stepsState.executionResponse.steps))
-                                            , Html.Styled.Attributes.value (String.fromInt stepsState.position)
-                                            , onInput (String.toInt >> Maybe.withDefault 1 >> SliderChange)
-                                            ]
-                                            []
-                                        ]
-                                ]
+            [ main_
+                [ css
+                    [ Tw.flex
+                    , Tw.flex_col
+                    , Bp.lg
+                        [ Tw.grid
+                        , Tw.grid_cols_2
+                        , Css.property "grid-template-rows" "minmax(0, 1fr)"
+                        , Tw.flex_1
+                        , Tw.min_h_0
                         ]
-                    , programVisualizer visualizeState
                     ]
-
+                ]
+                [ editorPane stepsState visualizeState
+                , statePane visualizeState
+                ]
+            , outputPanel visualizeState
+            ]
 
         Failure error ->
-            main_ [ css [ Css.flex (Css.num 1), Css.displayFlex, Css.justifyContent Css.spaceBetween, Css.alignItems Css.center ] ]
-                [ pre [ css [ Tw.bg_color Tw.red_500, Css.fontSize (Css.px 20) ] ] [ text error ]
+            [ centered
+                [ div [ css [ Styles.card, Tw.w_full, Tw.max_w_lg, Tw.p_5 ] ]
+                    [ div [ css [ Tw.flex, Tw.items_center, Tw.gap_2, Tw.text_color Tw.red_700, Tw.font_semibold ] ]
+                        [ Icons.circleAlert 18, text "Couldn't load the program" ]
+                    , pre [ css [ Styles.mono, Tw.text_xs, Tw.whitespace_pre_wrap, Tw.break_words, Tw.text_color Tw.slate_700, Tw.bg_color Tw.slate_50, Tw.rounded_md, Tw.p_3, Tw.mt_3, Tw.mb_4 ] ]
+                        [ text error ]
+                    , a [ href "", target "_self", css [ Styles.buttonSecondary ] ] [ text "Reload" ]
+                    ]
                 ]
+            ]
 
         Loading ->
-            main_ [ css [ Css.flex (Css.num 1), Css.displayFlex, Css.justifyContent Css.spaceBetween, Css.alignItems Css.center ] ]
-                [ pre [ css [ Css.fontSize (Css.px 20) ] ] [ text "Loading..." ]
+            [ centered
+                [ img [ src "static/gopher.png", alt "", height 64 ] []
+                , div [ css [ Tw.flex, Tw.items_center, Tw.gap_2, Tw.text_color Tw.slate_500 ] ]
+                    [ spinner 16, text "Loading program…" ]
                 ]
+            ]
 
-nextSvg : Html msg
-nextSvg =
-    (Svg.svg
-        [ SvgAttr.width "24"
-        , SvgAttr.height "24"
-        , SvgAttr.viewBox "0 0 24 24"
-        , SvgAttr.fill "none"
-        , SvgAttr.stroke "currentColor"
-        , SvgAttr.strokeWidth "2"
-        , SvgAttr.strokeLinecap "round"
-        , SvgAttr.strokeLinejoin "round"
-        , SvgAttr.class "lucide lucide-chevron-right h-4 w-4"
-        ]
-        [ Svg.path
-            [ SvgAttr.d "m9 18 6-6-6-6"
-            ]
-            []
-        ]
-    ) |> Html.Styled.fromUnstyled
 
-previousSvg : Html msg
-previousSvg =
-    (Svg.svg
-        [ SvgAttr.width "24"
-        , SvgAttr.height "24"
-        , SvgAttr.viewBox "0 0 24 24"
-        , SvgAttr.fill "none"
-        , SvgAttr.stroke "currentColor"
-        , SvgAttr.strokeWidth "2"
-        , SvgAttr.strokeLinecap "round"
-        , SvgAttr.strokeLinejoin "round"
-        , SvgAttr.class "lucide lucide-chevron-left h-4 w-4"
-        ]
-        [ Svg.path
-            [ SvgAttr.d "m15 18-6-6 6-6"
+centered : List (Html msg) -> Html msg
+centered content =
+    main_
+        [ css
+            [ Tw.flex_1
+            , Tw.flex
+            , Tw.flex_col
+            , Tw.items_center
+            , Tw.justify_center
+            , Tw.gap_4
+            , Tw.p_8
+            , Css.minHeight (Css.vh 60)
             ]
-            []
         ]
-    ) |> Html.Styled.fromUnstyled
-shareSvg : Html msg
-shareSvg =
-    (Svg.svg
-        [ SvgAttr.width "16"
-        , SvgAttr.height "16"
-        , SvgAttr.viewBox "0 0 24 24"
-        , SvgAttr.fill "none"
-        , SvgAttr.stroke "currentColor"
-        , SvgAttr.strokeWidth "2"
-        , SvgAttr.strokeLinecap "round"
-        , SvgAttr.strokeLinejoin "round"
-        , SvgAttr.class "lucide lucide-share"
-        ]
-        [ Svg.path
-            [ SvgAttr.d "M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"
-            ]
-            []
-        , Svg.polyline
-            [ SvgAttr.points "16 6 12 2 8 6"
-            ]
-            []
-        , Svg.line
-            [ SvgAttr.x1 "12"
-            , SvgAttr.x2 "12"
-            , SvgAttr.y1 "2"
-            , SvgAttr.y2 "15"
-            ]
-            []
-        ]
-    ) |> Html.Styled.fromUnstyled
+        content
 
-formatSvg : Html msg
-formatSvg =
-    (Svg.svg
-        [ SvgAttr.width "16"
-        , SvgAttr.height "16"
-        , SvgAttr.viewBox "0 0 24 24"
-        , SvgAttr.fill "none"
-        , SvgAttr.stroke "currentColor"
-        , SvgAttr.strokeWidth "2"
-        , SvgAttr.strokeLinecap "round"
-        , SvgAttr.strokeLinejoin "round"
-        , SvgAttr.class "lucide lucide-align-left"
-        ]
-        [ Svg.path
-            [ SvgAttr.d "M15 12H3"
-            ]
-            []
-        , Svg.path
-            [ SvgAttr.d "M17 18H3"
-            ]
-            []
-        , Svg.path
-            [ SvgAttr.d "M21 6H3"
-            ]
-            []
-        ]
-    ) |> Html.Styled.fromUnstyled
+
+spinner : Int -> Html msg
+spinner size =
+    span [ css [ Tw.inline_flex, Tw.animate_spin ] ] [ Icons.loader size ]
+
 
 type alias VisualizeState =
     { lastStep : Maybe Step
@@ -258,6 +157,77 @@ filterUserFrames stack =
         |> List.filter (\frame -> String.endsWith "main.go" frame.file)
 
 
+
+-- EDITOR PANE
+
+
+editorPane : StepsState -> VisualizeState -> Html Msg
+editorPane stepsState state =
+    section
+        [ attribute "aria-label" "Editor"
+        , css
+            [ Tw.flex
+            , Tw.flex_col
+            , Tw.min_h_0
+            , Tw.bg_color Tw.white
+            , Tw.border_b
+            , Bp.lg [ Tw.border_b_0, Tw.border_r ]
+            ]
+        ]
+        [ editorToolbar stepsState state
+        , codeView state
+        , stepControls stepsState
+        ]
+
+
+editorToolbar : StepsState -> VisualizeState -> Html Msg
+editorToolbar stepsState state =
+    div [ css [ Styles.panelHeader ] ]
+        [ div [ css [ Tw.flex, Tw.flex_wrap, Tw.items_center, Tw.gap_2, Tw.min_w_0 ] ]
+            (exampleSelector
+                :: (case state.mode of
+                        Edit ->
+                            [ button [ type_ "button", onClick Fmt, css [ Styles.buttonSecondary, Styles.buttonSm ] ]
+                                [ Icons.alignLeft 14, text "Format" ]
+                            ]
+
+                        View ->
+                            [ button [ type_ "button", onClick Share, css [ Styles.buttonSecondary, Styles.buttonSm ] ]
+                                [ Icons.share 14, text "Share" ]
+                            , case stepsState.shareUrl of
+                                Just url ->
+                                    span
+                                        [ title "Click to select the link, then copy it"
+                                        , css
+                                            [ Styles.mono
+                                            , Tw.select_all
+                                            , Tw.truncate
+                                            , Tw.max_w_xs
+                                            , Tw.text_xs
+                                            , Tw.leading_5
+                                            , Tw.px_2
+                                            , Tw.py_1
+                                            , Tw.rounded_md
+                                            , Tw.border
+                                            , Tw.border_color Tw.slate_200
+                                            , Tw.bg_color Tw.slate_50
+                                            , Tw.text_color Tw.slate_700
+                                            ]
+                                        ]
+                                        [ text url ]
+
+                                Nothing ->
+                                    text ""
+                            ]
+
+                        _ ->
+                            []
+                   )
+            )
+        , editOrViewButton state.mode
+        ]
+
+
 codeView : VisualizeState -> Html Msg
 codeView state =
     let
@@ -276,8 +246,7 @@ codeView state =
     in
     div
         [ css
-            [ borderStyle
-            , case state.mode of
+            [ case state.mode of
                 Edit ->
                     Tw.bg_color Tw.slate_50
 
@@ -329,7 +298,9 @@ codeView state =
             , class "code-style"
             , class "code-textarea"
             , class "code-textarea-lc"
+            , class "thin-scroll"
             , spellcheck False
+            , attribute "aria-label" "Go source code"
             , css
                 [ Css.cursor
                     (case state.mode of
@@ -337,7 +308,7 @@ codeView state =
                             Css.text_
 
                         _ ->
-                            Css.notAllowed
+                            Css.default
                     )
                 ]
             ]
@@ -345,98 +316,433 @@ codeView state =
         ]
 
 
-wrapCode : String -> String
-wrapCode code =
-    "```go\n" ++ code ++ "\n```"
+stepControls : StepsState -> Html Msg
+stepControls stepsState =
+    let
+        total =
+            List.length stepsState.executionResponse.steps
 
-secondaryBackgroundColor : Css.Color
-secondaryBackgroundColor =
-    Css.hsla 210 0.40 0.98 1
+        position =
+            stepsState.position
 
-secondaryBackgroundColorHover : Css.Color
-secondaryBackgroundColorHover =
-    Css.hsla 210 0.40 0.961 1
+        hasSteps =
+            total > 0
 
-mutedColor : Css.Color
-mutedColor =
-    Css.hsla 210 0.40 0.96 1
+        atStart =
+            not hasSteps || position <= 1
 
-primaryForegroundColor : Css.Color
-primaryForegroundColor =
-    Css.hsla 210 0.40 0.98 1
+        atEnd =
+            not hasSteps || position >= total
+    in
+    div [ css [ Tw.flex_none, Tw.border_t, Tw.px_3, Tw.pt_1, Tw.pb_2 ] ]
+        [ div [ css [ Tw.flex, Tw.items_center, Tw.gap_3 ] ]
+            [ div [ css [ Tw.flex, Tw.items_center, Tw.gap_1 ] ]
+                [ stepButton "First step" (SliderChange 1) atStart (Icons.chevronFirst 16)
+                , stepButton "Previous step (←)" Prev atStart (Icons.chevronLeft 16)
+                , stepButton "Next step (→)" Next atEnd (Icons.chevronRight 16)
+                , stepButton "Last step" (SliderChange total) atEnd (Icons.chevronLast 16)
+                ]
+            , if hasSteps then
+                div [ css [ Tw.text_sm, Tw.text_color Tw.slate_500, Tw.tabular_nums, Tw.whitespace_nowrap ] ]
+                    [ text "Step "
+                    , span [ css [ Tw.font_semibold, Tw.text_color Tw.slate_900 ] ] [ text (String.fromInt position) ]
+                    , text (" / " ++ String.fromInt total)
+                    ]
 
-primaryBackgroundColor : Css.Color
-primaryBackgroundColor =
-    Css.rgba 0 173 216 1
+              else
+                div [ css [ Styles.muted, Tw.whitespace_nowrap ] ] [ text "Press Visualize to record steps" ]
+            , input
+                [ type_ "range"
+                , Html.Styled.Attributes.min "1"
+                , Html.Styled.Attributes.max (String.fromInt total)
+                , Html.Styled.Attributes.value (String.fromInt position)
+                , onInput (String.toInt >> Maybe.withDefault 1 >> SliderChange)
+                , disabled (not hasSteps)
+                , attribute "aria-label" "Execution step"
+                , css [ Tw.flex_1, Tw.min_w_0 ]
+                ]
+                []
+            ]
+        , p [ css [ Tw.text_color Tw.slate_400, Css.fontSize (Css.px 11) ] ]
+            [ text "Your code is sent to our server for execution and cached to improve performance. We don't share it." ]
+        ]
 
-primaryHoverBackgroundColor : Css.Color
-primaryHoverBackgroundColor =
-    Css.rgba 13 75 115 1
+
+stepButton : String -> Msg -> Bool -> Html Msg -> Html Msg
+stepButton label msg isDisabled iconHtml =
+    button
+        [ type_ "button"
+        , onClick msg
+        , disabled isDisabled
+        , title label
+        , attribute "aria-label" label
+        , css [ Styles.buttonGhost, Styles.iconButton, Tw.h_8, Tw.w_8 ]
+        ]
+        [ iconHtml ]
+
 
 editOrViewButton : Mode -> Html Msg
 editOrViewButton mode =
-    let
-        bStyle =
-            Css.batch
-                [ buttonStyle
-                , borderStyle
-                , Css.color primaryForegroundColor
-                , Css.backgroundColor primaryBackgroundColor
-                , Css.hover [ Css.backgroundColor primaryHoverBackgroundColor ]
-                ]
-    in
     case mode of
         Edit ->
-            div [ onClick Visualize, css [ bStyle ] ] [
-                (Svg.svg
-                    [ SvgAttr.width "16"
-                    , SvgAttr.height "16"
-                    , SvgAttr.viewBox "0 0 24 24"
-                    , SvgAttr.fill "none"
-                    , SvgAttr.stroke "currentColor"
-                    , SvgAttr.strokeWidth "2"
-                    , SvgAttr.strokeLinecap "round"
-                    , SvgAttr.strokeLinejoin "round"
-                    ]
-                    [ Svg.polygon [ SvgAttr.points "6 3 20 12 6 21 6 3" ] []
-                    ]
-                ) |> Html.Styled.fromUnstyled
-                , text "Visualize Code Execution"
-            ]
+            button [ type_ "button", onClick Visualize, css [ Styles.buttonPrimary, Styles.buttonSm ] ]
+                [ Icons.play 14, text "Visualize" ]
 
         View ->
-            div [ onClick EditCode, css [ bStyle ] ] [
-                (Svg.svg
-                    [ SvgAttr.width "16"
-                    , SvgAttr.height "16"
-                    , SvgAttr.viewBox "0 0 24 24"
-                    , SvgAttr.fill "none"
-                    , SvgAttr.stroke "currentColor"
-                    , SvgAttr.strokeWidth "2"
-                    , SvgAttr.strokeLinecap "round"
-                    , SvgAttr.strokeLinejoin "round"
-                    ]
-                    [ Svg.path
-                        [ SvgAttr.d "M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-                        ]
-                        []
-                    , Svg.path
-                        [ SvgAttr.d "M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"
-                        ]
-                        []
-                    ]
-                 ) |> Html.Styled.fromUnstyled
-                , text "Edit Code"
-            ]
+            button [ type_ "button", onClick EditCode, css [ Styles.buttonSecondary, Styles.buttonSm ] ]
+                [ Icons.squarePen 14, text "Edit code" ]
 
         WaitingSteps ->
-            p [ css [ Css.marginTop (Css.px 10), Css.marginBottom (Css.px 0) ] ] [ text "Waiting for execution steps... ⏳" ]
+            busyButton "Running…"
 
         WaitingSourceCode ->
-            p [ css [ Css.marginTop (Css.px 10), Css.marginBottom (Css.px 0) ] ] [ text "Waiting for source code... ⏳" ]
+            busyButton "Loading…"
 
         WaitingLLM ->
-            p [ css [ Css.marginTop (Css.px 10), Css.marginBottom (Css.px 0) ] ] [ text "Waiting for LLM response... ⏳" ]
+            busyButton "Asking AI…"
+
+
+busyButton : String -> Html msg
+busyButton label =
+    button [ type_ "button", disabled True, css [ Styles.buttonPrimary, Styles.buttonSm ] ]
+        [ spinner 14, text label ]
+
+
+exampleSelector : Html Msg
+exampleSelector =
+    select
+        [ css [ Styles.select ]
+        , onInput ExampleSelected
+        , attribute "aria-label" "Load an example"
+        ]
+        [ option [ value "gotutor.txt", Html.Styled.Attributes.default True ] [ text "GoTutor Example" ]
+        , option [ value "goroutines.txt" ] [ text "Goroutines" ]
+        , option [ value "hello.txt" ] [ text "Hello, World!" ]
+        , option [ value "fib.txt" ] [ text "Fibonacci Closure" ]
+        , option [ value "pi.txt" ] [ text "Concurrent pi" ]
+        , option [ value "sieve.txt" ] [ text "Concurrent Prime Sieve" ]
+        , option [ value "tree.txt" ] [ text "Tree Comparison" ]
+        , option [ value "http.txt" ] [ text "HTTP Server" ]
+        , option [ value "index-dev.txt" ] [ text "Generic index" ]
+        ]
+
+
+
+-- STATE PANE
+
+
+statePane : VisualizeState -> Html Msg
+statePane state =
+    section
+        [ attribute "aria-label" "Program state"
+        , css [ Tw.flex, Tw.flex_col, Tw.min_h_0, Tw.bg_color Tw.slate_50 ]
+        ]
+        [ div [ css [ Styles.panelHeader ] ]
+            [ h2 [ css [ Tw.text_sm, Tw.font_semibold, Tw.text_color Tw.slate_900 ] ] [ text "Program state" ]
+            , configView state.config
+            ]
+        , div
+            [ class "thin-scroll"
+            , css
+                [ Tw.flex_1
+                , Tw.min_h_0
+                , Tw.overflow_auto
+                , Tw.overscroll_contain
+                , Tw.p_4
+                , Tw.flex
+                , Tw.flex_col
+                , Tw.gap_5
+                ]
+            ]
+            [ backendStateView state
+            , globalsView state.config state.packageVars
+            , goroutinesView
+                state.config
+                (state.lastStep
+                    |> Maybe.map .goroutinesData
+                    |> Maybe.withDefault []
+                    |> List.filter (\g -> not (List.isEmpty (filterUserFrames g.stacktrace)))
+                )
+            ]
+        ]
+
+
+configView : Config -> Html Msg
+configView config =
+    div [ css [ Tw.flex, Tw.flex_wrap, Tw.items_center, Tw.gap_x_4, Tw.gap_y_1, Tw.text_xs, Tw.text_color Tw.slate_600 ] ]
+        [ label [ css [ Tw.flex, Tw.items_center, Tw.gap_1_dot_5, Tw.cursor_pointer ] ]
+            [ input [ type_ "checkbox", onCheck ShowOnlyExportedFields, checked config.showOnlyExportedFields, css [ Styles.checkbox ] ] []
+            , text "Exported fields only"
+            ]
+        , label [ css [ Tw.flex, Tw.items_center, Tw.gap_1_dot_5, Tw.cursor_pointer ] ]
+            [ input [ type_ "checkbox", onCheck ShowMemoryAddresses, checked config.showMemoryAddresses, css [ Styles.checkbox ] ] []
+            , text "Memory addresses"
+            ]
+        ]
+
+
+backendStateView : VisualizeState -> Html Msg
+backendStateView state =
+    let
+        waitingMessage =
+            case state.mode of
+                WaitingSteps ->
+                    Just "Waiting for backend to get execution steps... ⏳"
+
+                WaitingSourceCode ->
+                    Just "Waiting for source code... ⏳"
+
+                WaitingLLM ->
+                    Just "Waiting for LLM response... ⏳"
+
+                _ ->
+                    Nothing
+
+        infoAlert message =
+            div [ attribute "role" "status", css [ Styles.alertInfo, Tw.flex, Tw.items_center, Tw.gap_2 ] ]
+                [ Icons.info 16, text message ]
+    in
+    case ( waitingMessage, state.flashMessage, state.lastStep ) of
+        ( Just message, _, _ ) ->
+            infoAlert message
+
+        ( Nothing, Just error, _ ) ->
+            div [ attribute "role" "alert", css [ Styles.alertDanger ] ]
+                [ div [ css [ Tw.flex, Tw.items_start, Tw.gap_2 ] ]
+                    [ span [ css [ Tw.inline_flex, Tw.mt_0_dot_5, Tw.text_color Tw.red_600 ] ] [ Icons.circleAlert 16 ]
+                    , pre [ css [ Styles.mono, Tw.flex_1, Tw.min_w_0, Tw.m_0, Tw.text_xs, Tw.leading_5, Tw.whitespace_pre_wrap, Tw.break_words ] ]
+                        [ text error ]
+                    ]
+                , div [ css [ Tw.flex, Tw.justify_end, Tw.mt_3 ] ]
+                    [ button [ type_ "button", onClick FixCodeWithAI, css [ Styles.buttonSecondary, Styles.buttonSm ] ]
+                        [ text "Fix with AI ✨" ]
+                    ]
+                ]
+
+        ( Nothing, Nothing, Nothing ) ->
+            infoAlert "No step to show yet. Press Visualize to run the program, or move the slider."
+
+        ( Nothing, Nothing, Just _ ) ->
+            text ""
+
+
+globalsView : Config -> List Variable -> Html msg
+globalsView config vars =
+    if List.isEmpty vars then
+        text ""
+
+    else
+        details [ attribute "open" "" ]
+            [ summary [ css [ Styles.sectionTitle, Tw.mb_2 ] ] [ text "Global variables" ]
+            , div [ css [ Styles.card, Tw.px_3, Tw.py_2 ] ] [ varList config vars ]
+            ]
+
+
+goroutinesView : Config -> List GoroutinesData -> Html Msg
+goroutinesView config goroutinesData =
+    let
+        note =
+            if List.length goroutinesData >= 100 then
+                p [ css [ Styles.muted, Tw.mb_3 ] ] [ text "Showing the first 100 goroutines only." ]
+
+            else
+                text ""
+
+        goroutines =
+            if List.length goroutinesData >= 100 then
+                List.take 100 goroutinesData
+
+            else
+                goroutinesData
+    in
+    if List.isEmpty goroutines then
+        text ""
+
+    else
+        details [ attribute "open" "" ]
+            [ summary [ css [ Styles.sectionTitle, Tw.mb_3 ] ]
+                [ text <| "Goroutines · " ++ String.fromInt (List.length goroutines) ]
+            , note
+            , Keyed.node "div"
+                [ css
+                    [ Tw.grid
+                    , Css.property "grid-template-columns" "repeat(auto-fill, minmax(280px, 1fr))"
+                    , Tw.items_start
+                    , Tw.gap_x_4
+                    , Tw.gap_y_6
+                    , Tw.pt_3
+                    ]
+                ]
+                -- the first goroutine is the one executing the highlighted line
+                (List.indexedMap
+                    (\index goroutineData ->
+                        ( String.fromInt goroutineData.goroutine.id
+                        , goroutineView config (index == 0) goroutineData
+                        )
+                    )
+                    goroutines
+                )
+            ]
+
+
+goroutineView : Config -> Bool -> GoroutinesData -> Html Msg
+goroutineView config isRunning goroutineData =
+    div
+        [ css
+            [ Styles.card
+            , Tw.relative
+            , Tw.flex
+            , Tw.flex_col
+            , Tw.gap_3
+            , Tw.p_3
+            , Tw.min_w_0
+            , if isRunning then
+                Css.batch [ Tw.border_color Tw.transparent, Tw.ring_2, Tw.ring_color Tw.emerald_500 ]
+
+              else
+                Css.batch []
+            ]
+        ]
+        [ img
+            [ src "static/megaphone-gopher.svg"
+            , alt ""
+            , css [ Tw.absolute, Tw.w_10, Tw.h_10, Css.top (Css.rem -1), Css.left (Css.rem -0.75) ]
+            ]
+            []
+        , goroutineInfoView isRunning goroutineData
+        , stackView config (goroutineData.stacktrace |> filterUserFrames)
+        ]
+
+
+goroutineInfoView : Bool -> GoroutinesData -> Html msg
+goroutineInfoView isRunning goroutineData =
+    let
+        gInfo =
+            if goroutineData.goroutine.id == 1 then
+                "Main Goroutine #1"
+
+            else
+                "Goroutine #" ++ String.fromInt goroutineData.goroutine.id
+
+        runningBadge =
+            if isRunning then
+                span
+                    [ css
+                        [ Tw.inline_flex
+                        , Tw.items_center
+                        , Tw.gap_1_dot_5
+                        , Tw.rounded_full
+                        , Tw.bg_color Tw.emerald_50
+                        , Tw.text_color Tw.emerald_700
+                        , Tw.px_2
+                        , Tw.py_0_dot_5
+                        , Tw.text_xs
+                        , Tw.font_medium
+                        ]
+                    ]
+                    [ span [ css [ Tw.w_1_dot_5, Tw.h_1_dot_5, Tw.rounded_full, Tw.bg_color Tw.emerald_500 ] ] []
+                    , text "running"
+                    ]
+
+            else
+                text ""
+    in
+    div [ css [ Tw.flex, Tw.items_center, Tw.justify_between, Tw.gap_2, Tw.pl_8, Css.minHeight (Css.rem 1.5) ] ]
+        [ h3 [ css [ Tw.text_sm, Tw.font_semibold, Tw.text_color Tw.slate_900 ] ] [ text gInfo ]
+        , runningBadge
+        ]
+
+
+stackView : Config -> List StackFrame -> Html Msg
+stackView config stack =
+    if List.isEmpty stack then
+        text ""
+
+    else
+        details [ attribute "open" "" ]
+            [ summary [ css [ Styles.sectionTitle, Tw.mb_2 ] ] [ text "Stack frames" ]
+            , ol [ css [ Tw.list_none, Tw.p_0 ] ]
+                (List.indexedMap
+                    (\index frame ->
+                        li []
+                            [ if index > 0 then
+                                -- the frame above is called by this one
+                                div [ title "called from", css [ Tw.flex, Tw.justify_center, Tw.text_color Tw.slate_400 ] ]
+                                    [ Icons.chevronUp 14 ]
+
+                              else
+                                text ""
+                            , frameView config frame
+                            ]
+                    )
+                    stack
+                )
+            ]
+
+
+frameView : Config -> StackFrame -> Html Msg
+frameView config frame =
+    let
+        fileName =
+            String.split "/" frame.file
+                |> List.reverse
+                |> List.head
+                |> Maybe.withDefault frame.file
+    in
+    div
+        [ css
+            [ Tw.rounded_md
+            , Tw.border
+            , Tw.border_color Tw.slate_200
+            , Tw.bg_color Tw.slate_50
+            , Tw.p_2_dot_5
+            , Tw.transition_colors
+            , Css.hover [ Tw.border_color Tw.cyan_400, Tw.bg_color Tw.white ]
+            ]
+        , onMouseEnter (Highlight frame.line)
+        , onMouseLeave (Unhighlight frame.line)
+        ]
+        [ div [ css [ Tw.flex, Tw.items_center, Tw.justify_between, Tw.gap_2 ] ]
+            [ span [ css [ Styles.mono, Tw.text_xs, Tw.font_semibold, Tw.text_color Tw.slate_900, Tw.truncate ] ]
+                [ text <| removeMainPrefix frame.function.name ]
+            , span [ css [ Styles.chip, Tw.shrink_0, Tw.bg_color Tw.white, Tw.border, Tw.border_color Tw.slate_200 ] ]
+                [ text <| fileName ++ ":" ++ String.fromInt frame.line ]
+            ]
+        , varsView config "arguments" frame.arguments
+        , varsView config "locals" frame.locals
+        ]
+
+
+varsView : Config -> String -> Maybe (List Variable) -> Html msg
+varsView config title maybeVars =
+    case maybeVars of
+        Nothing ->
+            text ""
+
+        Just vars ->
+            if List.isEmpty vars then
+                text ""
+
+            else
+                details [ attribute "open" "", css [ Tw.mt_2 ] ]
+                    [ summary [ css [ Tw.text_xs, Tw.font_medium, Tw.text_color Tw.slate_500, Tw.mb_0_dot_5 ] ] [ text title ]
+                    , varList config vars
+                    ]
+
+
+varList : Config -> List Variable -> Html msg
+varList config vars =
+    ul
+        [ css
+            [ Styles.mono
+            , Tw.list_none
+            , Tw.p_0
+            , Css.fontSize (Css.px 12)
+            , Css.lineHeight (Css.rem 1.25)
+            , Tw.text_color Tw.slate_800
+            ]
+        ]
+        (List.map (varView config) vars)
 
 
 varView : Config -> Variable -> Html msg
@@ -471,55 +777,89 @@ varView config v =
                                             VariableI { vI | name = "[" ++ String.fromInt i ++ "]" ++ vI.name }
                                 )
 
+                    else if config.showOnlyExportedFields then
+                        var.children
+                            |> List.filter
+                                -- only show exported fields
+                                (\child ->
+                                    case child of
+                                        VariableI vI ->
+                                            String.uncons vI.name
+                                                |> Maybe.map (\( firstChar, _ ) -> Char.isUpper firstChar)
+                                                |> Maybe.withDefault False
+                                )
+
                     else
-                        if config.showOnlyExportedFields then
-                            var.children
-                                |> List.filter
-                                    -- only show exported fields
-                                    (\child ->
-                                        case child of
-                                            VariableI vI ->
-                                                String.uncons vI.name
-                                                    |> Maybe.map (\( firstChar, _ ) -> Char.isUpper firstChar)
-                                                    |> Maybe.withDefault False
-                                    )
-                        else
-                            var.children
+                        var.children
+
+                isLeaf =
+                    List.isEmpty children
+
+                lengthInfo =
+                    if isSliceOrArray then
+                        "len: " ++ String.fromInt var.len ++ ", cap: " ++ String.fromInt var.cap
+
+                    else if isMap then
+                        "len: " ++ String.fromInt var.len
+
+                    else
+                        ""
             in
             li []
-                [ details []
-                    [ summary
-                        [ if List.isEmpty children then
-                            css [ Css.listStyle Css.none ]
+                [ details
+                    (if isLeaf then
+                        [ class "leaf" ]
+
+                     else
+                        []
+                    )
+                    [ summary [ css [ Tw.py_px, Css.property "overflow-wrap" "anywhere", Css.paddingLeft (Css.em 1), Css.textIndent (Css.em -1) ] ]
+                        [ span [] [ text (removeMainPrefix var.name) ]
+                        , span [ css [ Tw.text_color Tw.slate_400 ] ] [ text " = " ]
+                        , span [ css [ Tw.text_color Tw.slate_400 ] ]
+                            [ text <| "{" ++ var.type_
+                            , if config.showMemoryAddresses then
+                                text <| " | " ++ (var.addr |> Helpers.Hex.intToHex)
+
+                              else
+                                text ""
+                            , text "} "
+                            ]
+                        , span [ css [ valueColor var.type_ ] ] [ text value ]
+                        , if String.isEmpty lengthInfo then
+                            text ""
 
                           else
-                            css []
+                            span [ css [ Tw.text_color Tw.slate_400, Css.fontSize (Css.px 11), Tw.ml_2 ] ] [ text lengthInfo ]
                         ]
-                        ([span [ css [ Css.hover [ Tw.cursor_pointer ] ] ] [ text <| removeMainPrefix var.name ++ " = "]
-                         , span [ css [ Tw.text_color Tw.gray_400 ] ]
-                                [ text <| "{" ++ var.type_
-                                , if config.showMemoryAddresses then
-                                    text <| " | " ++ (var.addr |> Helpers.Hex.intToHex)
-                                else
-                                    text ""
-                                , text "}  "
-                                ]
+                    , if isLeaf then
+                        text ""
 
-                         , text value
-                         ]
-                            ++ (if isSliceOrArray then
-                                    [ sub [] [ text <| "len: " ++ String.fromInt var.len ++ ", cap:" ++ String.fromInt var.cap ] ]
-
-                                else if isMap then
-                                    [ sub [] [ text <| "len: " ++ String.fromInt var.len ] ]
-
-                                else
-                                    []
-                               )
-                        )
-                    , ul [ css [ Tw.list_none ] ] (List.map (varView config) children)
+                      else
+                        ul [ css [ Tw.list_none, Tw.p_0, Tw.ml_1, Tw.pl_3, Tw.border_l, Tw.border_color Tw.slate_200 ] ]
+                            (List.map (varView config) children)
                     ]
                 ]
+
+
+valueColor : String -> Css.Style
+valueColor type_ =
+    let
+        isNumber =
+            List.any (\prefix -> String.startsWith prefix type_) [ "int", "uint", "float", "complex" ]
+                || List.member type_ [ "byte", "rune" ]
+    in
+    if type_ == "string" then
+        Css.color Styles.stringColor
+
+    else if isNumber then
+        Css.color Styles.numberColor
+
+    else if type_ == "bool" then
+        Css.color Styles.boolColor
+
+    else
+        Css.batch []
 
 
 isArrayType : String -> Bool
@@ -561,244 +901,6 @@ pairMapChildren children =
             []
 
 
-varsView : Config -> String -> Maybe (List Variable) -> List (Attribute msg) -> Html msg
-varsView config title maybeVars attributes =
-    case maybeVars of
-        Nothing ->
-            div [] []
-
-        Just vars ->
-            if List.isEmpty vars then
-                div [] []
-
-            else
-                details (attribute "open" "" :: attributes)
-                    [ summary []
-                        [ p [ css [ Css.display Css.inline, Tw.text_lg, Css.hover [ Tw.cursor_pointer ] ] ] [ text title ] ]
-                    , ul [ css [ Tw.list_none, Tw.ps_5 ] ] (List.map (varView config) vars)
-                    ]
-
-
-programVisualizer : VisualizeState -> Html Msg
-programVisualizer state =
-    div
-        [ css
-            [ Css.flex (Css.num 1)
-            , Css.paddingTop (Css.px 10)
-            , Css.paddingRight (Css.px 10)
-            ]
-        ]
-        [ backendStateView state
-        , configView state.config
-        , varsView
-            state.config
-            "Global Variables:"
-            (Just state.packageVars)
-            [ css [ Css.marginBottom (Css.px 10), Css.hover [ Tw.cursor_pointer ] ] ]
-        , goroutinesView
-            state.config
-            (state.lastStep
-                |> Maybe.map .goroutinesData
-                |> Maybe.withDefault []
-                |> List.filter (\g -> not (List.isEmpty (filterUserFrames g.stacktrace)))
-            )
-        , programOutputView state.stdout state.stderr state.duration
-        ]
-
-
-programOutputView : String -> String -> String -> Html Msg
-programOutputView stdout stderr duration =
-    let
-        stdoutWithBR =
-            String.split "\n" stdout
-                |> List.map text
-                |> List.intersperse (br [] [])
-        stderrWithBR =
-            String.split "\n" stderr
-                |> List.map text
-                |> List.intersperse (br [] [])
-    in
-    details [ css [ Css.marginTop (Css.px 10) ] ]
-        [ summary []
-            [ p [ css [ Css.display Css.inline, Css.fontSize (Css.rem 1.3), Css.hover [ Tw.cursor_pointer ] ] ] [ text "Program Output:" ] ]
-        , div []
-            [ p [ css [ Css.padding4 (Css.px 20) (Css.px 20) (Css.px 5) (Css.px 20), Css.backgroundColor (Css.hex "d9d5cf33") ] ]
-                (p [ css [ Tw.text_color (Tw.lime_500), Tw.mb_1 ] ] [ text "Standard Output:" ]
-                :: stdoutWithBR
-                ++  p [ css [ Tw.text_color (Tw.red_500), Tw.mb_1 ] ] [ text "Standard Error:" ]
-                :: stderrWithBR
-                ++ [ p [ css [ Tw.text_color (Tw.gray_500), Tw.mb_1 ] ] [ text <| "Execution time: " ++ duration ]
-                       , p [ css [ Tw.text_color (Tw.gray_500), Tw.mt_1 ] ] [ text "Output doesn't respect the slider yet." ]
-                       ]
-                )
-            ]
-        ]
-
-
-configView : Config -> Html Msg
-configView config =
-    div [ css [  Tw.flex, Tw.flex_row, Tw.gap_10 ] ]
-        [ p [ css [ Tw.text_lg ] ] [ text "Config:" ]
-        , label [ css [ Tw.flex, Tw.items_center, Tw.gap_2 ] ]
-            [ input [ type_ "checkbox", onCheck ShowOnlyExportedFields, checked config.showOnlyExportedFields, css [ Tw.cursor_pointer ] ] []
-            , text " Show only exported fields"
-            ]
-        , label [ css [ Tw.flex, Tw.items_center, Tw.gap_2 ] ]
-            [ input [ type_ "checkbox", onCheck ShowMemoryAddresses, checked config.showMemoryAddresses, css [ Tw.cursor_pointer ] ] []
-            , text " Show memory addresses"
-            ]
-
-        ]
-
-
-goroutinesView : Config -> List GoroutinesData -> Html Msg
-goroutinesView config goroutinesData =
-    let
-        note =
-            if List.length goroutinesData >= 100 then
-                p [ css [ Tw.text_color Tw.zinc_500, Css.marginBottom (Css.px 5) ] ] [ text "Showing first 100 goroutines only." ]
-
-            else
-                div [] []
-
-        goroutines =
-            if List.length goroutinesData >= 100 then
-                List.take 100 goroutinesData
-
-            else
-                goroutinesData
-    in
-    details [ attribute "open" "", css [ Css.marginTop (Css.px 10) ] ]
-        [ summary [css [Tw.mb_5]]
-            [ p [ css [ Css.display Css.inline, Css.fontSize (Css.rem 1.3), Css.hover [ Tw.cursor_pointer ] ] ] [
-                text <| "Running Goroutines (" ++ String.fromInt (List.length goroutines) ++ ")"
-            ] ]
-        , note
-        , div
-            [ css
-                [ Css.displayFlex
-                , Css.flexDirection Css.row
-                , Css.flexWrap Css.wrap
-                , Css.property "justify-content" "space-evenly"
-                ]
-            ]
-            -- the first goroutine is the one executing the highlighted line
-            (List.indexedMap (\index -> goroutineView config (index == 0)) goroutines)
-        ]
-
-
-goroutineView : Config -> Bool -> GoroutinesData -> Html Msg
-goroutineView config isRunning goroutineData =
-    div
-        [ css
-            [ borderStyle
-            , if isRunning then
-                Css.batch [ Tw.border_2, Tw.border_color Tw.green_600 ]
-
-              else
-                Css.batch []
-            , Css.paddingLeft (Css.px 10)
-            , Css.paddingRight (Css.px 10)
-            , Css.marginBottom (Css.px 10)
-            , Tw.relative
-            ]
-        ]
-        [
-            img [ src "static/megaphone-gopher.svg", alt "goroutine", css [ Tw.absolute, Tw.w_10, Tw.h_10, Tw.neg_inset_5 ] ] []
-            , goroutineInfoView isRunning goroutineData
-        , stackView config (goroutineData.stacktrace |> filterUserFrames)
-        ]
-
-
-goroutineInfoView : Bool -> GoroutinesData -> Html msg
-goroutineInfoView isRunning goroutineData =
-    let
-        gInfo =
-            if goroutineData.goroutine.id == 1 then
-                "Main Goroutine #1"
-
-            else
-                "Goroutine #" ++ String.fromInt goroutineData.goroutine.id
-
-        runningBadge =
-            if isRunning then
-                span
-                    [ css [ Tw.bg_color Tw.green_100, Tw.text_color Tw.green_600, Tw.rounded_full, Tw.px_2, Tw.py_0_dot_5, Tw.text_xs, Tw.font_semibold, Tw.ml_2 ] ]
-                    [ text "running" ]
-
-            else
-                text ""
-    in
-    div
-        [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.alignItems Css.center, Css.marginBottom (Css.px 10) ] ]
-        [ p [ css [ Css.fontSize (Css.rem 1.3) ] ] [ text gInfo, runningBadge ] ]
-
-
-stackView : Config -> List StackFrame -> Html Msg
-stackView config stack =
-    if List.isEmpty stack then
-        div [] []
-
-    else
-        details [ attribute "open" "" ]
-            [ summary [] [ b [css [ Css.hover [ Tw.cursor_pointer ] ] ] [ text "Stack Frames:" ] ]
-            , ul [ css [ Tw.list_none, Tw.ps_0 ] ]
-                (case stack of
-                    [] ->
-                        []
-
-                    first :: rest ->
-                        li [] [ frameView config first ]
-                            :: List.map
-                                (\frame ->
-                                    li []
-                                        [ div [ css [] ]
-                                            [ i
-                                                [ css
-                                                    [ arrow
-                                                    , up
-                                                    , Css.position Css.relative
-                                                    , Css.left (Css.pct 50)
-                                                    ]
-                                                ]
-                                                []
-                                            ]
-                                        , frameView config frame
-                                        ]
-                                )
-                                rest
-                )
-            ]
-
-
-frameView : Config -> StackFrame -> Html Msg
-frameView config frame =
-    let
-        fileName =
-            String.split "/" frame.file
-                |> List.reverse
-                |> List.head
-                |> Maybe.withDefault frame.file
-    in
-    div
-        [ css
-            [ frameBorderStyle
-            , Tw.bg_color Tw.gray_100
-            , Css.marginBottom (Css.px 10)
-            , Css.padding (Css.px 10)
-            , Tw.max_w_xl
-            , Tw.min_w_64
-            ]
-        , onMouseEnter (Highlight frame.line)
-        , onMouseLeave (Unhighlight frame.line)
-        ]
-        [ div [ css [ Css.displayFlex, Css.flexDirection Css.column, Css.alignItems Css.center ] ] [ b [] [ text <| removeMainPrefix frame.function.name ] ]
-        , div [ css [ Css.margin3 (Css.px 0) (Css.px 0) (Css.px 3) ] ] [ b [] [ text "Loc: " ], text <| fileName ++ ":" ++ String.fromInt frame.line ]
-        , varsView config "arguments:" frame.arguments [ css [ Css.marginBottom (Css.px 10) ] ]
-        , varsView config "locals:" frame.locals []
-        ]
-
-
 removeMainPrefix : String -> String
 removeMainPrefix str =
     let
@@ -815,141 +917,65 @@ removeMainPrefix str =
         str
 
 
-backendStateView : VisualizeState -> Html Msg
-backendStateView state =
+
+-- OUTPUT PANEL
+
+
+outputPanel : VisualizeState -> Html Msg
+outputPanel state =
     let
-        message =
-            case state.flashMessage of
-                Just msg ->
-                    msg
-
-                Nothing ->
-                    case state.mode of
-                        WaitingSteps ->
-                            "Waiting for backend to get execution steps... ⏳"
-
-                        _ ->
-                            case state.lastStep of
-                                Nothing ->
-                                    "step is empty, try moving the slider, or pressing `Visualize Steps` button"
-
-                                Just _ ->
-                                    ""
+        isEmpty =
+            String.isEmpty (String.trim state.stdout) && String.isEmpty (String.trim state.stderr)
     in
-    case message of
-        "" ->
-            div [] []
+    details
+        [ attribute "open" ""
+        , attribute "aria-label" "Program output"
+        , css [ Tw.flex_none, Tw.bg_color Tw.white, Tw.border_t ]
+        ]
+        [ summary [ css [ Tw.px_4, Tw.py_2, Tw.text_color Tw.slate_500, Tw.select_none ] ]
+            [ span [ css [ Tw.inline_flex, Tw.items_center, Tw.gap_3, Tw.align_middle ] ]
+                [ span [ css [ Tw.inline_flex, Tw.items_center, Tw.gap_1_dot_5, Tw.text_sm, Tw.font_semibold, Tw.text_color Tw.slate_900 ] ]
+                    [ Icons.terminal 14, text "Output" ]
+                , if String.isEmpty state.duration then
+                    text ""
 
-        _ ->
-            div
-                [ css
-                    ([ Tw.flex
-                     , Tw.flex_row
-                     , Tw.justify_between
-                     , Tw.items_center
-                     , Tw.mb_4
-                     , Tw.px_4
-                     , borderStyle
-                     ]
-                        ++ (case state.flashMessage of
-                                Just _ ->
-                                    [ Tw.bg_color Tw.red_300 ]
-
-                                Nothing ->
-                                    []
-                           )
-                    )
+                  else
+                    span [ title "Execution time", css [ Styles.chip ] ] [ Icons.clock 12, text state.duration ]
+                , span [ css [ Styles.muted, Tw.hidden, Bp.sm [ Tw.inline ] ] ] [ text "Output doesn't follow the slider yet." ]
                 ]
-                [ p [ css [ Css.fontSize (Css.rem 1.5) ] ] [ text message ]
-                , case state.flashMessage of
-                    Just _ ->
-                        div [ onClick FixCodeWithAI, css [ secondaryButtonStyle, borderStyle, Tw.mt_3] ]
-                            [ text "Fix with AI ✨" ]
-                    Nothing ->
-                        div [] []
-                ]
-
-
-exampleSelector : Html Msg
-exampleSelector =
-    select
-        [ css
-            [ Css.fontSize (Css.rem 0.9)
-            , Tw.bg_color Tw.slate_50
-            , borderStyle
-            , Tw.py_1
-            , Tw.rounded_md
             ]
-        , onInput ExampleSelected
-        ]
-        [ option [ value "gotutor.txt", Html.Styled.Attributes.default True ] [ text "GoTutor Example" ]
-        , option [ value "goroutines.txt" ] [ text "Goroutines" ]
-        , option [ value "hello.txt" ] [ text "Hello, World!" ]
-        , option [ value "fib.txt" ] [ text "Fibonacci Closure" ]
-        , option [ value "pi.txt" ] [ text "Concurrent pi" ]
-        , option [ value "sieve.txt" ] [ text "Concurrent Prime Sieve" ]
-        , option [ value "tree.txt" ] [ text "Tree Comparison" ]
-        , option [ value "http.txt" ] [ text "HTTP Server" ]
-        , option [ value "index-dev.txt" ] [ text "Generic index" ]
-        ]
+        , div
+            [ class "thin-scroll"
+            , css
+                [ Styles.mono
+                , Tw.text_xs
+                , Tw.leading_5
+                , Css.property "max-height" "clamp(4.5rem, 20vh, 13rem)"
+                , Tw.overflow_auto
+                , Tw.overscroll_contain
+                , Tw.px_4
+                , Tw.pb_3
+                ]
+            ]
+            (if isEmpty then
+                [ p [ css [ Tw.text_color Tw.slate_400 ] ] [ text "No output" ] ]
 
+             else
+                [ if String.isEmpty state.stdout then
+                    text ""
 
-borderStyle : Css.Style
-borderStyle =
-    Css.batch
-        [ Tw.border_color Tw.gray_300
-        , Tw.border
-        , Tw.border_solid
-        ]
+                  else
+                    pre [ css [ Tw.m_0, Tw.whitespace_pre_wrap, Tw.break_words, Tw.text_color Tw.slate_800, Css.property "font" "inherit" ] ]
+                        [ text state.stdout ]
+                , if String.isEmpty state.stderr then
+                    text ""
 
-
-frameBorderStyle : Css.Style
-frameBorderStyle =
-    Css.batch
-        [ Tw.border_color Tw.gray_300
-        , Tw.border
-        , Tw.border_solid
-        , Tw.rounded_md
-        ]
-
-secondaryButtonStyle : Css.Style
-secondaryButtonStyle =
-    Css.batch
-        [ buttonStyle
-        , Css.backgroundColor secondaryBackgroundColor
-        , Css.hover [ Css.backgroundColor secondaryBackgroundColorHover ]
-        ]
-
-buttonStyle : Css.Style
-buttonStyle =
-    Css.batch
-        [ Tw.inline_flex
-        , Tw.items_center
-        , Tw.justify_center
-        , Tw.gap_2
-        , Tw.whitespace_nowrap
-        , Tw.text_sm
-        , Tw.font_medium
-        , Tw.transition_colors
-        , Tw.h_9
-        , Tw.rounded_md
-        , Tw.px_3
-        , Css.hover [ Tw.cursor_pointer ]
-        ]
-
-
-arrow : Css.Style
-arrow =
-    Css.batch
-        [ Css.border3 (Css.px 0) Css.solid (Css.hex "979494")
-        , Css.borderWidth4 (Css.px 0) (Css.px 3) (Css.px 3) (Css.px 0)
-        , Css.display Css.inlineBlock
-        , Css.padding (Css.px 3)
-        ]
-
-
-up : Css.Style
-up =
-    Css.batch
-        [ Css.transform (Css.rotate (Css.deg -135))
+                  else
+                    div [ css [ Tw.mt_2 ] ]
+                        [ div [ css [ Tw.text_color Tw.red_600, Tw.font_semibold, Tw.uppercase, Tw.tracking_wide, Css.fontSize (Css.px 10) ] ] [ text "stderr" ]
+                        , pre [ css [ Tw.m_0, Tw.whitespace_pre_wrap, Tw.break_words, Tw.text_color Tw.red_600, Css.property "font" "inherit" ] ]
+                            [ text state.stderr ]
+                        ]
+                ]
+            )
         ]
