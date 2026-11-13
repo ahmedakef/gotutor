@@ -24,7 +24,9 @@ init route savedCode =
             ( Success (StepsState Edit { steps = [], duration = "", stdout = "", stderr = "" } 0 code Nothing (Scroll 0 0) Nothing Nothing { showOnlyExportedFields = True, showMemoryAddresses = False }), Cmd.none )
 
         _ ->
-            ( Loading, Cmd.batch [ getInitSteps, getInitSourceCode ] )
+            -- the steps are fetched once the source code arrives: if they arrived first, the
+            -- source code arriving would look like an edit and get saved as the user's code
+            ( Loading, getInitSourceCode )
 
 
 
@@ -426,18 +428,10 @@ update msg state env =
 
         Loading ->
             case msg of
-                GotExecutionResponse gotExecutionStepsResponseResult ->
-                    case gotExecutionStepsResponseResult of
-                        Ok executionResponse ->
-                            ( Success (StepsState View executionResponse 1 "" Nothing (Scroll 0 0) Nothing Nothing { showOnlyExportedFields = True, showMemoryAddresses = False }), Cmd.none )
-
-                        Err err ->
-                            ( Failure ("Error while getting program execution steps: " ++ err), Cmd.none )
-
                 GotSourceCode sourceCodeResult ->
                     case sourceCodeResult of
                         Ok sourceCode ->
-                            ( Success (StepsState View { steps = [], duration = "", stdout = "", stderr = "" } 0 sourceCode Nothing (Scroll 0 0) Nothing Nothing { showOnlyExportedFields = True, showMemoryAddresses = False }), Cmd.none )
+                            ( Success (StepsState View { steps = [], duration = "", stdout = "", stderr = "" } 0 sourceCode Nothing (Scroll 0 0) Nothing Nothing { showOnlyExportedFields = True, showMemoryAddresses = False }), getInitSteps )
 
                         Err err ->
                             ( Failure ("Error while reading program source code: " ++ HttpHelper.errorToString err), Cmd.none )
