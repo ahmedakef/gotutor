@@ -12,6 +12,7 @@ import (
 	"github.com/ahmedakef/gotutor/backend/src/cache"
 	"github.com/ahmedakef/gotutor/backend/src/controller"
 	"github.com/ahmedakef/gotutor/backend/src/db"
+	"github.com/ahmedakef/gotutor/backend/src/gemini"
 	"github.com/ahmedakef/gotutor/backend/src/handler"
 	"github.com/ahmedakef/gotutor/backend/src/metrics"
 	"github.com/rs/zerolog"
@@ -52,7 +53,15 @@ func main() {
 	containerWatcher := metrics.NewContainerWatcher(logger)
 	containerWatcher.Start(context.Background())
 
-	h := handler.NewHandler(logger, db, controller, pprofPort, containerWatcher)
+	var geminiClient *gemini.Client
+	if apiKey := os.Getenv("GEMINI_API_KEY"); apiKey != "" {
+		geminiClient = gemini.New(apiKey, os.Getenv("GEMINI_MODEL"))
+		logger.Info().Str("model", geminiClient.Model()).Msg("fixing code with AI is enabled")
+	} else {
+		logger.Warn().Msg("GEMINI_API_KEY is not set, fixing code with AI is disabled")
+	}
+
+	h := handler.NewHandler(logger, db, controller, pprofPort, containerWatcher, geminiClient)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", h.HandleHealthz)

@@ -8,6 +8,7 @@ import (
 
 	"github.com/ahmedakef/gotutor/backend/src/controller"
 	"github.com/ahmedakef/gotutor/backend/src/db"
+	"github.com/ahmedakef/gotutor/backend/src/gemini"
 	"github.com/ahmedakef/gotutor/backend/src/metrics"
 	"github.com/rs/zerolog"
 )
@@ -18,16 +19,20 @@ type Handler struct {
 	controller       *controller.Controller
 	pprofPort        int
 	containerWatcher *metrics.ContainerWatcher
+	gemini           *gemini.Client
+	fixCodeLimiter   *ipRateLimiter
 }
 
-// NewHandler creates a new Handler
-func NewHandler(logger zerolog.Logger, db *db.DB, controller *controller.Controller, pprofPort int, containerWatcher *metrics.ContainerWatcher) *Handler {
+// NewHandler creates a new Handler. A nil geminiClient disables /fix-code.
+func NewHandler(logger zerolog.Logger, db *db.DB, controller *controller.Controller, pprofPort int, containerWatcher *metrics.ContainerWatcher, geminiClient *gemini.Client) *Handler {
 	return &Handler{
 		logger:           logger,
 		db:               db,
 		controller:       controller,
 		pprofPort:        pprofPort,
 		containerWatcher: containerWatcher,
+		gemini:           geminiClient,
+		fixCodeLimiter:   newIPRateLimiter(_fixCodeLimitPerIP, _fixCodeLimitWindow),
 	}
 }
 
