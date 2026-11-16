@@ -21,7 +21,7 @@ init route savedCode =
             ( Loading, getSharedCode id )
 
         ( _, Just code ) ->
-            ( Success (StepsState Edit { steps = [], duration = "", stdout = "", stderr = "" } 0 code Nothing (Scroll 0 0) Nothing Nothing { showOnlyExportedFields = True, showMemoryAddresses = False }), Cmd.none )
+            ( Success (StepsState Edit { steps = [], duration = "", stdout = "", stderr = "" } 0 code Nothing (Scroll 0 0) Nothing Nothing Nothing { showOnlyExportedFields = True, showMemoryAddresses = False }), Cmd.none )
 
         _ ->
             -- the steps are fetched once the source code arrives: if they arrived first, the
@@ -45,6 +45,7 @@ type alias StepsState =
     , highlightedLine : Maybe Int
     , scroll : Scroll
     , errorMessage : Maybe String
+    , programError : Maybe String -- the last compile, run or format error of sourceCode, sent to the LLM
     , shareUrl : Maybe String
     , config : Config
     }
@@ -328,13 +329,13 @@ update msg state env =
                 GotExecutionResponse gotExecutionStepsResponseResult ->
                     case gotExecutionStepsResponseResult of
                         Ok executionResponse ->
-                            ( Success { successState | executionResponse = executionResponse, position = 1, mode = View, errorMessage = Nothing }, Cmd.none )
+                            ( Success { successState | executionResponse = executionResponse, position = 1, mode = View, errorMessage = Nothing, programError = Nothing }, Cmd.none )
 
                         Err err ->
                             case successState.mode of
                                 WaitingSteps ->
                                     -- waiting after clicking visualize
-                                    ( Success { successState | mode = Edit, executionResponse = { steps = [], duration = "", stdout = "", stderr = "" }, position = 0, errorMessage = Just err }, Cmd.none )
+                                    ( Success { successState | mode = Edit, executionResponse = { steps = [], duration = "", stdout = "", stderr = "" }, position = 0, errorMessage = Just err, programError = Just err }, Cmd.none )
 
                                 _ ->
                                     ( Success { successState | mode = Edit, errorMessage = Just ("Error while getting execution steps: " ++ err) }, Cmd.none )
@@ -342,7 +343,7 @@ update msg state env =
                 GotSourceCode sourceCodeResult ->
                     case sourceCodeResult of
                         Ok sourceCode ->
-                            ( Success { successState | sourceCode = sourceCode, errorMessage = Nothing }, Cmd.none )
+                            ( Success { successState | sourceCode = sourceCode, errorMessage = Nothing, programError = Nothing }, Cmd.none )
 
                         Err err ->
                             ( Failure ("Error while reading program source code: " ++ HttpHelper.errorToString err), Cmd.none )
@@ -350,7 +351,7 @@ update msg state env =
                 GotExampleSourceCode sourceCodeResult ->
                     case sourceCodeResult of
                         Ok sourceCode ->
-                            ( Success { successState | sourceCode = sourceCode, mode = Edit, errorMessage = Nothing }, Cmd.none )
+                            ( Success { successState | sourceCode = sourceCode, mode = Edit, errorMessage = Nothing, programError = Nothing }, Cmd.none )
 
                         Err err ->
                             ( Success { successState | mode = Edit, errorMessage = Just ("Error while reading example source code: " ++ HttpHelper.errorToString err) }, Cmd.none )
@@ -361,12 +362,12 @@ update msg state env =
                             ( Success { successState | sourceCode = fmtResponse.body, mode = Edit, errorMessage = Nothing }, Cmd.none )
 
                         Err err ->
-                            ( Success { successState | mode = Edit, errorMessage = Just ("Error while formatting source code: " ++ err) }, Cmd.none )
+                            ( Success { successState | mode = Edit, errorMessage = Just ("Error while formatting source code: " ++ err), programError = Just err }, Cmd.none )
 
                 GotFixedCode fixCodeResponseResult ->
                     case fixCodeResponseResult of
                         Ok fixCodeResponse ->
-                            ( Success { successState | sourceCode = fixCodeResponse.fixedCode, mode = Edit, errorMessage = Nothing }, Cmd.none )
+                            ( Success { successState | sourceCode = fixCodeResponse.fixedCode, mode = Edit, errorMessage = Nothing, programError = Nothing }, Cmd.none )
 
                         Err err ->
                             ( Success { successState | mode = Edit, errorMessage = Just ("Error while fixing code with AI: " ++ err) }, Cmd.none )
@@ -413,7 +414,7 @@ update msg state env =
                     ( Success { successState | mode = WaitingSourceCode }, getFmt successState.sourceCode env )
 
                 FixCodeWithAI ->
-                    ( Success { successState | mode = WaitingLLM }, getFixCode successState.sourceCode successState.errorMessage env )
+                    ( Success { successState | mode = WaitingLLM }, getFixCode successState.sourceCode successState.programError env )
 
                 Share ->
                     ( state, callShare successState.sourceCode )
@@ -435,7 +436,7 @@ update msg state env =
                 GotSourceCode sourceCodeResult ->
                     case sourceCodeResult of
                         Ok sourceCode ->
-                            ( Success (StepsState View { steps = [], duration = "", stdout = "", stderr = "" } 0 sourceCode Nothing (Scroll 0 0) Nothing Nothing { showOnlyExportedFields = True, showMemoryAddresses = False }), getInitSteps )
+                            ( Success (StepsState View { steps = [], duration = "", stdout = "", stderr = "" } 0 sourceCode Nothing (Scroll 0 0) Nothing Nothing Nothing { showOnlyExportedFields = True, showMemoryAddresses = False }), getInitSteps )
 
                         Err err ->
                             ( Failure ("Error while reading program source code: " ++ HttpHelper.errorToString err), Cmd.none )
@@ -443,7 +444,7 @@ update msg state env =
                 GotSharedCode sharedCodeResult ->
                     case sharedCodeResult of
                         Ok sharedCode ->
-                            ( Success (StepsState WaitingSteps { steps = [], duration = "", stdout = "", stderr = "" } 0 sharedCode Nothing (Scroll 0 0) Nothing Nothing { showOnlyExportedFields = True, showMemoryAddresses = False }), getSteps sharedCode env )
+                            ( Success (StepsState WaitingSteps { steps = [], duration = "", stdout = "", stderr = "" } 0 sharedCode Nothing (Scroll 0 0) Nothing Nothing Nothing { showOnlyExportedFields = True, showMemoryAddresses = False }), getSteps sharedCode env )
 
                         Err err ->
                             ( Failure ("Error while loading shared source code: " ++ HttpHelper.errorToString err), Cmd.none )
